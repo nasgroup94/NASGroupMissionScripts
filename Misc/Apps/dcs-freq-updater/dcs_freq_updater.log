@@ -1,0 +1,3 @@
+[24-01-06 09:19:29] [DEBUG ] [dcs_freq_updater:<module>():91] Unzipped _source\VNAO_Westpac_qual_1.10.miz to _build\VNAO_Westpac_qual_1.10.
+[24-01-06 09:19:29] [DEBUG ] [dcs_freq_updater:<module>():95] Reading data from VNAO_Westpac_qual_1.10.miz.
+[24-01-06 09:19:31] [DEBUG ] [dcs_freq_updater:<module>():97] Read data from VNAO_Westpac_qual_1.10.miz.

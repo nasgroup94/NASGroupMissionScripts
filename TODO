@@ -1,0 +1,24 @@
+Common scripts setup
+finish setting up server bot
+add mods repo
+setup mod repo with OMM
+make two training servers one day one night
+figure out how to log night hours automatically
+adjust website to new name
+change website training blocks to be more repeatable
+setup touch and go in paddles (hook up) carrier
+flight logs design to include flight time in trap scores as well as refuel connect count and fuel taken
+
+
+mission features
+nav points for easy planning
+spawnable scenarios:
+tied into range script at a minimum message saying killed and by who
+moving targets
+static targets
+hardened targets
+stand off targets
+sead range
+aic practice
+a/a spawns
+

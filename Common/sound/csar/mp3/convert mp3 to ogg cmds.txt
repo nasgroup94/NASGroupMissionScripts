@@ -1,0 +1,6 @@
+
+-convert mp3 to wav
+for %i in (*.mp3) do ffmpeg -i "%i" -acodec pcm_s16le -ac 1 -ar 16000 "..\wav\%~ni.wav"
+
+-convert wav to ogg
+for %i in (..\wav\*.wav) do ffmpeg -i "%i" -acodec libvorbis "..\%~ni.ogg"
