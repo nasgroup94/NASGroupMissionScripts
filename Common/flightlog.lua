@@ -9,8 +9,8 @@ local FlightLogSendDelay = 10
 local funkmanHost = "127.0.0.1"
 local funkmanPort = 10042
 
-package.path  = package.path .. ';c:\\vnao\\VNAO-Mission_Scripts\\Common\\?.lua;'
-package.cpath = package.cpath .. ';c:\\vnao\\VNAO-Mission_Scripts\\Common\\?.dll;'
+package.path  = package.path .. ';c:\\NASG\\NASGroupMissionScripts\\Common\\?.lua;'
+package.cpath = package.cpath .. ';c:\\NASG\\NASGroupMissionScripts\\Common\\?.dll;'
 local uuid = require("uuid_generator")
 
 

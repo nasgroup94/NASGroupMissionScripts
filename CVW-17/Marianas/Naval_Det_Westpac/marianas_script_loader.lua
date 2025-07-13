@@ -4,15 +4,15 @@ DCSServerBotConfig = require('DCSServerBotConfig')
 SERVER_SETTINGS = cfg -- cfg table is from the current DCS servers config/serverSettings.lua  
 
 local mission_scripts_path = debug.getinfo(1).source:match("@?(.*/)")
-local common_scripts_path = "C:/VNAO/VNAO-Mission_Scripts/Common/"
-local moose_folder = "C:/VNAO/VNAO-MOOSE_INCLUDE/Moose_Include_Static/"
+local common_scripts_path = "C:/NASG/NASGroupMissionScripts/Common/"
+local moose_folder = "C:/NASG/MOOSE_INCLUDE/Moose_Include_Static/"
 local user_folder = os.getenv('USERPROFILE'):gsub("\\","/") .. "/"
 
 
 -- GLOBALS
 SERVER_LOCATION = user_folder .. "Saved Games/" .. DCSServerBotConfig.INSTANCE_NAME .. "/"
-GOOGLE_CREDS = "C:/VNAO/API-Keys/cvw7-tracking-11c8a6927776.json"
-SRS_PATH = "C:/Program Files/DCS-SimpleRadio-Standalone"
+-- GOOGLE_CREDS = "C:/VNAO/API-Keys/cvw7-tracking-11c8a6927776.json"
+SRS_PATH = "C:/DCS-SimpleRadioStandalone/ExternalAudio"
 SRS_PORT = DCSServerBotConfig.SRS_PORT
 SRS_VOICES = {
     Female = {

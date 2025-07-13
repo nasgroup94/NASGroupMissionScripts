@@ -162,7 +162,7 @@ AW36:AddSquadron(SQDN_AACS961)
 AW36:NewPayload(GROUP:FindByName("SQDN_AACS961"), 4, {AUFTRAG.Type.AWACS})
 
 -- Fleet Logistics Support Squadron 40 (VRC-40)
-SQDN_VRC40 = SQUADRON:New("SQDN_VRC40", 4, "Fleet Logistics Support Squadron 40")
+SQDN_VRC40 = SQUADRON:New("SQDN_VRC40", 4, "Fleet Logistics Support Squadron 41")
     :AddMissionCapability({AUFTRAG.Type.ORBIT})
     :SetCallsign(CALLSIGN.Aircraft.Enfield, 9)
     :SetParkingIDs(andersenSquadronParkingIDs.Airlift)
