@@ -219,7 +219,7 @@ LoneWarrior:SetDespawnOnEngineShutdown()
 LoneWarrior:SetRecoveryTanker(RecoveryTanker)
 LoneWarrior:SetMenuSingleCarrier()
 LoneWarrior:SetHandleAIOFF()
--- LoneWarrior:SetIntoWindLegacy( SwitchOn )  -- uncomment this to use old turn into wind calculation
+LoneWarrior:SetIntoWindLegacy( SwitchOn ) 
 -- LoneWarrior.trapsheet = false
 
 function LoneWarrior:OnAfterRecoveryStart(Event, From, To, Case, Offset)
