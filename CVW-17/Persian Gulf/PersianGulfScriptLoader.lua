@@ -90,7 +90,7 @@ MISSION_TANKER_ALTS.Recovery = 8000
 
 -- Moose/mist (really need to getrid of MIST one of these days!)
 assert(loadfile(moose_folder .. "Moose.lua"))()
-assert(loadfile(moose_folder .. "Moose_.lua"))()
+-- assert(loadfile(moose_folder .. "Moose_.lua"))()
 assert(loadfile(common_scripts_path .. "mist.lua"))()
 
 -- Common for all missions

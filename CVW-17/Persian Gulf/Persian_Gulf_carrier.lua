@@ -122,7 +122,7 @@ RED_CLIENT_SET:HandleEvent(EVENTS.PlayerEnterAircraft)
 
 --------------------------------------------- CVN73 -------------------------------------------------------
 -- S3
-RecoveryTanker = RECOVERYTANKER:New(UNIT:FindByName("CVN-71 Rough Rider"), "CVN71_ARCO1")
+RecoveryTanker = RECOVERYTANKER:New(UNIT:FindByName("CSG-1-1"), "CVN71_ARCO1")
 RecoveryTanker:SetTakeoffAir()
 RecoveryTanker:SetRadio(260)
 RecoveryTanker:SetAltitude(MISSION_TANKER_ALTS.Recovery)
@@ -131,7 +131,7 @@ RecoveryTanker:SetCallsign(CALLSIGN.Tanker.Arco, 9)
 RecoveryTanker:SetTACAN(60, "AR9")
 RecoveryTanker:__Start(60)
 
-HighTanker = RECOVERYTANKER:New(UNIT:FindByName("CVN-71 Rough Rider"), "CVN71_ARCO2")
+HighTanker = RECOVERYTANKER:New(UNIT:FindByName("CSG-1-1"), "CVN71_ARCO2")
 HighTanker:SetTakeoffAir()
 HighTanker:SetRadio(268)
 HighTanker:SetAltitude(MISSION_TANKER_ALTS.Offgoing)
@@ -142,9 +142,9 @@ HighTanker:SetTACAN(68, "AR8")
 HighTanker:SetSpeed(350)
 HighTanker:Start()
 
-RescueHelo = RESCUEHELO:New(UNIT:FindByName("CVN-71 Rough Rider"), "CVN71_RescueHelo")
+RescueHelo = RESCUEHELO:New(UNIT:FindByName("CSG-1-1"), "CVN71_RescueHelo")
 RescueHelo:SetTakeoffCold()
-RescueHelo:SetHomeBase("CVN75-3")
+RescueHelo:SetHomeBase("CSG-1-1")
 RescueHelo:SetRespawnInAir()
 RescueHelo:SetRescueDuration(1)
 RescueHelo:SetRescueHoverSpeed(5)
@@ -165,7 +165,7 @@ rescuehelo:SetModex(42)
 rescuehelo:Start(30)
 --]]
 
-Awacs = RECOVERYTANKER:New("CVN-71 Rough Rider", "CVN71_FOCUS")
+Awacs = RECOVERYTANKER:New("CSG-1-1", "CVN71_FOCUS")
 Awacs:SetAWACS()
 Awacs:SetTakeoffCold()
 Awacs:SetRadio(269)
@@ -176,7 +176,7 @@ Awacs:SetModex(611)
 Awacs:SetTACAN(69, "WZ6")
 Awacs:__Start(150)
 
-Teddy = AIRBOSS:New("CVN-71 Rough Rider", "CVN-71 Rough Rider")
+Teddy = AIRBOSS:New("CSG-1-1", "CVN-71 Rough Rider")
 
 function Teddy:OnAfterStart(From, Event, To)
     self:DeleteAllRecoveryWindows()
