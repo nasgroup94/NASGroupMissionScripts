@@ -97,8 +97,8 @@ end
 -------------------------
 -- Refueling_Monitor --
 -------------------------
--- Refueling_Monitor = REFUELING_MONITOR:New({"Shell", "Texaco", "Arco"})
--- Refueling_Monitor = REFUELING_MONITOR:New({ "Refueling", "Tanker", "Shell", "Texaco", "Arco", "ARCO", "ARCO3", "ARS909", "ARS909MPRS" })
+Refueling_Monitor = REFUELING_MONITOR:New({"Shell", "Texaco", "Arco"})
+Refueling_Monitor = REFUELING_MONITOR:New({ "Refueling", "Tanker", "Shell", "Texaco", "Arco", "ARCO", "ARCO3", "ARS909", "ARS909MPRS" })
 
 
 -------------------------
