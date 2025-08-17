@@ -19,14 +19,14 @@
 -- Change this value as needed if you are not seeing correct results.
 local good_height_range = 0.1
 
-local newClient = EVENTHANDLER:New()
-newClient:HandleEvent(EVENTS.PlayerEnterAircraft)
+-- local newClient = EVENTHANDLER:New()
+-- newClient:HandleEvent(EVENTS.PlayerEnterAircraft)
 
 BASE:I("Dynamic Crewchief loading.")
 
--- Run every time a new client spawns at an airbase
-function newClient:OnEventPlayerEnterAircraft(EventData)
-    BASE:I("------------ newClient:OnEventPlayerEnterAircraft() called for " .. EventData.IniPlayerName)
+-- -- Run every time a new client spawns at an airbase
+-- function newClient:OnEventPlayerEnterAircraft(EventData)
+--     BASE:I("------------ newClient:OnEventPlayerEnterAircraft() called for " .. EventData.IniPlayerName)
     -- BASE:I("Client spawned at airbase: " .. newClient:Name())
     -- You can add additional logic here if needed
     local set_client = SET_CLIENT:New():FilterCategories({"plane","helicopter"}):FilterStart()
@@ -223,7 +223,7 @@ function newClient:OnEventPlayerEnterAircraft(EventData)
             end
         end)
     end)
-end
+-- end
 
 
 
