@@ -1,5 +1,15 @@
+-- Create AirWing at Al Minad AFB
+AMAW = AIRWING:New("Warehouse Al Minad AFB", "Al Minad Air Wing")
 
 
+--Al Minad AFB Parking
+local AlMinadSquadronParkingIDs = {
+    Tanker = {1,2,3,4},
+    AWACS = {5,6},
+}
+
+
+-- Tanker setup
 -- Tanker Zones
 local aarSouth = {
     zone = ZONE:New("AAR South"),
@@ -15,13 +25,6 @@ local aarNorth = {
     leg = 60,
 }
 
-local AlMinadSquadronParkingIDs = {
-    Tanker = {1,2,3,4},
-}
-
--- Create AirWing at Al Minad AFB
-AMAW = AIRWING:New("Warehouse Al Minad AFB", "Al Minad Air Wing")
-
 -- Tanker Squadron
 Tank = SQUADRON:New("CVN71_ARCO2",4,"Al Minad Tanker Squadron")
     :AddMissionCapability({AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
@@ -30,9 +33,6 @@ Tank = SQUADRON:New("CVN71_ARCO2",4,"Al Minad Tanker Squadron")
 
 AMAW:AddSquadron(Tank)
 AMAW:NewPayload(GROUP:FindByName("CVN71_ARCO2"),4,{AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
-
-
-
 
 -- add tasks to airWing
 
@@ -45,8 +45,7 @@ local southAAR = AUFTRAG:NewORBIT(aarSouth.zone:GetCoordinate(),MISSION_TANKER_A
     :SetTACAN(29,"STK")
     :SetRadio(369.5)
 
--- function southAAR:OnAfterScheduled(From,Event,To)
---     tankerSetup(self, CALLSIGN.Tanker.Texaco, 1, 29,)
+southAAR:AssignSquadrons({Tank})
 
 local northAAR = AUFTRAG:NewORBIT(aarNorth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarNorth.speed,aarNorth.hdg,aarNorth.leg)
     :SetTime(1)
@@ -57,19 +56,11 @@ local northAAR = AUFTRAG:NewORBIT(aarNorth.zone:GetCoordinate(),MISSION_TANKER_A
     :SetTACAN(28,"NTK")
     :SetRadio(368.5)
 
-southAAR:AssignSquadrons({Tank})
 northAAR:AssignSquadrons({Tank})
 
-local DetectionGroup = SET_GROUP:New():FilterCoalitions("blue"):FilterPrefixes("EW"):FilterStart()
 
-Blue_Chief = CHIEF:New(coalition.side.BLUE, DetectionGroup,"Blue Chief")
-Blue_Chief:SetStrategy(CHIEF.Strategy.DEFENSIVE)
 
-local ZoneBlueBorder=ZONE:New("Blue Border")
-Blue_Chief:AddBorderZone(ZoneBlueBorder)
-Blue_Chief:AddAirwing(AMAW)
+-- AWACS Setup
 
-Blue_Chief:Start()
 
-Blue_Chief:AddMission(southAAR)
-Blue_Chief:AddMission(northAAR)
+
