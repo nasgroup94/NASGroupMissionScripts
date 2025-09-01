@@ -5,7 +5,7 @@ AMAW = AIRWING:New("Warehouse Al Minad AFB", "Al Minad Air Wing")
 --Al Minad AFB Parking
 local AlMinadSquadronParkingIDs = {
     Tanker = {1,2,3,4},
-    AWACS = {5,6},
+    AWACS = {45,46,47,48},
 }
 
 
@@ -36,7 +36,7 @@ AMAW:NewPayload(GROUP:FindByName("CVN71_ARCO2"),4,{AUFTRAG.Type.TANKER,AUFTRAG.T
 
 -- add tasks to airWing
 
-local southAAR = AUFTRAG:NewORBIT(aarSouth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarSouth.speed,aarSouth.hdg,aarSouth.leg)
+ southAAR = AUFTRAG:NewORBIT(aarSouth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarSouth.speed,aarSouth.hdg,aarSouth.leg)
     :SetTime(1)
     :SetRepeat(10)
     :SetMissionRange(500)
@@ -47,7 +47,7 @@ local southAAR = AUFTRAG:NewORBIT(aarSouth.zone:GetCoordinate(),MISSION_TANKER_A
 
 southAAR:AssignSquadrons({Tank})
 
-local northAAR = AUFTRAG:NewORBIT(aarNorth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarNorth.speed,aarNorth.hdg,aarNorth.leg)
+ northAAR = AUFTRAG:NewORBIT(aarNorth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarNorth.speed,aarNorth.hdg,aarNorth.leg)
     :SetTime(1)
     :SetRepeat(10)
     :SetMissionRange(500)
@@ -61,6 +61,23 @@ northAAR:AssignSquadrons({Tank})
 
 
 -- AWACS Setup
+ awacsZones= {
+    {
+        zone = ZONE:FindByName("AWACS North"),
+        alt = 3000,
+        spd = 300,
+        hdg = 90,
+        leg = 60,
+    },
+}
 
+AWACS = SQUADRON:New("AWACS",4,"Al Minad AWACS")
+    :AddMissionCapability({AUFTRAG.Type.AWACS})
+    :SetCallsign(CALLSIGN.Aircraft.Overlord,5)
+    :SetFuelLowThreshold(0.3)
+    :SetRadio(262, radio.modulation.AM)
 
+AWACS:SetParkingIDs(AlMinadSquadronParkingIDs.AWACS)
 
+AMAW:AddSquadron(AWACS)
+AMAW:NewPayload(GROUP:FindByName("AWACS"),4,{AUFTRAG.Type.AWACS})

@@ -23,7 +23,6 @@ samTypesDB = {
         },
         ['trackingRadar'] = {
             ['RPC_5N62V'] = {
-					['NATO'] = "Square Pair"
             },
         },
         ['launchers'] = {
@@ -33,22 +32,17 @@ samTypesDB = {
         ['name'] = {
             ['NATO'] = 'SA-5 Gammon',
         },
-        ['harm_detection_chance'] = 80
+        ['harm_detection_chance'] = 60
     },
 	['S-300'] = {
 		['type'] = 'complex',
 		['searchRadar'] = {
-			['S-300PS 40B6MD sr_19J6'] = {
+			['S-300PS 40B6MD sr'] = {
 				['name'] = {
-					['NATO'] = 'Tin Shield',
+					['NATO'] = 'Clam Shell',
 				},
 			},
-			['S-300PS 40B6MD sr'] = {
-                ['name'] = {
-                    ['NATO'] = 'Clam Shell',
-                },
-			}, 
-			['S-300PS 64H6E sr'] =  {
+			['S-300PS 64H6E sr'] = {
 				['name'] = {
 					['NATO'] = 'Big Bird',
 				},
@@ -61,9 +55,8 @@ samTypesDB = {
 		},
 		['trackingRadar'] = {
 			['S-300PS 40B6M tr'] = {
-				['name'] = {
-					['NATO'] = 'Flap Lid-A',
-				},
+			},	
+			['S-300PS 5H63C 30H6_tr'] = {
 			},
 		},
 		['launchers'] = {
@@ -78,7 +71,7 @@ samTypesDB = {
 			},
 		},
 		['name'] = {
-			['NATO'] = 'SA-10A Grumble',
+			['NATO'] = 'SA-10 Grumble',
 		},
 		['harm_detection_chance'] = 90,
 		['can_engage_harm'] = true
@@ -441,7 +434,7 @@ samTypesDB = {
 	['55G6 EWR'] = {
 		['type'] = 'ewr',
 		['searchRadar'] = {
-			['EWR 55G6U NEBO-U'] = {
+			['55G6 EWR'] = {
 				['name'] = {
 					['NATO'] = 'Tall Rack',
 				},
@@ -461,17 +454,6 @@ samTypesDB = {
 		['harm_detection_chance'] = 20
 	},
 -- Start of BLUE EW radars:
-	['FPS-117'] = {
-		['type'] = 'ewr',
-		['searchRadar'] = {
-		['FPS-117'] = {
-			['name'] = {
-				['NATO'] = 'FPS-117',
-			},
-		},
-		},
-		['harm_detection_chance'] = 80
-	},
 	['FPS-117 Dome'] = {
 		['type'] = 'ewr',
 		['searchRadar'] = {
@@ -482,73 +464,18 @@ samTypesDB = {
 			},
 		},
 		['harm_detection_chance'] = 80
-	},	
-    ['EWR P-37 Bar Lock'] = {
-        ['type'] = 'ewr',
-        ['searchRadar'] = {
-        ['EWR P-37 BAR LOCK'] = {
-                ['name'] = {
-                    ['NATO'] = 'Bar Lock',
-                },
-            },
-        },
-        ['harm_detection_chance'] = 70
-    },
-    ['EWR 55G6U NEBO-U'] = {
-        ['type'] = 'ewr',
-        ['searchRadar'] = {
-            ['EWR 55G6U NEBO-U'] = {
-                ['name'] = {
-                    ['NATO'] = '',
-                },
-            },
-        },
-        ['harm_detection_chance'] = 65
-    },
-    ['EWR 1L119 Nebo-SVU'] = {
-        ['type'] = 'ewr',
-        ['searchRadar'] = {
-            ['EWR 1L119 Nebo-SVU'] = {
-                ['name'] = {
-                    ['NATO'] = '',
-                },
-            },
-        },
-        ['harm_detection_chance'] = 75
-    },
-    ['EWR Generic radar tower'] = {
-        ['type'] = 'ewr',
-        ['searchRadar'] = {
-            ['EWR Generic radar tower'] = {
-            },
-        },
-        ['name'] = {
-            ['NATO'] = 'EWR Generic radar tower',
-        },
-        ['harm_detection_chance'] = 60
-    },
-    ['RadarDomeH'] = {
-        ['type'] = 'ewr',
-        ['searchRadar'] = {
-            ['RadarDomeH'] = {
-            },
-        },
-        ['name'] = {
-            ['NATO'] = 'RadarDomeH',
-        },
-        ['harm_detection_chance'] = 60
-    },
-    ['RadarDomeL'] = {
-        ['type'] = 'ewr',
-        ['searchRadar'] = {
-            ['RadarDomeL'] = {
-            },
-        },
-        ['name'] = {
-            ['NATO'] = 'RadarDomeL',
-        },
-        ['harm_detection_chance'] = 60
-    },    
+	},
+	['FPS-117'] = {
+		['type'] = 'ewr',
+		['searchRadar'] = {
+			['FPS-117'] = {
+				['name'] = {
+					['NATO'] = 'FPS-117',
+				},
+			},
+		},
+		['harm_detection_chance'] = 80
+	}
 }
 end
 do
@@ -687,33 +614,35 @@ samTypesDB['S-300VM'] = {
 samTypesDB['S-300PS'] = {
 	['type'] = 'complex',
 	['searchRadar'] = {
-		['S-300PS 64H6E sr'] = {
-			['name'] = {
-				['NATO'] = 'Big Bird',
-			},
-		},
-		['S-300PS 40B6MD sr'] = {
+		['S-300PS SA-10B 40B6MD MAST sr'] = {
 			['name'] = {
 				['NATO'] = 'Clam Shell',
 			},
-		}, 
-	},
-	['trackingRadar'] = {
-		['S-300PS 5H63C 30H6_tr'] = {
-			['name'] = {
-				['NATO'] = 'Flap Lid-B',
-			},
+		},
+		['S-300PS 64H6E TRAILER sr'] = {
 		},
 	},
+	['trackingRadar'] = {
+		['S-300PS 30N6 TRAILER tr'] = {
+		},
+		['S-300PS SA-10B 40B6M MAST tr'] = {
+		},
+		['S-300PS 40B6M tr'] = {
+		},
+		['S-300PMU1 40B6M tr'] = {
+		},	
+		['S-300PMU1 30N6E tr'] = {
+		},		
+	},
 	['misc'] = {
-		['S-300PS 54K6 cp'] = {
+		['S-300PS SA-10B 54K6 cp'] = {
 			['required'] = true,
 		},
 	},
 	['launchers'] = {
-		['S-300PS 5P85C ln'] = {
+		['S-300PS 5P85SE_mod ln'] = {
 		},
-		['S-300PS 5P85D ln'] = {
+		['S-300PS 5P85SU_mod ln'] = {
 		},
 	},
 	['name']  = {
@@ -1816,9 +1745,8 @@ function SkynetIADS:deactivateEarlyWarningRadars()
 	end
 end	
 
-function SkynetIADS:addRadioMenu(parentMenu)
-	parentMenu=parentMenu or nil 
-	self.radioMenu = missionCommands.addSubMenu("IADS Info", parentMenu)
+function SkynetIADS:addRadioMenu()
+	self.radioMenu = missionCommands.addSubMenu('SKYNET IADS '..self:getCoalitionString())
 	local displayIADSStatus = missionCommands.addCommand('show IADS Status', self.radioMenu, SkynetIADS.updateDisplay, {self = self, value = true, option = 'IADSStatus'})
 	local displayIADSStatus = missionCommands.addCommand('hide IADS Status', self.radioMenu, SkynetIADS.updateDisplay, {self = self, value = false, option = 'IADSStatus'})
 	local displayIADSStatus = missionCommands.addCommand('show contacts', self.radioMenu, SkynetIADS.updateDisplay, {self = self, value = true, option = 'contacts'})

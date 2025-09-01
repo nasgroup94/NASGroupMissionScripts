@@ -95,16 +95,19 @@ assert(loadfile(common_scripts_path .. "mist.lua"))()
 -- Common for all missions
 assert(loadfile(common_scripts_path .. "refueling_monitor_mp.lua"))() -- client refueling monitor for discord reporting
 assert(loadfile(common_scripts_path .. "flightlog.lua"))() -- Flight logging to DCSServerBot
--- assert(loadfile(common_scripts_path .. "rnt.lua"))() -- Random navy traffic
+assert(loadfile(common_scripts_path .. "skynet-iads-compiled.lua"))() 
 assert(loadfile(common_scripts_path .. "rolln.lua"))() -- Just some helper functions
 -- assert(loadfile(common_scripts_path .. "dynamic_crewchief.lua"))() -- adds crew cheif in front of client spawns. requires mod, read lua file.
 
 -- Persian Gulf specific
 -- assert(loadfile(mission_scripts_path .. "marianas_airboss_heli.lua"))() -- Moded airboss for helis, ** must be loaded before the carrier AIRBOSS **
 assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_carrier.lua"))() -- carrier/tarawa AIRBOSS
-assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Blue_CSG_Chief.lua"))() -- blue chief, squadrons, airwings
-assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Al_Minad_AFB.lua"))() -- blue chief, squadrons, airwings
-assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Chief_Blue.lua"))()  -- red chief, squadrons, airwings
+assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Blue_CSG_Chief.lua"))() 
+assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Al_Minad_AFB.lua"))() 
+assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Chief_Blue.lua"))()
+assert(loadfile(mission_scripts_path .. "\\NATO\\Blue_IADS.lua"))()  
+assert(loadfile(mission_scripts_path .. "\\NATO\\Training\\Blue_Ranges.lua"))()  
+
 -- assert(loadfile(mission_scripts_path .. "marianas_civilian_traffic.lua"))() -- random civilian traffic
 -- assert(loadfile(mission_scripts_path .. "marianas_ranges.lua"))() -- Bombing range and strafe pit
 -- assert(loadfile(mission_scripts_path .. "marianas_beacons.lua"))() -- Mission beacons
