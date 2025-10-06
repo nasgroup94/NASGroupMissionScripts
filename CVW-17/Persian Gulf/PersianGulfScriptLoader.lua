@@ -3,7 +3,7 @@ dofile(lfs.writedir() .. 'Scripts/net/DCSServerBot/DCSServerBotConfig.lua')
 DCSServerBotConfig = require('DCSServerBotConfig')
 SERVER_SETTINGS = cfg -- cfg table is from the current DCS servers config/serverSettings.lua  
 
-local mission_scripts_path =  "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf/"
+local mission_scripts_path =  "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf"
 local common_scripts_path = "C:/NASGroup/NASGroupMissionScripts/Common/"
 local moose_folder = "C:/NASGroup/MOOSE_INCLUDE/Moose_Include_Static/"
 local user_folder = os.getenv('USERPROFILE'):gsub("\\","/") .. "/"
@@ -106,7 +106,7 @@ assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Blue_CSG_Chief.lua
 assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Al_Minad_AFB.lua"))() 
 assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Chief_Blue.lua"))()
 assert(loadfile(mission_scripts_path .. "\\NATO\\Blue_IADS.lua"))()  
-assert(loadfile(mission_scripts_path .. "\\NATO\\Training\\Blue_Ranges.lua"))()  
+assert(loadfile(mission_scripts_path .. "\\Training\\Blue_Ranges.lua"))()  
 
 -- assert(loadfile(mission_scripts_path .. "marianas_civilian_traffic.lua"))() -- random civilian traffic
 -- assert(loadfile(mission_scripts_path .. "marianas_ranges.lua"))() -- Bombing range and strafe pit

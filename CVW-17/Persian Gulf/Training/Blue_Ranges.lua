@@ -19,7 +19,7 @@ local AzZafrahBombTargets ={
 
 AzZafrahRange:AddBombingTargets(AzZafrahBombTargets,BombTargetsGoodHitDistance)
 
-local azzafrah_range_zone = ZONE:FindByName("Faralon Test Range")
+local azzafrah_range_zone = ZONE:FindByName("AZ ZAFRAH Range")
 AzZafrahRange:SetRangeZone(azzafrah_range_zone)
 
 function AzZafrahRange:OnAfterEnterRange(From, Event, To, player)
