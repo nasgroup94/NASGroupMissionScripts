@@ -43,7 +43,7 @@ RecoveryTanker:SetRadio(260)
 RecoveryTanker:SetAltitude(MISSION_TANKER_ALTS.Recovery)
 RecoveryTanker:SetModex(703)
 RecoveryTanker:SetCallsign(CALLSIGN.Tanker.Arco, 9)
-RecoveryTanker:SetTACAN(60, "AR1")
+RecoveryTanker:SetTACAN(65, "AR1")
 RecoveryTanker:__Start(60)
 
 -- HighTanker = RECOVERYTANKER:New(UNIT:FindByName("CVN-75 Lone Warrior"), "CVN75_ARCO2")
