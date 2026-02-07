@@ -95,7 +95,7 @@ assert(loadfile(common_scripts_path .. "mist.lua"))()
 assert(loadfile(common_scripts_path .. "/refueling_monitor_mp.lua"))() -- client refueling monitor for discord reporting
 assert(loadfile(common_scripts_path .. "/srs_msg.lua"))() -- Custom radio calls for things like the range, rescue helo, etc.
 assert(loadfile(common_scripts_path .. "/flightlog.lua"))() -- Flight logging to DCSServerBot
-assert(loadfile(common_scripts_path .. "/rnt.lua"))() -- Random navy traffic
+-- assert(loadfile(common_scripts_path .. "/rnt.lua"))() -- Random navy traffic
 assert(loadfile(common_scripts_path .. "/rolln.lua"))() -- Just some helper functions
 
 -- Marianas specific
