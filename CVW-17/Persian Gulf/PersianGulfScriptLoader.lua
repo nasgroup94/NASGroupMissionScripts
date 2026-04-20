@@ -3,16 +3,17 @@ dofile(lfs.writedir() .. 'Scripts/net/DCSServerBot/DCSServerBotConfig.lua')
 DCSServerBotConfig = require('DCSServerBotConfig')
 SERVER_SETTINGS = cfg -- cfg table is from the current DCS servers config/serverSettings.lua  
 
-local mission_scripts_path =  "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf"
+local mission_scripts_path =  "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf/"
 local common_scripts_path = "C:/NASGroup/NASGroupMissionScripts/Common/"
 local moose_folder = "C:/NASGroup/MOOSE_INCLUDE/Moose_Include_Static/"
-local user_folder = os.getenv('USERPROFILE'):gsub("\\","/") .. "/"
+-- local user_folder = os.getenv('USERPROFILE'):gsub("\\","/") .. "/"
+local user_folder = "C:/Users/naval/"
 
 
 -- GLOBALS
 SERVER_LOCATION = user_folder .. "Saved Games/" .. DCSServerBotConfig.INSTANCE_NAME .. "/"
--- GOOGLE_CREDS = "C:/NASGroup/API-Keys/cvw7-tracking-11c8a6927776.json"
-SRS_PATH = "C:/DCS-SimpleRadio-Standalone/ExternalAudio/"
+GOOGLE_CREDS = "C:/Users/naval/Documents/dcs-datis-350723-fe7aab2d9ae1.json"
+SRS_PATH = "C:/DCS-SimpleRadioStandalone/ExternalAudio"
 SRS_PORT = DCSServerBotConfig.SRS_PORT
 SRS_VOICES = {
     Female = {
@@ -70,11 +71,12 @@ COMMONSOUNDSFOLDER = common_scripts_path .. "sound/"
 
 
 -- AIRBOSS/RANGE Sound file locations within the miz file
-AIRBOSSBASESOUNDFOLDER = "Airboss Soundfiles/" -- needed for the default pilot sound files used by ariboss
+AIRBOSSBASESOUNDFOLDER = COMMONSOUNDSFOLDER .. "Airboss Soundfiles/" -- needed for the default pilot sound files used by ariboss
 AIRBOSSLSORAYNOR = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack LSO Raynor/"
 AIRBOSSMARSHALRAYNOR = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack Marshal Raynor/"
 AIRBOSSMARSHALGABRIELLA = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack Marshal Gabriella/"
 RANGESOUNDFOLDER = "Range Soundfiles/"
+ATISSOUNDFOLDER = COMMONSOUNDSFOLDER .. "/ATIS/"
 
 -- Target/Trap sheet save locations
 TARGETSHEETSTRAFELOCATION = SERVER_LOCATION .. "Logs/strafesheets"
@@ -101,30 +103,21 @@ assert(loadfile(common_scripts_path .. "rolln.lua"))() -- Just some helper funct
 
 -- Persian Gulf specific
 -- assert(loadfile(mission_scripts_path .. "marianas_airboss_heli.lua"))() -- Moded airboss for helis, ** must be loaded before the carrier AIRBOSS **
-assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_carrier.lua"))() -- carrier/tarawa AIRBOSS
-assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Blue_CSG_Chief.lua"))() 
-assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Al_Minad_AFB.lua"))() 
-assert(loadfile(mission_scripts_path .. "\\NATO\\Persian_Gulf_Chief_Blue.lua"))()
-assert(loadfile(mission_scripts_path .. "\\NATO\\Blue_IADS.lua"))()  
-assert(loadfile(mission_scripts_path .. "\\Training\\Blue_Ranges.lua"))()  
+assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_carrier.lua"))() -- carrier/tarawa AIRBOSS
+assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Blue_CSG_Chief.lua"))() 
+assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Al_Minad_AFB.lua"))() 
+assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Chief_Blue.lua"))()
+assert(loadfile(mission_scripts_path .. "NATO\\Blue_IADS.lua"))()  
+assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()  
 
--- assert(loadfile(mission_scripts_path .. "marianas_civilian_traffic.lua"))() -- random civilian traffic
--- assert(loadfile(mission_scripts_path .. "marianas_ranges.lua"))() -- Bombing range and strafe pit
--- assert(loadfile(mission_scripts_path .. "marianas_beacons.lua"))() -- Mission beacons
--- assert(loadfile(mission_scripts_path .. "marianas_tactical_menu.lua"))() -- menu for spawning missons
--- assert(loadfile(mission_scripts_path .. "marianas_csar_ctld.lua"))() -- Must be loaded after tactical menu
--- -- assert(loadfile(mission_scripts_path .. "marianas_map_markers.lua"))() -- Draws markup for unit locations on F10 map.
--- assert(loadfile(mission_scripts_path .. "marianas_markerops_tanker.lua"))() -- Allows tanker missions to launch via F10 map
--- assert(loadfile(mission_scripts_path .. "AWACsGCI.lua"))()
--- assert(loadfile(mission_scripts_path .. "Factory.lua"))()
--- assert(loadfile(mission_scripts_path .. "supply.lua"))()
--- assert(loadfile(mission_scripts_path .. "RussianWarehouse.lua"))()
--- assert(loadfile(mission_scripts_path .. "FSMTest.lua"))()
 
 -- Set up MSRS (Moose SRS)
-MSRS.LoadConfigFile(nil, mission_scripts_path, "marianas_msrs_config.lua") -- Note the "." here
-MESSAGE.SetMSRS(MSRS.path,MSRS.port,nil,127,radio.modulation.AM,nil,nil,nil,nil,nil,"DCS Message") -- Note the "." here
+MSRS.LoadConfigFile(nil, mission_scripts_path, "Persian_Gulf_msrs_config.lua") -- Note the "." here
+-- MESSAGE.SetMSRS(MSRS.path,MSRS.port,nil,127,radio.modulation.AM,nil,nil,nil,nil,nil,"DCS Message") -- Note the "." here
 
+atis= ATIS:New(AIRBASE.PersianGulf.Al_Minhad_AFB,123,radio.modulation.AM)
+atis:SetSRS(SRS_PATH)
+atis:Start()
 
 --Dev
 -- AIRBASE:FindByName("Andersen AFB"):MarkParkingSpots() -- For development, marks parkiong spots on F10 map with IDs used for scripting
