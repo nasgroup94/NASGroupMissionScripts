@@ -109,7 +109,6 @@ assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Al_Minad_AFB.lua"))(
 assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Chief_Blue.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\Blue_IADS.lua"))()  
 assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
-assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
 
 
 -- Set up MSRS (Moose SRS)
@@ -128,3 +127,6 @@ ROLLN.db("Path: " .. (debug.getinfo(1).source:match("@?(.*/)") or ''), true)
 -- BASE:TraceClass('MARKEROPS')
 -- BASE:TraceClass('AUFTRAG')
 -- BASE:TraceClass('BASE')
+
+
+assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
