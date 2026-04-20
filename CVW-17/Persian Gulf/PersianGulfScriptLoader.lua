@@ -108,16 +108,14 @@ assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Blue_CSG_Chief.lua")
 assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Al_Minad_AFB.lua"))() 
 assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Chief_Blue.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\Blue_IADS.lua"))()  
-assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()  
+assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
+assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
 
 
 -- Set up MSRS (Moose SRS)
 MSRS.LoadConfigFile(nil, mission_scripts_path, "Persian_Gulf_msrs_config.lua") -- Note the "." here
 -- MESSAGE.SetMSRS(MSRS.path,MSRS.port,nil,127,radio.modulation.AM,nil,nil,nil,nil,nil,"DCS Message") -- Note the "." here
 
-atis= ATIS:New(AIRBASE.PersianGulf.Al_Minhad_AFB,123,radio.modulation.AM)
-atis:SetSRS(SRS_PATH)
-atis:Start()
 
 --Dev
 -- AIRBASE:FindByName("Andersen AFB"):MarkParkingSpots() -- For development, marks parkiong spots on F10 map with IDs used for scripting
