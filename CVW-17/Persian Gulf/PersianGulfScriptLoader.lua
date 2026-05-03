@@ -3,17 +3,21 @@ dofile(lfs.writedir() .. 'Scripts/net/DCSServerBot/DCSServerBotConfig.lua')
 DCSServerBotConfig = require('DCSServerBotConfig')
 SERVER_SETTINGS = cfg -- cfg table is from the current DCS servers config/serverSettings.lua  
 
-local mission_scripts_path =  "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf/"
-local common_scripts_path = "C:/NASGroup/NASGroupMissionScripts/Common/"
-local moose_folder = "C:/NASGroup/MOOSE_INCLUDE/Moose_Include_Static/"
+package.path = [[C:\Users\fpere\IdeaProjects\NASGroupMissionScripts\Common\TTS Test\?.lua;]] .. package.path
+local TTSPython = require("TTSPython")
+local tts = TTSPython:New()
+
+local mission_scripts_path =  "C:Users/fpere/IdeaProjects/NASGroupMissionScripts/CVW-17/Persian Gulf/"
+local common_scripts_path = "C:Users/fpere/IdeaProjects/NASGroupMissionScripts/Common/"
+local moose_folder = "C:NASGroup/MOOSE_INCLUDE/Moose_Include_Static/"
 -- local user_folder = os.getenv('USERPROFILE'):gsub("\\","/") .. "/"
-local user_folder = "C:/Users/naval/"
+local user_folder = "C:/Users/fpere/"
 
 
 -- GLOBALS
 SERVER_LOCATION = user_folder .. "Saved Games/" .. DCSServerBotConfig.INSTANCE_NAME .. "/"
 GOOGLE_CREDS = "C:/Users/naval/Documents/dcs-datis-350723-fe7aab2d9ae1.json"
-SRS_PATH = "C:/DCS-SimpleRadioStandalone/ExternalAudio"
+SRS_PATH = "E:/DCS-SimpleRadioStandalone-2.0.8.5/ExternalAudio"
 SRS_PORT = DCSServerBotConfig.SRS_PORT
 SRS_VOICES = {
     Female = {
@@ -109,12 +113,35 @@ assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Al_Minad_AFB.lua"))(
 assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Chief_Blue.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\Blue_IADS.lua"))()  
 assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
+--assert(loadfile(mission_scripts_path .. "Testing\\TTSWebSocket.lua"))()
 
 
 -- Set up MSRS (Moose SRS)
-MSRS.LoadConfigFile(nil, mission_scripts_path, "Persian_Gulf_msrs_config.lua") -- Note the "." here
+--MSRS.LoadConfigFile(nil, mission_scripts_path, "Persian_Gulf_msrs_config.lua") -- Note the "." here
 -- MESSAGE.SetMSRS(MSRS.path,MSRS.port,nil,127,radio.modulation.AM,nil,nil,nil,nil,nil,"DCS Message") -- Note the "." here
 
+local msrs = MSRS:New(SRS_PATH, 250, radio.modulation.AM, MSRS.Backend.SRSEXE)    --msrs:SetDefaultBackendHound()
+local text = "Clear to land runway two three"
+
+local function PlayTtsEvery10Seconds()
+    local filename, folder, err = tts:GenerateOgg(text)
+
+    if not filename then
+        env.info("TTS generation failed: " .. tostring(err))
+        return timer.getTime() + 10
+    end
+
+    env.info("Generated OGG: " .. tostring(folder .. filename))
+
+    local soundfile = SOUNDFILE:New(filename, folder)
+    msrs:PlaySoundFile(soundfile)
+
+    return timer.getTime() + 10
+end
+
+timer.scheduleFunction(PlayTtsEvery10Seconds, nil, timer.getTime() + 1)
+
+--TTSWebSocket.Play("Cleared Runway two seven. Winds zero nine zero for 8.", 251, radio.modulation.AM)
 
 --Dev
 -- AIRBASE:FindByName("Andersen AFB"):MarkParkingSpots() -- For development, marks parkiong spots on F10 map with IDs used for scripting
@@ -129,4 +156,4 @@ ROLLN.db("Path: " .. (debug.getinfo(1).source:match("@?(.*/)") or ''), true)
 -- BASE:TraceClass('BASE')
 
 
-assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
+--assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()

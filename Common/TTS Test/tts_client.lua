@@ -1,28 +1,43 @@
-local websocket = require("websocket.client")
-local cjson = require("cjson.safe")
-local mime = require("mime")
+local lua_modules = [[C:\Users\fpere\IdeaProjects\NASGroupMissionScripts\Common\TTS Test\lua_modules]]
 
-local uri = "ws://96.32.24.78:8080"
+package.path =
+lua_modules .. [[\?.lua;]] ..
+        lua_modules .. [[\?\init.lua;]] ..
+        lua_modules .. [[\share\lua\5.1\?.lua;]] ..
+        lua_modules .. [[\share\lua\5.1\?\init.lua;]] ..
+        package.path
+
+package.cpath =
+lua_modules .. [[\?.dll;]] ..
+        lua_modules .. [[\lib\lua\5.1\?.dll;]] ..
+        package.cpath
+
+local websocket = require("websocket.client")
+local mime = require("mime")
+local json = require("dkjson")
+
+local url = "ws://96.32.24.78:8080"
+
 local ws = websocket()
 
-local ok, err = ws:connect(uri)
+local ok, err = ws:connect(url)
 if not ok then
-  error("Failed to connect: " .. tostring(err))
+  error("WebSocket connect failed: " .. tostring(err))
 end
 
--- Send plain text or JSON
-local text = "hello from lua"
-ws:send(text)
--- Or json: ws:send(cjson.encode({ text = text }))
+ws:send("hello from lua")
 
-local message = ws:receive()
-if not message then
+local response_body = ws:receive()
+ws:close()
+
+if not response_body then
   error("No response from server")
 end
 
-local data = cjson.decode(message)
+local data = json.decode(response_body)
+
 if not data then
-  error("Failed to parse JSON response: " .. tostring(message))
+  error("Failed to parse JSON response: " .. tostring(response_body))
 end
 
 if data.success and data.audio then
@@ -38,5 +53,3 @@ if data.success and data.audio then
 else
   print("Server error:", data.error or "unknown")
 end
-
-ws:close()

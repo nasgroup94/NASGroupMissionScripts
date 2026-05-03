@@ -1,7 +1,8 @@
 -- Moose MSRS default Config
 MSRS_Config = {
     Path = SRS_PATH, -- Path to SRS install directory.
-    Port = SRS_PORT,            -- Port of SRS server. Default 5002.
+    --Port = SRS_PORT,            -- Port of SRS server. Default 5002.
+    Port = 5002,
     Backend = "srsexe",     -- Interface to SRS: "srsexe" or "grpc".
     Frequency = {127, 243}, -- Default frequences. Must be a table 1..n entries!
     Modulation = {0,0},     -- Default modulations. Must be a table, 1..n entries, one for each frequency!
@@ -17,12 +18,12 @@ MSRS_Config = {
     win = {
     voice = "Microsoft Hazel Desktop",
     },
-    -- Google Cloud
-    gcloud = {
-    voice = "en-GB-Standard-A", -- The Google Cloud voice to use (see https://cloud.google.com/text-to-speech/docs/voices).
-    credentials = GOOGLE_CREDS, -- Full path to credentials JSON file (only for SRS-TTS.exe backend)
-    -- key="Your access Key", -- Google API access key (only for DCS-gRPC backend)
-    },
+    ---- Google Cloud
+    --gcloud = {
+    --voice = "en-GB-Standard-A", -- The Google Cloud voice to use (see https://cloud.google.com/text-to-speech/docs/voices).
+    --credentials = GOOGLE_CREDS, -- Full path to credentials JSON file (only for SRS-TTS.exe backend)
+    ---- key="Your access Key", -- Google API access key (only for DCS-gRPC backend)
+    --},
     -- -- Amazon Web Service
     -- aws = {
     -- voice = "Brian", -- The default AWS voice to use (see https://docs.aws.amazon.com/polly/latest/dg/voicelist.html).
