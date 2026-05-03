@@ -112,27 +112,20 @@ function MSRS:SetPythonWebSocket(ServiceUrl, PythonExe)
         self.pythonTTSUrl = "http://127.0.0.1:8765/tts"
     end
 
-    self.pythonTTS = TTSPython:New({
-        Url = self.pythonTTSUrl
-    })
-
     return self
 end
 
---- Set NASGroupMissionScripts Python TTS HTTP service details.
+--- Set NASGroupMissionScripts Python TTS HTTP service as backend.
 -- Kept under the old name for compatibility with existing mission scripts.
 -- @param #MSRS self
 -- @param #string ServiceUrl Optional HTTP service URL. Defaults to http://127.0.0.1:8765/tts.
 -- @param #string PythonExe Ignored. Kept for backwards compatibility.
 -- @return #MSRS self
-function MSRS:SetPythonWebSocket(ServiceUrl, PythonExe)
+function MSRS:SetBackendPythonWebSocket(ServiceUrl, PythonExe)
     self:F({ ServiceUrl = ServiceUrl, PythonExe = PythonExe })
 
-    if ServiceUrl and tostring(ServiceUrl):match("^https?://") then
-        self.pythonTTSUrl = ServiceUrl
-    else
-        self.pythonTTSUrl = "http://127.0.0.1:8765/tts"
-    end
+    self:SetBackend(MSRS.Backend.PYWS)
+    self:SetPythonWebSocket(ServiceUrl, PythonExe)
 
     return self
 end
