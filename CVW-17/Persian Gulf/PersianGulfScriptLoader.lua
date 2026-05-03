@@ -4,25 +4,25 @@ DCSServerBotConfig = require('DCSServerBotConfig')
 SERVER_SETTINGS = cfg -- cfg table is from the current DCS servers config/serverSettings.lua  
 
 package.path = [[C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\?.lua;]] .. package.path
-local lua_modules = [[C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\lua_modules]]
+-- local lua_modules = [[C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\lua_modules]]
 
-package.path =
-lua_modules .. [[\?.lua;]] ..
-        lua_modules .. [[\?\init.lua;]] ..
-        lua_modules .. [[\share\lua\5.1\?.lua;]] ..
-        lua_modules .. [[\share\lua\5.1\?\init.lua;]] ..
-        package.path
+-- package.path =
+-- lua_modules .. [[\?.lua;]] ..
+--         lua_modules .. [[\?\init.lua;]] ..
+--         lua_modules .. [[\share\lua\5.1\?.lua;]] ..
+--         lua_modules .. [[\share\lua\5.1\?\init.lua;]] ..
+--         package.path
 
-package.cpath =
-lua_modules .. [[\?.dll;]] ..
-        lua_modules .. [[\lib\lua\5.1\?.dll;]] ..
-        package.cpath
+-- package.cpath =
+-- lua_modules .. [[\?.dll;]] ..
+--         lua_modules .. [[\lib\lua\5.1\?.dll;]] ..
+--         package.cpath
 
 
 
 local mission_scripts_path =  "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf/"
 local common_scripts_path = "C:/NASGroup/NASGroupMissionScripts/Common/"
-local moose_folder = "C:NASGroup/MOOSE_INCLUDE/Moose_Include_Static/"
+local moose_folder = "C:/NASGroup/MOOSE_INCLUDE/Moose_Include_Static/"
 -- local user_folder = os.getenv('USERPROFILE'):gsub("\\","/") .. "/"
 local user_folder = "C:/Users/naval/"
 
