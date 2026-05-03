@@ -1,0 +1,20 @@
+{
+  "ATIS|freqs=125.1|modulations=AM|coalition=2": {
+    "file_path": "C:\\Users\\fpere\\IdeaProjects\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\atis-125-1\\ATIS_freqs_125.1_modulations_AM_coalition_2.mp3",
+    "initiator": "ATIS|freqs=125.1|modulations=AM|coalition=2",
+    "text_hash": "e594f6e4ca42fd4a078281fddb3eee4b1f231c81dbac00c955948e8697e013db",
+    "updated_at": 1777841374.337364
+  },
+  "ATIS|freqs=126.2|modulations=AM|coalition=2": {
+    "file_path": "C:\\Users\\fpere\\IdeaProjects\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\atis-125-1\\ATIS_freqs_126.2_modulations_AM_coalition_2.mp3",
+    "initiator": "ATIS|freqs=126.2|modulations=AM|coalition=2",
+    "text_hash": "6b0786a3a0387ee0acda49288ff7c7d70e1a2dba5faa6dd87ef7cd279cfab45d",
+    "updated_at": 1777841378.951531
+  },
+  "ROBOT|freqs=305|modulations=AM|coalition=2": {
+    "file_path": "C:\\Users\\fpere\\IdeaProjects\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\atis-125-1\\ROBOT_freqs_305_modulations_AM_coalition_2.mp3",
+    "initiator": "ROBOT|freqs=305|modulations=AM|coalition=2",
+    "text_hash": "9838e4b34a4e6ae92ca66eb6371df7bedc2431b9bf338757d29db11e90f53fe1",
+    "updated_at": 1777839913.4022164
+  }
+}
