@@ -7,20 +7,91 @@
 --   MSRS.Backend.PYWS
 --
 -- It routes MSRS text-to-speech calls through the local NASGroupMissionScripts
--- Python TTS HTTP service instead of launching DCS-SR-ExternalAudio.exe directly.
+-- Python TTS HTTP service.
 --
--- Required mission load order:
---
---   1. Moose.lua / SRS.lua
---   2. TTSPython.lua must be available in package.path
---   3. SRS_PythonWebSocket.lua
---   4. Your mission code
-
-local TTSPython = require("TTSPython")
+-- This version intentionally does not use LuaSocket, because DCS often cannot
+-- load socket.core.dll reliably.
 
 if not MSRS then
     env.info("[MSRS_PythonWebSocket] ERROR: MSRS is not loaded. Load SRS.lua before SRS_PythonWebSocket.lua.")
     return
+end
+
+--- Escape a Lua value as a JSON string value.
+-- @param #string value Value to escape.
+-- @return #string Escaped JSON string.
+function MSRS:_PythonWebSocketJsonString(value)
+    value = tostring(value or "")
+    value = value:gsub("\\", "\\\\")
+    value = value:gsub('"', '\\"')
+    value = value:gsub("\r", "\\r")
+    value = value:gsub("\n", "\\n")
+    value = value:gsub("\t", "\\t")
+    return '"' .. value .. '"'
+end
+
+--- Convert a Lua value to a JSON field value.
+-- @param value Value.
+-- @return #string JSON value.
+function MSRS:_PythonWebSocketJsonValue(value)
+    if value == nil then
+        return "null"
+    end
+
+    if type(value) == "number" then
+        return tostring(value)
+    end
+
+    if type(value) == "boolean" then
+        return value and "true" or "false"
+    end
+
+    return self:_PythonWebSocketJsonString(value)
+end
+
+--- Write request JSON to a temp file and POST it to the TTS service with curl.exe.
+-- @param #table Payload Payload table.
+-- @return #boolean Success.
+function MSRS:_PythonWebSocketPost(Payload)
+    local tempFolder = nil
+
+    if lfs and lfs.writedir then
+        tempFolder = lfs.writedir() .. "Logs\\"
+    else
+        tempFolder = "C:\\Windows\\Temp\\"
+    end
+
+    local filename = tempFolder .. "nas_tts_" .. tostring(timer.getTime()):gsub("%.", "_") .. ".json"
+
+    local fields = {}
+
+    for key, value in pairs(Payload or {}) do
+        table.insert(fields, self:_PythonWebSocketJsonString(key) .. ":" .. self:_PythonWebSocketJsonValue(value))
+    end
+
+    local jsonPayload = "{" .. table.concat(fields, ",") .. "}"
+
+    local file, err = io.open(filename, "w")
+    if not file then
+        self:E("ERROR: Could not write TTS request file: " .. tostring(err))
+        return false
+    end
+
+    file:write(jsonPayload)
+    file:close()
+
+    local command = string.format(
+            'cmd.exe /C curl.exe -s -X POST -H "Content-Type: application/json" --data-binary "@%s" "%s" >NUL 2>NUL & del "%s" >NUL 2>NUL',
+            filename,
+            self.pythonTTSUrl or "http://127.0.0.1:8765/tts",
+            filename
+    )
+
+    self:T("MSRS Python TTS HTTP command=" .. command)
+
+    local result = self:_ExecCommand(command)
+
+    return result ~= nil
 end
 
 MSRS.Backend = MSRS.Backend or {}
@@ -48,17 +119,20 @@ function MSRS:SetPythonWebSocket(ServiceUrl, PythonExe)
     return self
 end
 
---- Set NASGroupMissionScripts Python TTS HTTP service as backend to communicate with SRS.
+--- Set NASGroupMissionScripts Python TTS HTTP service details.
 -- Kept under the old name for compatibility with existing mission scripts.
 -- @param #MSRS self
 -- @param #string ServiceUrl Optional HTTP service URL. Defaults to http://127.0.0.1:8765/tts.
 -- @param #string PythonExe Ignored. Kept for backwards compatibility.
 -- @return #MSRS self
-function MSRS:SetBackendPythonWebSocket(ServiceUrl, PythonExe)
+function MSRS:SetPythonWebSocket(ServiceUrl, PythonExe)
     self:F({ ServiceUrl = ServiceUrl, PythonExe = PythonExe })
 
-    self:SetBackend(MSRS.Backend.PYWS)
-    self:SetPythonWebSocket(ServiceUrl, PythonExe)
+    if ServiceUrl and tostring(ServiceUrl):match("^https?://") then
+        self.pythonTTSUrl = ServiceUrl
+    else
+        self.pythonTTSUrl = "http://127.0.0.1:8765/tts"
+    end
 
     return self
 end
@@ -111,7 +185,9 @@ function MSRS:_PythonWebSocketTTS(Text, Frequencies, Modulations, Gender, Cultur
     local voice = Voice or self:GetVoice(provider) or self.voice
     local label = Label or self.Label or self.label or self.lid or "MSRS"
 
-    local job_id, err = self.pythonTTS:Request(Text or "", {
+    local ok = self:_PythonWebSocketPost({
+        text = Text or "",
+
         initiator = label,
         label = label,
 
@@ -127,13 +203,13 @@ function MSRS:_PythonWebSocketTTS(Text, Frequencies, Modulations, Gender, Cultur
         volume = Volume or self.volume,
     })
 
-    if not job_id then
-        self:E("ERROR: MSRS Python TTS HTTP request failed: " .. tostring(err))
+    if not ok then
+        self:E("ERROR: MSRS Python TTS HTTP request failed.")
         return nil
     end
 
-    self:T("MSRS Python TTS HTTP job queued: " .. tostring(job_id))
-    return job_id
+    self:T("MSRS Python TTS HTTP request queued.")
+    return true
 end
 
 local _MSRS_SetBackend = MSRS.SetBackend

@@ -18,8 +18,7 @@ lua_modules .. [[\?.dll;]] ..
         lua_modules .. [[\lib\lua\5.1\?.dll;]] ..
         package.cpath
 
-local TTSPython = require("TTSPython")
-local tts = TTSPython:New()
+
 
 local mission_scripts_path =  "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf/"
 local common_scripts_path = "C:/NASGroup/NASGroupMissionScripts/Common/"
