@@ -4,21 +4,6 @@ DCSServerBotConfig = require('DCSServerBotConfig')
 SERVER_SETTINGS = cfg -- cfg table is from the current DCS servers config/serverSettings.lua  
 
 package.path = [[C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\?.lua;]] .. package.path
--- local lua_modules = [[C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\lua_modules]]
-
--- package.path =
--- lua_modules .. [[\?.lua;]] ..
---         lua_modules .. [[\?\init.lua;]] ..
---         lua_modules .. [[\share\lua\5.1\?.lua;]] ..
---         lua_modules .. [[\share\lua\5.1\?\init.lua;]] ..
---         package.path
-
--- package.cpath =
--- lua_modules .. [[\?.dll;]] ..
---         lua_modules .. [[\lib\lua\5.1\?.dll;]] ..
---         package.cpath
-
-
 
 local mission_scripts_path =  "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf/"
 local common_scripts_path = "C:/NASGroup/NASGroupMissionScripts/Common/"
@@ -128,6 +113,7 @@ assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Al_Minad_AFB.lua"))(
 assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Chief_Blue.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\Blue_IADS.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
+assert(loadfile(mission_scripts_path .. "NATO\\BlueATC.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
 
 
