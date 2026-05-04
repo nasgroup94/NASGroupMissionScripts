@@ -1,3 +1,4 @@
+```python
 import argparse
 import os
 import shutil
@@ -13,6 +14,19 @@ import hashlib
 import json
 
 import websockets
+
+
+CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
+
+
+def get_subprocess_startupinfo():
+    if os.name != "nt":
+        return None
+
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = 0
+    return startupinfo
 
 
 def get_srs_channel_key(options: dict) -> str:
@@ -456,6 +470,8 @@ def play_srs(output_file: Path, options: dict):
                     stderr=subprocess.STDOUT,
                     text=True,
                     bufsize=1,
+                    creationflags=CREATE_NO_WINDOW,
+                    startupinfo=get_subprocess_startupinfo(),
                 )
 
                 while True:
@@ -972,5 +988,3 @@ if __name__ == "__main__":
 
         except Exception as exc:
             print(f"TTS service crashed: {INSTANCE_NAME}: {exc}")
-            print("Restarting TTS service in 3 seconds...")
-            time.sleep(3)
