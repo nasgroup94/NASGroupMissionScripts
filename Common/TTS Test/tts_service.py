@@ -429,6 +429,7 @@ def play_srs(output_file: Path, options: dict):
 
     command = [
         str(SRS_EXTERNAL_AUDIO_EXE),
+        "--minimized",
         f"--file={str(output_file)}",
         f"--freqs={freqs}",
         f"--modulations={modulations}",
