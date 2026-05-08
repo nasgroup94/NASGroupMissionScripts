@@ -1,0 +1,12 @@
+name: Setup
+description: Set up Skyeye build environment
+runs:
+  using: composite
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    - name: Install dependencies
+      shell: bash
+      run: make install-debian-dependencies

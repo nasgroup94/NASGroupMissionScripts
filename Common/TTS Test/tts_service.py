@@ -1,4 +1,3 @@
-```python
 import argparse
 import os
 import shutil
@@ -12,11 +11,10 @@ import asyncio
 import base64
 import hashlib
 import json
-
 import websockets
 
+CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
-CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 
 
 def get_subprocess_startupinfo():
@@ -65,6 +63,39 @@ def parse_args():
         type=int,
         default=int(os.getenv("TTS_SERVICE_PORT", "8765")),
         help="HTTP bind port.",
+    )
+
+    parser.add_argument(
+        "--srs-host",
+        default=os.getenv("SRS_HOST", "127.0.0.1"),
+        help="SRS server host for native Python SRS playback.",
+    )
+
+    parser.add_argument(
+        "--srs-backend",
+        choices=("native", "external_audio", "go_native"),
+        default=os.getenv("TTS_SERVICE_SRS_BACKEND", "native"),
+        help=(
+            "SRS playback backend. "
+            "Use native for the experimental Python UDP sender, "
+            "external_audio for DCS-SR-ExternalAudio.exe, "
+            "or go_native for the SkyEye-based SRS sender."
+        ),
+    )
+
+    parser.add_argument(
+        "--srs-go-sender",
+        default=os.getenv(
+            "SRS_GO_SENDER_EXE",
+            str(Path(__file__).resolve().parent / "srs-tts-send.exe"),
+        ),
+        help="Path to the SkyEye-based native SRS sender executable.",
+    )
+
+    parser.add_argument(
+        "--external-awacs-password",
+        default=os.getenv("SRS_EXTERNAL_AWACS_PASSWORD", ""),
+        help="External AWACS mode password for SRS native Go sender.",
     )
 
     parser.add_argument(
@@ -122,6 +153,10 @@ else:
 CACHE_INDEX_FILE = CACHE_DIR / "cache_index.json"
 
 SRS_EXTERNAL_AUDIO_EXE = Path(ARGS.srs_exe)
+SRS_GO_SENDER_EXE = Path(ARGS.srs_go_sender)
+SRS_HOST = ARGS.srs_host
+SRS_BACKEND = ARGS.srs_backend
+SRS_EXTERNAL_AWACS_PASSWORD = ARGS.external_awacs_password
 
 SUPPRESS_UNCHANGED_TEXT = True
 CACHE_TTS_AUDIO = True
@@ -335,7 +370,27 @@ def srs_output_indicates_disconnect_problem(output: str) -> bool:
     return any(marker in output_lower for marker in disconnect_markers)
 
 
+def srs_output_indicates_disconnect_problem(output: str) -> bool:
+    output_lower = (output or "").lower()
+
+    disconnect_markers = [
+        "disconnect",
+        "disconnecting",
+        "connection reset",
+        "forcibly closed",
+        "udp voice handler thread stop",
+        "closing",
+    ]
+
+    return any(marker in output_lower for marker in disconnect_markers)
+
+
 async def generate_tts(text: str, job_id: str, options: dict) -> Path:
+    INSTANCE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    request_payload = {
+        "text": text,
+    }
     INSTANCE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     request_payload = {
@@ -419,7 +474,7 @@ async def generate_tts(text: str, job_id: str, options: dict) -> Path:
     return output_file
 
 
-def play_srs(output_file: Path, options: dict):
+def play_srs_external_audio(output_file: Path, options: dict):
     freqs = str(options.get("freqs") or "250.0")
     modulations = str(options.get("modulations") or "AM")
     coalition = str(options.get("coalition") or "2")
@@ -429,7 +484,6 @@ def play_srs(output_file: Path, options: dict):
 
     command = [
         str(SRS_EXTERNAL_AUDIO_EXE),
-        "--minimized",
         f"--file={str(output_file)}",
         f"--freqs={freqs}",
         f"--modulations={modulations}",
@@ -443,259 +497,163 @@ def play_srs(output_file: Path, options: dict):
     if volume:
         command.append(f"--volume={volume}")
 
-    last_error = None
+    print(
+        f"[{INSTANCE_NAME}] Starting SRS ExternalAudio fallback: {' '.join(command)}",
+        flush=True,
+    )
 
-    channel_key = get_srs_channel_key(options)
-    channel_lock = get_srs_channel_lock(options)
+    process = subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        creationflags=CREATE_NO_WINDOW,
+        startupinfo=get_subprocess_startupinfo(),
+        timeout=SRS_HARD_TIMEOUT_SECONDS,
+    )
 
-    # Serialize only messages for the same SRS radio channel.
-    # Different frequencies/modulations/coalitions can play concurrently.
-    with channel_lock:
-        for attempt in range(1, SRS_MAX_ATTEMPTS + 1):
-            print(
-                f"[{INSTANCE_NAME}] Starting SRS ExternalAudio attempt "
-                f"{attempt}/{SRS_MAX_ATTEMPTS} on {channel_key}: {' '.join(command)}",
-                flush=True,
+    if process.stdout:
+        print(process.stdout, flush=True)
+
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"SRS ExternalAudio failed with exit code {process.returncode}: {process.stdout}"
+        )
+
+    return {
+        "success": True,
+        "backend": "external_audio",
+        "returncode": process.returncode,
+    }
+
+def convert_audio_to_skyeye_pcm_f32le(audio_file: Path) -> Path:
+    import av
+
+    audio_file = Path(audio_file)
+    pcm_file = audio_file.with_suffix(audio_file.suffix + ".16k_mono_f32le.pcm")
+
+    resampler = av.audio.resampler.AudioResampler(
+        format="flt",
+        layout="mono",
+        rate=16000,
+    )
+
+    with av.open(str(audio_file)) as container:
+        stream = next((s for s in container.streams if s.type == "audio"), None)
+
+        if stream is None:
+            raise RuntimeError(f"No audio stream found in {audio_file}")
+
+        with pcm_file.open("wb") as out:
+            for packet in container.demux(stream):
+                for frame in packet.decode():
+                    resampled = resampler.resample(frame)
+
+                    if not isinstance(resampled, list):
+                        resampled = [resampled]
+
+                    for out_frame in resampled:
+                        for plane in out_frame.planes:
+                            out.write(bytes(plane))
+
+    if not pcm_file.exists() or pcm_file.stat().st_size == 0:
+        raise RuntimeError(f"Failed to convert audio to SkyEye PCM: {pcm_file}")
+
+    return pcm_file
+
+def play_srs_go_native(output_file: Path, options: dict):
+    freqs = str(options.get("freqs") or "250.0")
+    modulations = str(options.get("modulations") or "AM")
+    coalition = str(options.get("coalition") or "2")
+    port = str(options.get("port") or "5002")
+    volume = str(options.get("volume") or "1.0")
+    password = str(
+        options.get("external_awacs_mode_password")
+        or SRS_EXTERNAL_AWACS_PASSWORD
+        or ""
+    )
+
+    pcm_file = convert_audio_to_skyeye_pcm_f32le(output_file)
+
+    command = [
+        str(SRS_GO_SENDER_EXE),
+        f"--srs-address={SRS_HOST}:{port}",
+        "--client-name=NASGroup TTS",
+        f"--coalition={coalition}",
+        f"--frequency={freqs}",
+        f"--modulation={modulations}",
+        f"--volume={volume}",
+        f"--external-awacs-password={password}",
+        f"--file={str(pcm_file)}",
+    ]
+
+    print(
+        f"[{INSTANCE_NAME}] Starting Go native SRS sender: "
+        f"exe={SRS_GO_SENDER_EXE}, file={output_file}, pcm={pcm_file}, "
+        f"host={SRS_HOST}, port={port}, freqs={freqs}, "
+        f"modulations={modulations}, coalition={coalition}",
+        flush=True,
+    )
+
+    try:
+        process = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            creationflags=CREATE_NO_WINDOW,
+            startupinfo=get_subprocess_startupinfo(),
+            timeout=SRS_HARD_TIMEOUT_SECONDS,
+        )
+
+        if process.stdout:
+            print(process.stdout, flush=True)
+
+        if process.returncode != 0:
+            raise RuntimeError(
+                f"Go native SRS sender failed with exit code {process.returncode}: {process.stdout}"
             )
 
-            process = None
-            output_lines = []
-            audio_sent = False
-            start_time = time.time()
-            last_output_time = start_time
+        return {
+            "success": True,
+            "backend": "go_native",
+            "sender": str(SRS_GO_SENDER_EXE),
+            "returncode": process.returncode,
+        }
 
-            try:
-                process = subprocess.Popen(
-                    command,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                    creationflags=CREATE_NO_WINDOW,
-                    startupinfo=get_subprocess_startupinfo(),
-                )
+    finally:
+        try:
+            pcm_file.unlink(missing_ok=True)
+        except Exception as exc:
+            print(f"Failed to delete temporary SkyEye PCM file {pcm_file}: {exc}", flush=True)
 
-                while True:
-                    if process.stdout:
-                        line = process.stdout.readline()
-                    else:
-                        line = ""
 
-                    if line:
-                        last_output_time = time.time()
-                        print(line, end="")
-                        output_lines.append(line)
+def play_srs_native(output_file: Path, options: dict):
+    from srs_native import transmit_file_to_srs
 
-                        if srs_output_indicates_audio_sent(line):
-                            audio_sent = True
-                            print("SRS ExternalAudio reported Finished Sending Audio; treating job as successful.")
+    native_options = dict(options)
+    native_options["srs_host"] = native_options.get("srs_host") or SRS_HOST
 
-                            try:
-                                process.wait(timeout=SRS_FINISH_GRACE_SECONDS)
-                            except subprocess.TimeoutExpired:
-                                print(
-                                    "SRS ExternalAudio did not exit during cleanup grace period; "
-                                    "terminating child process after audio completed."
-                                )
-                                process.terminate()
+    print(
+        f"[{INSTANCE_NAME}] Starting native Python SRS playback: "
+        f"file={output_file}, host={native_options.get('srs_host')}, "
+        f"port={native_options.get('port')}, freqs={native_options.get('freqs')}, "
+        f"modulations={native_options.get('modulations')}, "
+        f"coalition={native_options.get('coalition')}",
+        flush=True,
+    )
 
-                                try:
-                                    process.wait(timeout=2)
-                                except subprocess.TimeoutExpired:
-                                    print("SRS ExternalAudio did not terminate; killing child process.")
-                                    process.kill()
-                                    process.wait(timeout=2)
+    return transmit_file_to_srs(output_file, native_options)
 
-                            time.sleep(SRS_COOLDOWN_SECONDS)
 
-                            return {
-                                "success": True,
-                                "returncode": process.returncode,
-                                "attempts": attempt,
-                                "warning": "ExternalAudio was stopped after Finished Sending Audio to avoid disconnect crash.",
-                            }
+def play_srs(output_file: Path, options: dict):
+    if SRS_BACKEND == "native":
+        return play_srs_native(output_file, options)
 
-                    returncode = process.poll()
-                    if returncode is not None:
-                        remaining_output = ""
+    if SRS_BACKEND == "go_native":
+        return play_srs_go_native(output_file, options)
 
-                        if process.stdout:
-                            remaining_output = process.stdout.read() or ""
-
-                        if remaining_output:
-                            print(remaining_output, end="")
-                            output_lines.append(remaining_output)
-
-                        combined_output = "".join(output_lines)
-
-                        if returncode == 0:
-                            return {
-                                "success": True,
-                                "returncode": returncode,
-                                "attempts": attempt,
-                                "warning": None,
-                            }
-
-                        if audio_sent or srs_output_indicates_audio_sent(combined_output):
-                            warning = (
-                                "SRS ExternalAudio exited non-zero after audio appears to have been sent. "
-                                "Treating as success."
-                            )
-                            print(warning)
-                            return {
-                                "success": True,
-                                "returncode": returncode,
-                                "attempts": attempt,
-                                "warning": warning,
-                            }
-
-                        last_error = (
-                            f"SRS ExternalAudio failed before audio was sent. "
-                            f"Exit code={returncode}. Output={combined_output!r}"
-                        )
-                        break
-
-                    # if time.time() - start_time > SRS_TIMEOUT_SECONDS:
-                    #     combined_output = "".join(output_lines)
-                    #
-                    #     if audio_sent or srs_output_indicates_audio_sent(combined_output):
-                    #         warning = (
-                    #             f"SRS ExternalAudio timed out after {SRS_TIMEOUT_SECONDS} seconds, "
-                    #             "but audio appears to have been sent. Treating as success."
-                    #         )
-                    #         print(warning)
-                    #
-                    #         if process.poll() is None:
-                    #             process.terminate()
-                    #             try:
-                    #                 process.wait(timeout=2)
-                    #             except subprocess.TimeoutExpired:
-                    #                 process.kill()
-                    #                 process.wait(timeout=2)
-                    #
-                    #         return {
-                    #             "success": True,
-                    #             "returncode": process.returncode,
-                    #             "attempts": attempt,
-                    #             "warning": warning,
-                    #         }
-                    #
-                    #     last_error = f"SRS ExternalAudio timed out after {SRS_TIMEOUT_SECONDS} seconds before audio was sent."
-                    #
-                    #     if process.poll() is None:
-                    #         process.terminate()
-                    #         try:
-                    #             process.wait(timeout=2)
-                    #         except subprocess.TimeoutExpired:
-                    #             process.kill()
-                    #             process.wait(timeout=2)
-                    #
-                    #     break
-
-                    now = time.time()
-
-                    if now - last_output_time > SRS_NO_OUTPUT_TIMEOUT_SECONDS:
-                        combined_output = "".join(output_lines)
-
-                        if audio_sent or srs_output_indicates_audio_sent(combined_output):
-                            warning = (
-                                f"SRS ExternalAudio had no output for {SRS_NO_OUTPUT_TIMEOUT_SECONDS} seconds, "
-                                "but audio appears to have been sent. Treating as success."
-                            )
-                            print(warning)
-
-                            if process.poll() is None:
-                                process.terminate()
-                                try:
-                                    process.wait(timeout=2)
-                                except subprocess.TimeoutExpired:
-                                    process.kill()
-                                    process.wait(timeout=2)
-
-                            return {
-                                "success": True,
-                                "returncode": process.returncode,
-                                "attempts": attempt,
-                                "warning": warning,
-                            }
-
-                        last_error = (
-                            f"SRS ExternalAudio produced no output for "
-                            f"{SRS_NO_OUTPUT_TIMEOUT_SECONDS} seconds before audio completed."
-                        )
-
-                        if process.poll() is None:
-                            process.terminate()
-                            try:
-                                process.wait(timeout=2)
-                            except subprocess.TimeoutExpired:
-                                process.kill()
-                                process.wait(timeout=2)
-
-                        break
-
-                    if now - start_time > SRS_HARD_TIMEOUT_SECONDS:
-                        combined_output = "".join(output_lines)
-
-                        if audio_sent or srs_output_indicates_audio_sent(combined_output):
-                            warning = (
-                                f"SRS ExternalAudio hit hard timeout after {SRS_HARD_TIMEOUT_SECONDS} seconds, "
-                                "but audio appears to have been sent. Treating as success."
-                            )
-                            print(warning)
-
-                            if process.poll() is None:
-                                process.terminate()
-                                try:
-                                    process.wait(timeout=2)
-                                except subprocess.TimeoutExpired:
-                                    process.kill()
-                                    process.wait(timeout=2)
-
-                            return {
-                                "success": True,
-                                "returncode": process.returncode,
-                                "attempts": attempt,
-                                "warning": warning,
-                            }
-
-                        last_error = (
-                            f"SRS ExternalAudio exceeded hard timeout of "
-                            f"{SRS_HARD_TIMEOUT_SECONDS} seconds before audio completed."
-                        )
-
-                        if process.poll() is None:
-                            process.terminate()
-                            try:
-                                process.wait(timeout=2)
-                            except subprocess.TimeoutExpired:
-                                process.kill()
-                                process.wait(timeout=2)
-
-                        break
-
-                    time.sleep(0.05)
-
-            except Exception as exc:
-                last_error = f"SRS ExternalAudio crashed/failed: {exc}"
-
-                if process and process.poll() is None:
-                    try:
-                        process.terminate()
-                        process.wait(timeout=2)
-                    except Exception:
-                        try:
-                            process.kill()
-                        except Exception:
-                            pass
-
-            print(last_error)
-
-            if attempt < SRS_MAX_ATTEMPTS:
-                time.sleep(1)
-
-    raise RuntimeError(last_error or "SRS ExternalAudio failed for an unknown reason.")
-
+    return play_srs_external_audio(output_file, options)
 
 def set_job(job_id: str, updates: dict):
     with jobs_lock:
@@ -856,13 +814,18 @@ class TTSHandler(BaseHTTPRequestHandler):
                 "rate": payload.get("rate"),
                 "pitch": payload.get("pitch"),
 
-                # SRS ExternalAudio options
+                # SRS options
+                "srs_host": payload.get("srs_host", SRS_HOST),
                 "freqs": payload.get("freqs", "250.0"),
                 "modulations": payload.get("modulations", "AM"),
                 "coalition": payload.get("coalition", 2),
                 "port": payload.get("port", 5002),
                 "gender": payload.get("gender"),
                 "volume": payload.get("volume"),
+                "external_awacs_mode_password": payload.get(
+                    "external_awacs_mode_password",
+                    SRS_EXTERNAL_AWACS_PASSWORD,
+                ),
             }
 
             initiator = get_initiator(payload, options)
@@ -979,6 +942,8 @@ if __name__ == "__main__":
             print(f"TTS output: {INSTANCE_OUTPUT_DIR}")
             print(f"TTS cache:  {CACHE_DIR}")
             print(f"TTS upstream websocket: {URI}")
+            print(f"SRS backend: {SRS_BACKEND}")
+            print(f"SRS Go sender: {SRS_GO_SENDER_EXE}")
             print(f"SRS ExternalAudio: {SRS_EXTERNAL_AUDIO_EXE}")
 
             server.serve_forever()

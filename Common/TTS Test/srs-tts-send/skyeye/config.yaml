@@ -1,0 +1,257 @@
+# Sample YAML configuration file for SkyEye.
+
+# New to YAML? Here's a crash course.
+#
+# Comments:
+# - Comments are lines that start with the '#' symbol. Comments are ignored
+# when the config file is loaded.
+# - You'll need to uncomment the example configuration values if you want to
+# customize them. You can do this by deleting the '#' at the start of that
+# line.
+#
+# Setting configuration values:
+# - A key is a unique identifier, followed by a colon and a space, and then the
+# value.
+# - Values can be strings (text), booleans (true/false), numbers, or lists of
+# strings.
+#   - Strings can be enclosed in quotes to disambiguate them if needed.
+# - Some values are time intervals. You can specify "m" for minutes and "s" for
+# seconds. For example, "90s" and "1m30s" are both 90 seconds.
+# - You can check the defaults by passing the --help flag to the executable.
+#
+# Learn more: https://learnxinyminutes.com/docs/yaml/
+
+# SPEECH RECOGNITION
+#
+# Choose "openai-whisper-local" to use local speech recognition, which has
+# more intense system requirements.
+# Choose "openai-whisper-api" to use the OpenAI API for speech recognition,
+# which requires paying OpenAI for credits.
+# See docs/ADMIN.md for more details and advantages and disadvantages of each.
+# "openai-gpt4o" and "openai-gpt4o-mini" are also valid, but are not recommended
+# at this time due to higher error rates than Whisper.
+#recognizer: openai-whisper-local
+#
+# If you chose local speech recogntion, SkyEye requires a whisper.cpp model from
+# https://huggingface.co/ggerganov/whisper.cpp/tree/main. Note that the
+# cloud-init and WinSW YAML files provided with the release will download the
+# model on your behalf before starting SkyEye. You probably only need to change
+# the value of whisper-model here if you're manually installing SkyEye or
+# are running a development build.
+#
+# The small English-only model provides a good balance between performance, RAM
+# usage and quality.
+#whisper-model: ggml-small.en.bin
+#
+# The medium English-only model has better quality, but requires a powerful CPU
+# and additional RAM.
+#whisper-model: ggml-medium.en.bin
+#
+# Only resort to the tiny model if the small model is too slow. It has poor
+# speech recognition quality.
+#whisper-model: ggml-tiny.en.bin
+#
+# If you chose the OpenAI API for cloud-based speech recognition, you need to
+# provide an API key. You can get an API key at https://openai.com/api.
+#openai-api-key: apikeygoeshere
+
+# TELEMETRY
+# Telemetry service address. Set this to the host and port of the TacView
+# real-time telemetry service for your DCS World installation.
+# DCS running on the same computer:
+#telemetry-address: localhost:42674
+# DCS running remotely:
+#telemetry-address: dcs.example.com:42674
+#
+# If your telemetry is password-protected, set the password here.
+#telemetry-password: passwordgoeshere
+
+# SIMPLERADIO-STANDALONE
+#
+# External AWACS Mode (EAM) must be enabled in the SRS server and an EAM
+# password must be configured. If correctly configured the SR-Server.exe
+# GUI will display "ON" next to External AWACS Mode.
+#
+# SRS server address. Set this to the host and port of the SRS server.
+# SRS server running on the same computer:
+#srs-server-address: localhost:5002
+# SRS server running remotely:
+#srs-server-address: srs.example.com:5002
+#
+# SRS EAM password. Set this to the password used to connect to External AWACS
+# Mode in SRS.
+#srs-eam-password: eampasswordgoeshere
+#
+# SRS frequencies. Set this to the radio frequencies the GCI should listen and
+# speak on. The GCI can understand players speaking simultaneously on multiple
+# frequencies. It speaks on all frequencies simultaneously, similar to the
+# Simultaneous Tranmission (ST) option in the official SRS client application.
+#
+# ⚠️ Consider that some aircraft are limited to certain frequencies. For example,
+# the F-4E can only tune 225.0AM-399.95AM on the primary radio and 265.0AM-284.9AM
+# on the aux radio. Meanwhile, the F-16 can only tune 225.000-399.975 on COM1 and
+# 108.000-151.975 on COM2.
+#srs-frequencies: 251.0AM,133.0AM,30.0FM
+
+# DCS-gRPC (optional)
+# Enable DCS-gRPC features (requires https://github.com/DCS-gRPC/rust-server)
+# This enables using in-game chat to communicate with the GCI.
+#enable-grpc: true
+# Address of the DCS-gRPC server (usually port 50051 on the DCS World server)
+# DCS running on the same computer:
+#grpc-address: localhost:50051
+# DCS running remotely:
+#grpc-address: dcs.example.com:50051
+#
+# If authentication is enabled on the DCS-gRPC server, set the API key here.
+# Authentication is STORNGLY RECOMMENDED if the DCS-gRPC server is exposed over
+# a network, as it allows powerful control over the DCS World server and mission.
+#grpc-password: passwordgoeshere
+
+# IDENTITY
+# Set the callsign to whatever you want the GCI to use as the callsign. Good
+# callsigns should be in English, two or three syllables, and easy to
+# pronounce. Real-world examples include: Baron, Chalice, Darkstar, Disco,
+# Focus, Goliath, Magic, Sentry and Wizard. If you don't provide a callsign, a
+# random callsign is selected from a set of Ace Combat/Project Wingman easter
+# eggs.
+#
+# ⚠️ Please do _not_ use the callsign "Overlord" to avoid any possible
+# confusion with OverlordBot. I do not want any confused players to send bug
+# reports to the wrong project!
+#callsign: Focus
+# Alternatively you can provide a list of callsigns and one will be randomly
+# selected.
+#callsigns: [Wizard, Magic, Goliath]
+#
+# Set the coalition this GCI will serve - either "red" or "blue"
+#coalition: blue
+
+# SPEECH SYNTHESIS
+# Select a voice (either feminine or masculine). If you don't select one, one
+# is selected for you. This option is not available on macOS.
+#voice: feminine
+#
+# macOS only: Use the system voice instead of the default "Samantha" voice.
+# This can be used to select one of the current Siri voices. Additional
+# download and setup is required; refer to the admin guide for details.
+#use-system-voice: true
+#
+# Set the playback speed of the voice. Values above 1.0 slow down the voice,
+# while values below 1.0 speed it up.
+#voice-playback-speed: 1.0
+#
+# Set the volume level for audio output. 0.0 is silent, 1.0 is the default produced by
+# the selected speech synthesizer. Human perception of volume is nonlinear, so 0.5
+# may not sound half as loud as 1.0. Experimentation is required.
+
+# This has no perceived effect if "Incoming Audio Automatic Gain Control" is enabled
+# in the SRS Client.
+#voice-volume: 1.0
+#
+# Customize the length of the pause between sentences. This can be useful if
+# the GCI is speaking too quickly for your taste. This option is not available
+# on macOS.
+#voice-playback-pause: 0.3s
+
+# BEHAVIOR
+# By default, the GCI broadcasts an updated PICTURE if a PICTURE has not been
+# given for two minutes. I find this feature works very well for smaller
+# missions like Retribution campaigns, where the PICTURE helps maintain
+# situational awareness. However, I understand that on a large server with lots
+# of enemy aircraft this could become annoying, so the feature is customizable.
+#
+# You can disable PICTURE broadcasts by setting auto-picture to false. Players
+# may still request a PICTURE on demand, but automatic broadcasts will be
+# disabled.
+#auto-picture: true
+#
+# You can customize the PICTURE broadcast interval. I find values between 2 and
+# 5 minutes work best.
+#auto-picture-interval: 2m
+#
+# By default, the GCI monitors any friendly aircraft which tunes onto any of the
+# configured SRS frequencies. The GCI will broadcast a threat call if a hostile
+# aircraft approaches close enough to a monitored friendly aircraft to satisfy
+# threat criteria. Threat criteria are dynamic; for example, a Su-27 Flanker is
+# considered to be a threat at a greater range than a Su-17 Fitter.
+#
+# You can disable threat monitoring by setting threat-monitoring to false. I
+# don't recommend this because it greatly reduces situational awareness. But
+# hey, it's your video game and I'm not your dad.
+#threat-monitoring: true
+#
+# Threat calls are repeated if the threat criteria are still met after a
+# cooldown period. You can customize how often the bot rebroadcasts threat
+# calls.
+#threat-monitoring-interval: 3m
+#
+# At a close enough range, any hostile aircraft with air-to-air capabilities is
+# considred a threat regardless of its platform. The default value (25 nautical
+# miles) is a reasonable choice for a modern setting, but you may wish to tune
+# this based on mission requirements and player skill level.
+#mandatory-threat-radius: 25
+#
+# The GCI may issue threat calls using either BRAA or Bullseye format.
+# - If there is only one friendly aircraft in the area and on the controller's
+#   frequency, the call always uses BRAA format.
+# - If there are multiple friendlies in the area and on frequency, the call
+#   uses BRAA format if the friendlies are close together or Bullseye format
+#   if the friendlies are split further apart.
+# These two thresholds control how close together the friendlies need to be
+# for the GCI to use BRAA instead of Bullseye.
+#
+# The bearing spread is the maximum difference in bearing (degrees) from each
+# friendly to the hostile. If the bearings diverge more than this, the GCI
+# uses Bullseye.
+#threat-braa-bearing-spread: 5
+#
+# The range spread is the maximum difference in range (nautical miles) from
+# each friendly to the hostile. If the ranges diverge more than this, the GCI
+# uses Bullseye.
+#threat-braa-range-spread: 1
+#
+# Path to a file containing custom locations to use in VECTOR TO requests.
+# See the LOCATIONS.md documentation for more information.
+#locations-file: /etc/skyeye/locations.yaml  # Linux
+#locations-file: 'C:\Users\me\locations.yaml'  # Windows
+
+# LOGGING
+#
+# Log verbosity. Most should leave this at the default INFO level, unless
+# troubleshooting an issue.
+#log-level: info
+#
+# Log format. "pretty" is easier to read in a console, "json" is easier to
+# search/query later.
+#log-format: pretty
+
+# TRACING
+#
+# Enable or diable tracing.
+#enable-tracing: false
+#
+# Send traces to Discord by providing a webhook ID and token.
+# The format of the webhook URL is https://discord.com/api/webhooks/<id>/<token>
+#discord-webhook-id: idgoeshere
+#discord-webhook-token: tokengoeshere
+
+# RUNTIME
+#
+# Limit the maximum bot runtime. This is useful in combination with systemd or
+# WinSW to restart the bot periodically. I've made a best effort to ensure the bot
+# is stable over long periods of time, but it's always possible that a resource
+# leak or other issue could cause the bot to break after running for a very long
+# time. It may be prudent to restart the bot every few days. The bot won't exit
+# if there are humans on any configured SRS channels, until they leave.
+#exit-after: 72h
+
+# EXPERIMENTS
+#
+# Set this to true to enable an experimental feature to auto-detect which DCS
+# terrain ("map") is currently running, and use that knowledge to improve
+# coordinate accuracy. This should drastically improve coordinate accuracy at
+# extreme latitudes such as on the Kola and South Atlantic terrains. However,
+# this can reduce accuracy in other cases, such as if you are using a terrain
+# which was released after this build of SkyEye.
+#x-detect-terrain: false

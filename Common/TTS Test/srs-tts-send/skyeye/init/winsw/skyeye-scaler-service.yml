@@ -1,0 +1,22 @@
+id: skyeye-scaler
+name: SkyEye Autoscaler
+description: SkyEye Autoscaler Tool
+executable: skyeye-scaler.exe'
+# Change arguments as required for your SRS server and autoscaler webhook
+env:
+  - name: NO_COLOR
+    value: "1"
+arguments: >
+  --srs-server-address localhost:5002
+  --srs-eam-password password
+  --srs-frequencies "251.0AM,30.0FM"
+  --webhook-url https://example.com/webhook
+startmode: Manual # If you want the service to start automatically on boot, change this to "Automatic"
+log:
+  mode: roll
+onFailure:
+  - action: restart
+    delay: 1 min
+serviceaccount:
+  domain: NT AUTHORITY
+  user: LocalService
