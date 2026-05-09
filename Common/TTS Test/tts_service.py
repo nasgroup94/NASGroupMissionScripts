@@ -126,14 +126,6 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--srs-exe",
-        default=os.getenv(
-            "SRS_EXTERNAL_AUDIO_EXE",
-            r"C:\DCS-SimpleRadioStandalone\ExternalAudio\DCS-SR-ExternalAudio.exe",
-        ),
-        help="Path to DCS-SR-ExternalAudio.exe.",
-    )
-    parser.add_argument(
         "--inbox-dir",
         default=os.getenv("TTS_SERVICE_INBOX_DIR", None),
         help="Directory watched for JSON TTS request files. Defaults to output-dir/tts_inbox/<instance>.",
@@ -147,6 +139,9 @@ def parse_args():
         ),
         help="Path to DCS-SR-ExternalAudio.exe.",
     )
+
+
+
 
     return parser.parse_args()
 
@@ -916,27 +911,27 @@ class TTSHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(response_body)
 
-def do_POST(self):
-    if self.path != "/tts":
-        self.send_json(404, {
-            "success": False,
-            "error": "Not found",
-        })
-        return
+    def do_POST(self):
+        if self.path != "/tts":
+            self.send_json(404, {
+                "success": False,
+                "error": "Not found",
+            })
+            return
 
-    content_length = int(self.headers.get("Content-Length", "0"))
-    body = self.rfile.read(content_length).decode("utf-8")
+        content_length = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(content_length).decode("utf-8")
 
-    try:
-        payload = json.loads(body)
-        result = queue_tts_payload(payload)
-        self.send_json(202, result)
+        try:
+            payload = json.loads(body)
+            result = queue_tts_payload(payload)
+            self.send_json(202, result)
 
-    except Exception as exc:
-        self.send_json(500, {
-            "success": False,
-            "error": str(exc),
-        })
+        except Exception as exc:
+            self.send_json(500, {
+                "success": False,
+                "error": str(exc),
+            })
 
     def do_GET(self):
         if not self.path.startswith("/tts/"):
