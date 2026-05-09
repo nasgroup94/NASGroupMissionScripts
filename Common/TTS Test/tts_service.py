@@ -11,6 +11,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import traceback
 import websockets
 
 CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -864,17 +865,18 @@ def process_inbox_file(file_path: Path):
     try:
         file_path.replace(processing_file)
 
-        payload = json.loads(processing_file.read_text(encoding="utf-8"))
+        payload = json.loads(processing_file.read_text(encoding="utf-8-sig"))
         result = queue_tts_payload(payload)
 
         done_file.write_text(json.dumps(result, indent=2), encoding="utf-8")
         processing_file.unlink(missing_ok=True)
 
     except Exception as exc:
+        error_text = traceback.format_exc()
         print(f"Failed to process TTS inbox file {file_path}: {exc}", flush=True)
 
         try:
-            error_file.write_text(str(exc), encoding="utf-8")
+            error_file.write_text(error_text, encoding="utf-8")
         except Exception:
             pass
 
