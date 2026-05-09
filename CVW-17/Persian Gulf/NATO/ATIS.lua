@@ -6,7 +6,7 @@ atisAlMinhad = ATIS:New(AIRBASE.PersianGulf.Al_Minhad_AFB, 125.1, radio.modulati
 atisAlMinhad:SetRadioRelayUnitName("AMAFBRelay")
 atisAlMinhad:SetSRS("", "female", "en-US")
 atisAlMinhad.msrs:SetBackendPythonWebSocket("http://127.0.0.1:8765/tts",
-"C:/Users/naval/Saved Games/DCS.Test")
+"C:/Users/naval/Saved Games/DCS.Test/Logs/tts_inbox/main/")
 atisAlMinhad.msrs.voice = "Zoe"
 atisAlMinhad.msrs.speed = 200
 atisAlMinhad:SetQueueUpdateTime(100)
@@ -17,7 +17,7 @@ atisAbuDhabi = ATIS:New(AIRBASE.PersianGulf.Abu_Dhabi_Intl, 126.2, radio.modulat
 atisAbuDhabi:SetRadioRelayUnitName("AbuDhabiRelay")
 atisAbuDhabi:SetSRS("", "male", "en-US")
 atisAbuDhabi.msrs:SetBackendPythonWebSocket("http://127.0.0.1:8765/tts",
-        "C:/Users/naval/Saved Games/DCS.Test")
+        "C:/Users/naval/Saved Games/DCS.Test/Logs/tts_inbox/main/")
 atisAbuDhabi.msrs.voice = "Nathan"
 atisAbuDhabi.msrs.speed = 200
 atisAbuDhabi:SetQueueUpdateTime(100)
