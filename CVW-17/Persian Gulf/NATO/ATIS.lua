@@ -1,46 +1,42 @@
 
 
-
 -- Al Minhad ATIS on 125.1 AM
 atisAlMinhad = ATIS:New(AIRBASE.PersianGulf.Al_Minhad_AFB, 125.1, radio.modulation.AM)
 atisAlMinhad:SetRadioRelayUnitName("AMAFBRelay")
 atisAlMinhad:SetSRS("", "female", "en-US")
-atisAlMinhad.msrs:SetBackendPythonWebSocket("http://127.0.0.1:8765/tts",
-"C:/Users/naval/Saved Games/DCS.Test")
-atisAlMinhad.msrs.voice = "Zoe"
-atisAlMinhad.msrs.speed = 200
+NASG_TTS:Use(atisAlMinhad.msrs, "Al Minhad ATIS", "Zoe", 200, 1.0)
 atisAlMinhad:SetQueueUpdateTime(100)
 atisAlMinhad:__Start(20)
 
--- Abu Dhabi ATIS on another frequency, same Python service URL
+-- Abu Dhabi ATIS on 126.2 AM
 atisAbuDhabi = ATIS:New(AIRBASE.PersianGulf.Abu_Dhabi_Intl, 126.2, radio.modulation.AM)
 atisAbuDhabi:SetRadioRelayUnitName("AbuDhabiRelay")
 atisAbuDhabi:SetSRS("", "male", "en-US")
-atisAbuDhabi.msrs:SetBackendPythonWebSocket("http://127.0.0.1:8765/tts",
-        "C:/Users/naval/Saved Games/DCS.Test")
-atisAbuDhabi.msrs.voice = "Nathan"
-atisAbuDhabi.msrs.speed = 200
+NASG_TTS:Use(atisAbuDhabi.msrs, "Abu Dhabi ATIS", "Nathan", 200, 1.0)
 atisAbuDhabi:SetQueueUpdateTime(100)
 atisAbuDhabi:__Start(25)
 
+
+
+
 --examples below
 
---NAS_TTS = {}
+--NASG_TTS = {}
 --
---NAS_TTS.BlueCommon = MSRS:New("", 250.1, radio.modulation.AM)
---NAS_TTS.BlueCommon:SetBackendPythonWebSocket("http://127.0.0.1:8765/tts")
---NAS_TTS.BlueCommon:SetCoalition(coalition.side.BLUE)
---NAS_TTS.BlueCommon:SetLabel("Blue Common")
---NAS_TTS.BlueCommon:SetVolume(1.0)
---NAS_TTS.BlueCommon.voice = "Zoe"
---NAS_TTS.BlueCommon.speed = 200
+--NASG_TTS.BlueCommon = MSRS:New("", 250.1, radio.modulation.AM)
+--NASG_TTS.BlueCommon:SetBackendPythonWebSocket("http://127.0.0.1:8765/tts")
+--NASG_TTS.BlueCommon:SetCoalition(coalition.side.BLUE)
+--NASG_TTS.BlueCommon:SetLabel("Blue Common")
+--NASG_TTS.BlueCommon:SetVolume(1.0)
+--NASG_TTS.BlueCommon.voice = "Zoe"
+--NASG_TTS.BlueCommon.speed = 200
 --
 --function NAS_TTS:Blue(text)
 --    self.BlueCommon:PlayText(text, 0)
 --end
 --
 --
---NAS_TTS:Blue("Package Saber one is cleared to push. Contact strike frequency two five zero decimal one.")
+--NASG_TTS:Blue("Package Saber one is cleared to push. Contact strike frequency two five zero decimal one.")
 --
 --
 --

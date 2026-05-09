@@ -190,6 +190,10 @@ TTS_MAX_RESPONSE_TIMEOUT_SECONDS = 240
 TTS_TIMEOUT_SECONDS_PER_CHARACTER = 0.08
 TTS_MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 
+TTS_INBOX_POLL_SECONDS = 0.25
+TTS_INBOX_DONE_RETENTION_SECONDS = 30
+TTS_INBOX_ERROR_RETENTION_SECONDS = 300
+
 jobs = {}
 jobs_lock = threading.Lock()
 
@@ -856,6 +860,25 @@ def queue_tts_payload(payload: dict) -> dict:
         "text_hash": text_hash,
     }
 
+def cleanup_inbox_status_files():
+    now = time.time()
+
+    cleanup_patterns = [
+        ("*.done", TTS_INBOX_DONE_RETENTION_SECONDS),
+        ("*.error", TTS_INBOX_ERROR_RETENTION_SECONDS),
+    ]
+
+    for pattern, retention_seconds in cleanup_patterns:
+        for file_path in INBOX_DIR.glob(pattern):
+            try:
+                age_seconds = now - file_path.stat().st_mtime
+
+                if age_seconds >= retention_seconds:
+                    file_path.unlink(missing_ok=True)
+
+            except Exception as exc:
+                print(f"Failed to clean up TTS inbox status file {file_path}: {exc}", flush=True)
+
 
 def process_inbox_file(file_path: Path):
     processing_file = file_path.with_suffix(file_path.suffix + ".processing")
@@ -896,10 +919,12 @@ def inbox_watcher_loop():
             for file_path in sorted(INBOX_DIR.glob("*.json")):
                 process_inbox_file(file_path)
 
+            cleanup_inbox_status_files()
+
         except Exception as exc:
             print(f"TTS inbox watcher error: {exc}", flush=True)
 
-        time.sleep(0.25)
+        time.sleep(TTS_INBOX_POLL_SECONDS)
 
 
 
