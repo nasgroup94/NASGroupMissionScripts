@@ -246,12 +246,12 @@ ShipLightingHandler:HandleEvent(EVENTS.Birth)
 function ShipLightingHandler:OnEventBirth(EventData)
     -- Nil checks.
     if EventData == nil then
-        self:E(self.lid .. "ERROR: EventData=nil in event BIRTH!")
+        self:E("ERROR: EventData=nil in event BIRTH!")
         self:E(EventData)
         return
     end
     if EventData.IniUnit == nil then
-        self:E(self.lid .. "ERROR: EventData.IniUnit=nil in event BIRTH!")
+        self:E("ERROR: EventData.IniUnit=nil in event BIRTH!")
         self:E(EventData)
         return
     end
