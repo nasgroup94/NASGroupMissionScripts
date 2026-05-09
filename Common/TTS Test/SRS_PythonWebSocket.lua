@@ -61,7 +61,9 @@ function MSRS:_PythonWebSocketPost(Payload)
         tempFolder = "C:\\Windows\\Temp\\"
     end
 
-    local filename = tempFolder .. "nas_tts_" .. tostring(timer.getTime()):gsub("%.", "_") .. ".json"
+    local uniqueName = "nas_tts_" .. tostring(timer.getTime()):gsub("%.", "_")
+    local filename = tempFolder .. uniqueName .. ".json"
+    local vbsFilename = tempFolder .. uniqueName .. ".vbs"
 
     local fields = {}
 
@@ -80,14 +82,29 @@ function MSRS:_PythonWebSocketPost(Payload)
     file:write(jsonPayload)
     file:close()
 
-    local command = string.format(
-            'cmd.exe /C curl.exe -s -X POST -H "Content-Type: application/json" --data-binary "@%s" "%s" >NUL 2>NUL & del "%s" >NUL 2>NUL',
+    local curlCommand = string.format(
+            'curl.exe -s -X POST -H "Content-Type: application/json" --data-binary "@%s" "%s"',
             filename,
-            self.pythonTTSUrl or "http://127.0.0.1:8765/tts",
-            filename
+            self.pythonTTSUrl or "http://127.0.0.1:8765/tts"
     )
 
-    self:T("MSRS Python TTS HTTP command=" .. command)
+    local vbsFile, vbsErr = io.open(vbsFilename, "w")
+    if not vbsFile then
+        self:E("ERROR: Could not write hidden TTS launcher file: " .. tostring(vbsErr))
+        return false
+    end
+
+    vbsFile:write('Set shell = CreateObject("WScript.Shell")\n')
+    vbsFile:write('command = "cmd.exe /C ' .. curlCommand:gsub('"', '""') .. ' >NUL 2>NUL & del ""' .. filename .. '"" >NUL 2>NUL & del ""' .. vbsFilename .. '"" >NUL 2>NUL"\n')
+    vbsFile:write('shell.Run command, 0, False\n')
+    vbsFile:close()
+
+    local command = string.format(
+            'wscript.exe "%s"',
+            vbsFilename
+    )
+
+    self:T("MSRS Python TTS hidden HTTP launcher=" .. command)
 
     local result = self:_ExecCommand(command)
 
