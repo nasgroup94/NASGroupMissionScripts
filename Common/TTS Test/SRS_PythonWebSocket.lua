@@ -53,17 +53,21 @@ end
 -- @param #table Payload Payload table.
 -- @return #boolean Success.
 function MSRS:_PythonWebSocketPost(Payload)
-    local tempFolder = nil
+    local inboxFolder = nil
 
-    if lfs and lfs.writedir then
-        tempFolder = lfs.writedir() .. "Logs\\"
+    if self.pythonTTSInbox then
+        inboxFolder = self.pythonTTSInbox
+    elseif lfs and lfs.writedir then
+        inboxFolder = lfs.writedir() .. "Logs\\tts_inbox\\main\\"
     else
-        tempFolder = "C:\\Windows\\Temp\\"
+        inboxFolder = "C:\\Windows\\Temp\\tts_inbox\\main\\"
     end
 
+    lfs.mkdir(inboxFolder)
+
     local uniqueName = "nas_tts_" .. tostring(timer.getTime()):gsub("%.", "_")
-    local filename = tempFolder .. uniqueName .. ".json"
-    local vbsFilename = tempFolder .. uniqueName .. ".vbs"
+    local tempFilename = inboxFolder .. uniqueName .. ".tmp"
+    local finalFilename = inboxFolder .. uniqueName .. ".json"
 
     local fields = {}
 
@@ -73,7 +77,7 @@ function MSRS:_PythonWebSocketPost(Payload)
 
     local jsonPayload = "{" .. table.concat(fields, ",") .. "}"
 
-    local file, err = io.open(filename, "w")
+    local file, err = io.open(tempFilename, "w")
     if not file then
         self:E("ERROR: Could not write TTS request file: " .. tostring(err))
         return false
@@ -82,33 +86,11 @@ function MSRS:_PythonWebSocketPost(Payload)
     file:write(jsonPayload)
     file:close()
 
-    local curlCommand = string.format(
-            'curl.exe -s -X POST -H "Content-Type: application/json" --data-binary "@%s" "%s"',
-            filename,
-            self.pythonTTSUrl or "http://127.0.0.1:8765/tts"
-    )
+    os.rename(tempFilename, finalFilename)
 
-    local vbsFile, vbsErr = io.open(vbsFilename, "w")
-    if not vbsFile then
-        self:E("ERROR: Could not write hidden TTS launcher file: " .. tostring(vbsErr))
-        return false
-    end
+    self:T("MSRS Python TTS inbox request written: " .. finalFilename)
 
-    vbsFile:write('Set shell = CreateObject("WScript.Shell")\n')
-    vbsFile:write('command = "cmd.exe /C ' .. curlCommand:gsub('"', '""') .. ' >NUL 2>NUL & del ""' .. filename .. '"" >NUL 2>NUL & del ""' .. vbsFilename .. '"" >NUL 2>NUL"\n')
-    vbsFile:write('shell.Run command, 0, False\n')
-    vbsFile:close()
-
-    local command = string.format(
-            'wscript.exe "%s"',
-            vbsFilename
-    )
-
-    self:T("MSRS Python TTS hidden HTTP launcher=" .. command)
-
-    local result = self:_ExecCommand(command)
-
-    return result ~= nil
+    return true
 end
 
 MSRS.Backend = MSRS.Backend or {}
@@ -127,6 +109,10 @@ function MSRS:SetPythonWebSocket(ServiceUrl, PythonExe)
         self.pythonTTSUrl = ServiceUrl
     else
         self.pythonTTSUrl = "http://127.0.0.1:8765/tts"
+    end
+
+    if PythonExe then
+        self.pythonTTSInbox = PythonExe
     end
 
     return self

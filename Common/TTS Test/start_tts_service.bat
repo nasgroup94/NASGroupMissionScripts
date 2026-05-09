@@ -38,5 +38,6 @@ py -u "%~dp0tts_service.py" ^
   --srs-host "%SRS_HOST%" ^
   --srs-go-sender "%SRS_GO_SENDER_EXE%" ^
   --external-awacs-password "%SRS_EXTERNAL_AWACS_PASSWORD%"
+  --inbox-dir "%USERPROFILE%\Saved Games\DCS.Test\Logs\tts_inbox\main"
 
 pause

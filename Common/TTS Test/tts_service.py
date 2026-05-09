@@ -133,6 +133,20 @@ def parse_args():
         ),
         help="Path to DCS-SR-ExternalAudio.exe.",
     )
+    parser.add_argument(
+        "--inbox-dir",
+        default=os.getenv("TTS_SERVICE_INBOX_DIR", None),
+        help="Directory watched for JSON TTS request files. Defaults to output-dir/tts_inbox/<instance>.",
+    )
+
+    parser.add_argument(
+        "--srs-exe",
+        default=os.getenv(
+            "SRS_EXTERNAL_AUDIO_EXE",
+            r"C:\DCS-SimpleRadioStandalone\ExternalAudio\DCS-SR-ExternalAudio.exe",
+        ),
+        help="Path to DCS-SR-ExternalAudio.exe.",
+    )
 
     return parser.parse_args()
 
@@ -149,6 +163,11 @@ if ARGS.cache_dir:
     CACHE_DIR = Path(ARGS.cache_dir)
 else:
     CACHE_DIR = OUTPUT_DIR / "tts_cache" / INSTANCE_NAME
+
+if ARGS.inbox_dir:
+    INBOX_DIR = Path(ARGS.inbox_dir)
+else:
+    INBOX_DIR = OUTPUT_DIR / "tts_inbox" / INSTANCE_NAME
 
 CACHE_INDEX_FILE = CACHE_DIR / "cache_index.json"
 
@@ -775,6 +794,117 @@ def process_job(job_id: str, text: str, options: dict, initiator: str, text_hash
             "completed_at": time.time(),
         })
 
+def queue_tts_payload(payload: dict) -> dict:
+    text = payload.get("text", "")
+
+    if not text:
+        raise ValueError("Missing text")
+
+    options = {
+        # Per-initiator repeat cache
+        "initiator": payload.get("initiator"),
+        "label": payload.get("label"),
+
+        # Upstream TTS server options
+        "voice": payload.get("voice"),
+        "rate": payload.get("rate"),
+        "pitch": payload.get("pitch"),
+
+        # SRS options
+        "srs_host": payload.get("srs_host", SRS_HOST),
+        "freqs": payload.get("freqs", "250.0"),
+        "modulations": payload.get("modulations", "AM"),
+        "coalition": payload.get("coalition", 2),
+        "port": payload.get("port", 5002),
+        "gender": payload.get("gender"),
+        "volume": payload.get("volume"),
+        "external_awacs_mode_password": payload.get(
+            "external_awacs_mode_password",
+            SRS_EXTERNAL_AWACS_PASSWORD,
+        ),
+    }
+
+    initiator = get_initiator(payload, options)
+    text_hash = get_text_hash(text, options)
+    job_id = uuid.uuid4().hex
+
+    print(
+        f"[{job_id}] Received TTS request: initiator={initiator!r}, "
+        f"text_hash={text_hash}, text_length={len(text)}",
+        flush=True,
+    )
+
+    with jobs_lock:
+        jobs[job_id] = {
+            "status": "queued",
+            "success": None,
+            "text": text,
+            "initiator": initiator,
+            "text_hash": text_hash,
+            "options": options,
+            "created_at": time.time(),
+        }
+
+    thread = threading.Thread(
+        target=process_job,
+        args=(job_id, text, options, initiator, text_hash),
+        daemon=True,
+    )
+    thread.start()
+
+    return {
+        "success": True,
+        "status": "queued",
+        "job_id": job_id,
+        "initiator": initiator,
+        "text_hash": text_hash,
+    }
+
+
+def process_inbox_file(file_path: Path):
+    processing_file = file_path.with_suffix(file_path.suffix + ".processing")
+    done_file = file_path.with_suffix(file_path.suffix + ".done")
+    error_file = file_path.with_suffix(file_path.suffix + ".error")
+
+    try:
+        file_path.replace(processing_file)
+
+        payload = json.loads(processing_file.read_text(encoding="utf-8"))
+        result = queue_tts_payload(payload)
+
+        done_file.write_text(json.dumps(result, indent=2), encoding="utf-8")
+        processing_file.unlink(missing_ok=True)
+
+    except Exception as exc:
+        print(f"Failed to process TTS inbox file {file_path}: {exc}", flush=True)
+
+        try:
+            error_file.write_text(str(exc), encoding="utf-8")
+        except Exception:
+            pass
+
+        try:
+            processing_file.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+def inbox_watcher_loop():
+    INBOX_DIR.mkdir(parents=True, exist_ok=True)
+
+    print(f"TTS inbox:   {INBOX_DIR}", flush=True)
+
+    while True:
+        try:
+            for file_path in sorted(INBOX_DIR.glob("*.json")):
+                process_inbox_file(file_path)
+
+        except Exception as exc:
+            print(f"TTS inbox watcher error: {exc}", flush=True)
+
+        time.sleep(0.25)
+
+
 
 class TTSHandler(BaseHTTPRequestHandler):
     def send_json(self, status_code: int, payload: dict):
@@ -786,89 +916,27 @@ class TTSHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(response_body)
 
-    def do_POST(self):
-        if self.path != "/tts":
-            self.send_json(404, {
-                "success": False,
-                "error": "Not found",
-            })
-            return
+def do_POST(self):
+    if self.path != "/tts":
+        self.send_json(404, {
+            "success": False,
+            "error": "Not found",
+        })
+        return
 
-        content_length = int(self.headers.get("Content-Length", "0"))
-        body = self.rfile.read(content_length).decode("utf-8")
+    content_length = int(self.headers.get("Content-Length", "0"))
+    body = self.rfile.read(content_length).decode("utf-8")
 
-        try:
-            payload = json.loads(body)
-            text = payload.get("text", "")
+    try:
+        payload = json.loads(body)
+        result = queue_tts_payload(payload)
+        self.send_json(202, result)
 
-            if not text:
-                raise ValueError("Missing text")
-
-            options = {
-                # Per-initiator repeat cache
-                "initiator": payload.get("initiator"),
-                "label": payload.get("label"),
-
-                # Upstream TTS server options
-                "voice": payload.get("voice"),
-                "rate": payload.get("rate"),
-                "pitch": payload.get("pitch"),
-
-                # SRS options
-                "srs_host": payload.get("srs_host", SRS_HOST),
-                "freqs": payload.get("freqs", "250.0"),
-                "modulations": payload.get("modulations", "AM"),
-                "coalition": payload.get("coalition", 2),
-                "port": payload.get("port", 5002),
-                "gender": payload.get("gender"),
-                "volume": payload.get("volume"),
-                "external_awacs_mode_password": payload.get(
-                    "external_awacs_mode_password",
-                    SRS_EXTERNAL_AWACS_PASSWORD,
-                ),
-            }
-
-            initiator = get_initiator(payload, options)
-            text_hash = get_text_hash(text, options)
-            job_id = uuid.uuid4().hex
-
-            print(
-                f"[{job_id}] Received TTS request: initiator={initiator!r}, "
-                f"text_hash={text_hash}, text_length={len(text)}",
-                flush=True,
-            )
-
-            with jobs_lock:
-                jobs[job_id] = {
-                    "status": "queued",
-                    "success": None,
-                    "text": text,
-                    "initiator": initiator,
-                    "text_hash": text_hash,
-                    "options": options,
-                    "created_at": time.time(),
-                }
-
-            thread = threading.Thread(
-                target=process_job,
-                args=(job_id, text, options, initiator, text_hash),
-                daemon=True,
-            )
-            thread.start()
-
-            self.send_json(202, {
-                "success": True,
-                "status": "queued",
-                "job_id": job_id,
-                "initiator": initiator,
-                "text_hash": text_hash,
-            })
-
-        except Exception as exc:
-            self.send_json(500, {
-                "success": False,
-                "error": str(exc),
-            })
+    except Exception as exc:
+        self.send_json(500, {
+            "success": False,
+            "error": str(exc),
+        })
 
     def do_GET(self):
         if not self.path.startswith("/tts/"):
@@ -930,6 +998,12 @@ class TTSHandler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     load_cache_index()
 
+    inbox_thread = threading.Thread(
+        target=inbox_watcher_loop,
+        daemon=True,
+    )
+    inbox_thread.start()
+
     while True:
         try:
             server = ThreadingHTTPServer((ARGS.host, ARGS.port), TTSHandler)
@@ -941,10 +1015,7 @@ if __name__ == "__main__":
             print(f"GET status: http://{ARGS.host}:{ARGS.port}/tts/<job_id>")
             print(f"TTS output: {INSTANCE_OUTPUT_DIR}")
             print(f"TTS cache:  {CACHE_DIR}")
-            print(f"TTS upstream websocket: {URI}")
-            print(f"SRS backend: {SRS_BACKEND}")
-            print(f"SRS Go sender: {SRS_GO_SENDER_EXE}")
-            print(f"SRS ExternalAudio: {SRS_EXTERNAL_AUDIO_EXE}")
+            print(f"TTS inbox:  {INBOX_DIR}")
 
             server.serve_forever()
 
