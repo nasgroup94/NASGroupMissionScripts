@@ -117,6 +117,7 @@ assert(loadfile(mission_scripts_path .. "NATO\\Blue_IADS.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\BlueATC.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
+assert(loadfile(mission_scripts_path .. "Training\\SEADRangeIADS.lua"))()
 
 
 
