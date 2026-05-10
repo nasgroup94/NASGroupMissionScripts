@@ -23,7 +23,7 @@ local function ActivateGroup(group)
     RangeMenu:Remove()
 
     local deactivate = MENU_COALITION:New("SEAD Range",coalition.side.blue)
-    MENU_COALITION_COMMAND:New("Clear Range", deactivate,clearRange(group))
+    MENU_COALITION_COMMAND:New(coalition.side.Blue,"Clear Range",clearRange(group))
 
 
 end
