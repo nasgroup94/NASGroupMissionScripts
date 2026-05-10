@@ -4,7 +4,7 @@ local BombTargetGoodHitDistance = 25
 
 AzZafrahRange = RANGE:New("Az Zafrah Range", coalition.side.BLUE)
 
-AzZafrahRange:SetSRS(SRS_PATH, SRS_PORT, coalition.side.BLUE, 221.5, radio.modulation.AM, 1.0, nil)
+AzZafrahRange:SetSRS(SRS_PATH, SRS_PORT, coalition.side.BLUE, 231.5, radio.modulation.AM, 1.0, nil)
 AzZafrahRange:SetSRSRangeControl(251.5, radio.modulation.AM, "Zoe", "en-US", "female", "Pagan Radio Relay")
 AzZafrahRange:SetSRSRangeInstructor(251, radio.modulation.AM, "Nathan", "en-US", "male", "Pagan Radio Relay")
 
