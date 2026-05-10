@@ -17,11 +17,11 @@ end
 
 local function ActivateGroup(group)
     group:Spawn()
-    local ClientUnit = EventData.Ini
-    if ClientUnit then
-        MESSAGE:New("SA-2 Activated", 10):ToClient(ClientUnit:GetGroup())
-    end
+
+    MESSAGE:New("SA-2 Activated", 10):ToAll()
+
     RangeMenu:Remove()
+
     local deactivate = MENU_COALITION:New("SEAD Range",coalition.side.blue)
     MENU_COALITION_COMMAND:New("Clear Range", deactivate,clearRange(group))
 
