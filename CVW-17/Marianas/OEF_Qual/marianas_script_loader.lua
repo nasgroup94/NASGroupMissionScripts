@@ -69,7 +69,7 @@ COMMONSOUNDSFOLDER = common_scripts_path .. "sound/"
 
 
 -- AIRBOSS/RANGE Sound file locations within the miz file
-AIRBOSSBASESOUNDFOLDER = "Airboss Soundfiles/" -- needed for the default pilot sound files used by ariboss
+AIRBOSSBASESOUNDFOLDER = "AIRBOSS/" -- needed for the default pilot sound files used by ariboss
 AIRBOSSLSORAYNOR = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack LSO Raynor/"
 AIRBOSSMARSHALRAYNOR = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack Marshal Raynor/"
 AIRBOSSMARSHALGABRIELLA = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack Marshal Gabriella/"
@@ -96,7 +96,7 @@ assert(loadfile(common_scripts_path .. "/refueling_monitor_mp.lua"))() -- client
 assert(loadfile(common_scripts_path .. "/srs_msg.lua"))() -- Custom radio calls for things like the range, rescue helo, etc.
 assert(loadfile(common_scripts_path .. "/flightlog.lua"))() -- Flight logging to DCSServerBot
 -- assert(loadfile(common_scripts_path .. "/rnt.lua"))() -- Random navy traffic
-assert(loadfile(common_scripts_path .. "/rolln.lua"))() -- Just some helper functions
+--assert(loadfile(common_scripts_path .. "/rolln.lua"))() -- Just some helper functions
 
 -- Marianas specific
 -- assert(loadfile(mission_scripts_path .. "/marianas_airboss_heli.lua"))() -- Moded airboss for helis, ** must be loaded before the carrier AIRBOSS **

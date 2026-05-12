@@ -123,7 +123,7 @@ LoneWarrior:SetMaxSectionSize(4)
 LoneWarrior:SetMPWireCorrection(12)
 LoneWarrior:SetRadioRelayLSO("CVN65_LSORELAY")
 LoneWarrior:SetRadioRelayMarshal("CVN65_MARSHALRELAY")
-LoneWarrior:SetSoundfilesFolder(AIRBOSSBASESOUNDFOLDER)
+LoneWarrior:SetSoundfilesFolder(AIRBOSSBASESOUNDFOLDER .. "/Airboss Soundfiles/")
 LoneWarrior:SetVoiceOversLSOByRaynor(AIRBOSSLSORAYNOR)
 LoneWarrior:SetVoiceOversMarshalByGabriella(AIRBOSSMARSHALGABRIELLA)
 LoneWarrior:SetDespawnOnEngineShutdown()
@@ -142,10 +142,10 @@ LoneWarrior.trapsheet = false
 function LoneWarrior:OnAfterRecoveryStart(Event, From, To, Case, Offset)
     env.info(string.format("Starting Recovery Case %d ops.", Case))
 end
-
+LoneWarrior:AddRecoveryWindow("8:10","12:00",1,0,true,27,false)
 -- Start airboss class.
 LoneWarrior:Start()
-LoneWarrior:AddRecoveryWindow("8:10","12:00",1,0,true,27,false)
+
 
 -- ------------------------------------------------ TARAWA ----------------------------------------------
 -- EXPD11_RESCUEHELO = RESCUEHELO:New(UNIT:FindByName("Tarawa"), "EXPD11_RESCUEHELO")
