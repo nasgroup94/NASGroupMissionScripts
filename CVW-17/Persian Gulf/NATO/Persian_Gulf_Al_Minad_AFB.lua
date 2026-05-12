@@ -42,7 +42,7 @@ AMAW:NewPayload(GROUP:FindByName("CVN71_ARCO2"),4,{AUFTRAG.Type.TANKER,AUFTRAG.T
     :SetMissionRange(500)
     :AssignSquadrons({Tank})
     :SetName("South AAR")
-    :SetTACAN(29,"STK")
+    :SetTACAN(29,"Y","STK")
     :SetRadio(369.5)
 
 southAAR:AssignSquadrons({Tank})
@@ -53,7 +53,7 @@ southAAR:AssignSquadrons({Tank})
     :SetMissionRange(500)
     :AssignSquadrons({Tank})
     :SetName("North AAR")
-    :SetTACAN(28,"NTK")
+    :SetTACAN(28,"Y","NTK")
     :SetRadio(368.5)
 
 northAAR:AssignSquadrons({Tank})
@@ -73,7 +73,7 @@ northAAR:AssignSquadrons({Tank})
 
 AWACS = SQUADRON:New("AWACS",4,"Al Minad AWACS")
     :AddMissionCapability({AUFTRAG.Type.AWACS})
-    :SetCallsign(CALLSIGN.Aircraft.Overlord,5)
+    :SetCallsign(CALLSIGN.Aircraft.Magic,5)
     :SetFuelLowThreshold(0.3)
     :SetRadio(262, radio.modulation.AM)
 

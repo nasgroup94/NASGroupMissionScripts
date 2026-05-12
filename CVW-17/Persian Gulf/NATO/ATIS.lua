@@ -1,15 +1,15 @@
 
 
 -- Al Minhad ATIS on 125.1 AM
-atisAlMinhad = ATIS:New(AIRBASE.PersianGulf.Al_Minhad_AFB, 125.1, radio.modulation.AM)
-atisAlMinhad:SetRadioRelayUnitName("AMAFBRelay")
-atisAlMinhad:SetSRS("", "female", "en-US")
-NASG_TTS:Use(atisAlMinhad.msrs, "Al Minhad ATIS", "Zoe", 200, 1.0)
-atisAlMinhad:SetQueueUpdateTime(100)
-atisAlMinhad:__Start(20)
+atisDubaiInt = ATIS:New(AIRBASE.PersianGulf.Dubai_Intl, 131.7, radio.modulation.AM)
+atisDubaiInt:SetRadioRelayUnitName("AMAFBRelay")
+atisDubaiInt:SetSRS("", "female", "en-US")
+NASG_TTS:Use(atisDubaiInt.msrs, "Al Minhad ATIS", "Zoe", 200, 1.0)
+atisDubaiInt:SetQueueUpdateTime(100)
+atisDubaiInt:__Start(20)
 
 -- Abu Dhabi ATIS on 126.2 AM
-atisAbuDhabi = ATIS:New(AIRBASE.PersianGulf.Abu_Dhabi_Intl, 126.2, radio.modulation.AM)
+atisAbuDhabi = ATIS:New(AIRBASE.PersianGulf.Abu_Dhabi_Intl, 125.1, radio.modulation.AM)
 atisAbuDhabi:SetRadioRelayUnitName("AbuDhabiRelay")
 atisAbuDhabi:SetSRS("", "male", "en-US")
 NASG_TTS:Use(atisAbuDhabi.msrs, "Abu Dhabi ATIS", "Nathan", 200, 1.0)

@@ -75,7 +75,7 @@ COMMONSOUNDSFOLDER = common_scripts_path .. "sound/"
 
 
 -- AIRBOSS/RANGE Sound file locations within the miz file
-AIRBOSSBASESOUNDFOLDER = COMMONSOUNDSFOLDER .. "Airboss Soundfiles/" -- needed for the default pilot sound files used by ariboss
+AIRBOSSBASESOUNDFOLDER = COMMONSOUNDSFOLDER .. "AIRBOSS/" -- needed for the default pilot sound files used by ariboss
 AIRBOSSLSORAYNOR = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack LSO Raynor/"
 AIRBOSSMARSHALRAYNOR = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack Marshal Raynor/"
 AIRBOSSMARSHALGABRIELLA = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack Marshal Gabriella/"

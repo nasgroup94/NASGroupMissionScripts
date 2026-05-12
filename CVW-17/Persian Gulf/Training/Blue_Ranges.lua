@@ -4,18 +4,18 @@ local BombTargetGoodHitDistance = 25
 
 AzZafrahRange = RANGE:New("Az Zafrah Range", coalition.side.BLUE)
 
-AzZafrahRange:SetSRS(SRS_PATH, SRS_PORT, coalition.side.BLUE, 231.5, radio.modulation.AM, 1.0, nil)
-AzZafrahRange:SetSRSRangeControl(251.5, radio.modulation.AM, "Zoe", "en-US", "female", "Pagan Radio Relay")
-AzZafrahRange:SetSRSRangeInstructor(251, radio.modulation.AM, "Nathan", "en-US", "male", "Pagan Radio Relay")
+AzZafrahRange:SetSRS(SRS_PATH, SRS_PORT, coalition.side.BLUE, 255, radio.modulation.AM, 1.0, nil)
+AzZafrahRange:SetSRSRangeControl(255, radio.modulation.AM, "Zoe", "en-US", "female", "AZRadioRelay")
+AzZafrahRange:SetSRSRangeInstructor(255.5, radio.modulation.AM, "Nathan", "en-US", "male", "AZRadioRelay")
 
 NASG_TTS:Use(AzZafrahRange.controlmsrs, "Az Zafrah Range Control", "Zoe", 200, 1.0)
 NASG_TTS:Use(AzZafrahRange.instructmsrs, "Az Zafrah Range Instructor", "Nathan", 200, 1.0)
 
 AzZafrahRange:SetFunkManOn(10042, "127.0.0.1")
 
-local fouldist = AzZafrahRange:GetFoullineDistance("strafe 1", "foul line 1")
+local fouldist = AzZafrahRange:GetFoullineDistance("strafe1", "foulline1")
 
-AzZafrahRange:AddStrafePit("strafe 1", 3000, 300, 180, 360, true, 20, fouldist)
+AzZafrahRange:AddStrafePit("strafe1", 3000, 300, 180, true, 20, fouldist)
 
 local AzZafrahBombTargets = {
     "circle 1",
