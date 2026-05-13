@@ -151,7 +151,7 @@ RescueHelo:SetRescueHoverSpeed(5)
 RescueHelo:SetRescueZone(15)
 RescueHelo:SetModex(42)
 local rescueHeloMsrs = MSRS:New(SRS_PATH,265,radio.modulation.AM,MSRS.Backend.SRSEXE)
-    :SetCoordinate(self:GetCoord())
+    --:SetCoordinate(self:GetCoord())
 NASG_TTS:Use(rescueHeloMsrs, "CVN-71 Rescue Helo", "Victoria",200,1.0)
 RescueHelo:Start(30)
 
