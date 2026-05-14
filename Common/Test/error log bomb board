@@ -1,0 +1,1210 @@
+ Error while processing report ./plugins/vnao/reports/rangeboard.json! Some elements might  base.py:159
+                  be empty.
+                  ╭────────────────────────── Traceback (most recent call last) ───────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:153 in _process_element                   │
+                  │                                                                                        │
+                  │   150 │   │                                                                            │
+                  │   151 │   │   # Render the element and handle exceptions                               │
+                  │   152 │   │   try:                                                                     │
+                  │ ❱ 153 │   │   │   await instance.render(**render_args)                                 │
+                  │   154 │   │   except (TimeoutError, asyncio.TimeoutError):                             │
+                  │   155 │   │   │   self.log.error(f"Timeout while processing report {self.filename}! So │
+                  │       elements might be empty.")                                                       │
+                  │   156 │   │   except psycopg.OperationalError:                                         │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\reports.py:408 in render                         │
+                  │                                                                                        │
+                  │   405 │   │   │   #  -                                                                 │
+                  │       https://sourceforge.net/projects/portableapps/files/Google%20Chrome%20Portable/G │
+                  │       omePortable64_109.0.5414.120_online.paf.exe/download                             │
+                  │   406 │   │   │   # Update the browser_exectuable path parameter to it's location and  │
+                  │       should work.                                                                     │
+                  │   407 │   │   │   if css_file:                                                         │
+                  │ ❱ 408 │   │   │   │   hti =                                                            │
+                  │       html2image.Html2Image(browser_executable="C:\\Users\\vnaon\\GoogleChromePortable │
+                  │       leChromePortable.exe",                                                           │
+                  │   409 │   │   │   │   │   │   │   │   │   │   │                                        │
+                  │       custom_flags=['--default-background-color=00000000', '--hide-scrollbars'])       │
+                  │   410 │   │   │   │   hti.output_path = temp_png.parent                                │
+                  │   411 │   │   │   │   hti.screenshot(                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\html2image.py:107 in __init__       │
+                  │                                                                                        │
+                  │   104 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │   105 │   │   │   )                                                                    │
+                  │   106 │   │   else:                                                                    │
+                  │ ❱ 107 │   │   │   self.browser = browser_class(                                        │
+                  │   108 │   │   │   │   executable=browser_executable,                                   │
+                  │   109 │   │   │   │   flags=custom_flags,                                              │
+                  │   110 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:189 in __init__  │
+                  │                                                                                        │
+                  │   186 │   """                                                                          │
+                  │   187 │                                                                                │
+                  │   188 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱ 189 │   │   super().__init__(executable=executable, flags=flags,                     │
+                  │       print_command=print_command, disable_logging=disable_logging,                    │
+                  │       use_new_headless=use_new_headless)                                               │
+                  │   190 │                                                                                │
+                  │   191 │   @property                                                                    │
+                  │   192 │   def executable(self):                                                        │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chromium.py:30 in __init__ │
+                  │                                                                                        │
+                  │    27 │   """                                                                          │
+                  │    28 │                                                                                │
+                  │    29 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱  30 │   │   self.executable = executable                                             │
+                  │    31 │   │   if not flags:                                                            │
+                  │    32 │   │   │   self.flags = [                                                       │
+                  │    33 │   │   │   │   '--default-background-color=00000000',                           │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:197 in           │
+                  │ executable                                                                             │
+                  │                                                                                        │
+                  │   194 │                                                                                │
+                  │   195 │   @executable.setter                                                           │
+                  │   196 │   def executable(self, value):                                                 │
+                  │ ❱ 197 │   │   self._executable = _find_chrome(value)                                   │
+                  │   198                                                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:74 in            │
+                  │ _find_chrome                                                                           │
+                  │                                                                                        │
+                  │    71 │   │   │   │   return command_origin                                            │
+                  │    72 │   │   │                                                                        │
+                  │    73 │   │   │   # cannot validate user_given_executable                              │
+                  │ ❱  74 │   │   │   raise FileNotFoundError()                                            │
+                  │    75 │   │                                                                            │
+                  │    76 │   │   # On a non-Windows OS, we can validate in a basic way that               │
+                  │    77 │   │   # user_given_executable leads to a Chrome / Chromium executable,         │
+                  ╰────────────────────────────────────────────────────────────────────────────────────────╯
+                  FileNotFoundError
+         ERROR    Exception while processing report ./plugins/vnao/reports/rangeboard.json! for server       base.py:443
+                  Shrike Test Server
+                  ╭────────────────────────── Traceback (most recent call last) ───────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:433 in render                             │
+                  │                                                                                        │
+                  │   430 │   async def render(self, *args, **kwargs) -> ReportEnv:                        │
+                  │   431 │   │   env = None                                                               │
+                  │   432 │   │   try:                                                                     │
+                  │ ❱ 433 │   │   │   env = await super().render(*args, **kwargs)                          │
+                  │   434 │   │   │   file = discord.File(fp=env.buffer or env.filename,                   │
+                  │   435 │   │   │   │   │   │   │   │   filename=os.path.basename(env.filename)) if env. │
+                  │       else MISSING                                                                     │
+                  │   436 │   │   │   await self.bot.setEmbed(embed_name=self.embed_name, embed=env.embed, │
+                  │       channel_id=self.channel_id,                                                      │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:127 in render                             │
+                  │                                                                                        │
+                  │   124 │   │   # Handle the 'elements' section                                          │
+                  │   125 │   │   if elements := report_def.get('elements'):                               │
+                  │   126 │   │   │   for element in elements:                                             │
+                  │ ❱ 127 │   │   │   │   await self._process_element(element, env.params)                 │
+                  │   128 │   │                                                                            │
+                  │   129 │   │   return env                                                               │
+                  │   130                                                                                  │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:153 in _process_element                   │
+                  │                                                                                        │
+                  │   150 │   │                                                                            │
+                  │   151 │   │   # Render the element and handle exceptions                               │
+                  │   152 │   │   try:                                                                     │
+                  │ ❱ 153 │   │   │   await instance.render(**render_args)                                 │
+                  │   154 │   │   except (TimeoutError, asyncio.TimeoutError):                             │
+                  │   155 │   │   │   self.log.error(f"Timeout while processing report {self.filename}! So │
+                  │       elements might be empty.")                                                       │
+                  │   156 │   │   except psycopg.OperationalError:                                         │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\reports.py:408 in render                         │
+                  │                                                                                        │
+                  │   405 │   │   │   #  -                                                                 │
+                  │       https://sourceforge.net/projects/portableapps/files/Google%20Chrome%20Portable/G │
+                  │       omePortable64_109.0.5414.120_online.paf.exe/download                             │
+                  │   406 │   │   │   # Update the browser_exectuable path parameter to it's location and  │
+                  │       should work.                                                                     │
+                  │   407 │   │   │   if css_file:                                                         │
+                  │ ❱ 408 │   │   │   │   hti =                                                            │
+                  │       html2image.Html2Image(browser_executable="C:\\Users\\vnaon\\GoogleChromePortable │
+                  │       leChromePortable.exe",                                                           │
+                  │   409 │   │   │   │   │   │   │   │   │   │   │                                        │
+                  │       custom_flags=['--default-background-color=00000000', '--hide-scrollbars'])       │
+                  │   410 │   │   │   │   hti.output_path = temp_png.parent                                │
+                  │   411 │   │   │   │   hti.screenshot(                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\html2image.py:107 in __init__       │
+                  │                                                                                        │
+                  │   104 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │   105 │   │   │   )                                                                    │
+                  │   106 │   │   else:                                                                    │
+                  │ ❱ 107 │   │   │   self.browser = browser_class(                                        │
+                  │   108 │   │   │   │   executable=browser_executable,                                   │
+                  │   109 │   │   │   │   flags=custom_flags,                                              │
+                  │   110 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:189 in __init__  │
+                  │                                                                                        │
+                  │   186 │   """                                                                          │
+                  │   187 │                                                                                │
+                  │   188 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱ 189 │   │   super().__init__(executable=executable, flags=flags,                     │
+                  │       print_command=print_command, disable_logging=disable_logging,                    │
+                  │       use_new_headless=use_new_headless)                                               │
+                  │   190 │                                                                                │
+                  │   191 │   @property                                                                    │
+                  │   192 │   def executable(self):                                                        │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chromium.py:30 in __init__ │
+                  │                                                                                        │
+                  │    27 │   """                                                                          │
+                  │    28 │                                                                                │
+                  │    29 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱  30 │   │   self.executable = executable                                             │
+                  │    31 │   │   if not flags:                                                            │
+                  │    32 │   │   │   self.flags = [                                                       │
+                  │    33 │   │   │   │   '--default-background-color=00000000',                           │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:197 in           │
+                  │ executable                                                                             │
+                  │                                                                                        │
+                  │   194 │                                                                                │
+                  │   195 │   @executable.setter                                                           │
+                  │   196 │   def executable(self, value):                                                 │
+                  │ ❱ 197 │   │   self._executable = _find_chrome(value)                                   │
+                  │   198                                                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:74 in            │
+                  │ _find_chrome                                                                           │
+                  │                                                                                        │
+                  │    71 │   │   │   │   return command_origin                                            │
+                  │    72 │   │   │                                                                        │
+                  │    73 │   │   │   # cannot validate user_given_executable                              │
+                  │ ❱  74 │   │   │   raise FileNotFoundError()                                            │
+                  │    75 │   │                                                                            │
+                  │    76 │   │   # On a non-Windows OS, we can validate in a basic way that               │
+                  │    77 │   │   # user_given_executable leads to a Chrome / Chromium executable,         │
+                  ╰────────────────────────────────────────────────────────────────────────────────────────╯
+                  FileNotFoundError
+         ERROR                                                                                           listener.py:146
+                  ╭──────────────────────── Traceback (most recent call last) ─────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:144 in processEvent                      │
+                  │                                                                                    │
+                  │   141 │                                                                            │
+                  │   142 │   async def processEvent(self, name: str, server: Server, data: dict) -> N │
+                  │   143 │   │   try:                                                                 │
+                  │ ❱ 144 │   │   │   await self.__events__[name](self, server, data)                  │
+                  │   145 │   │   except Exception as ex:                                              │
+                  │   146 │   │   │   self.log.exception(ex)                                           │
+                  │   147                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:43 in __call__                           │
+                  │                                                                                    │
+                  │    40 │   │   self.callback = func                                                 │
+                  │    41 │                                                                            │
+                  │    42 │   async def __call__(self, listener: EventListener, server: Server, data:  │
+                  │       None:                                                                        │
+                  │ ❱  43 │   │   await self.callback(listener, server, data)                          │
+                  │    44                                                                              │
+                  │    45                                                                              │
+                  │    46 def chat_command(name: str = MISSING, cls: Type[ChatCommand] = MISSING, **at │
+                  │       Callable[[Any], ChatCommand]:                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:430 in moose_bomb_result         │
+                  │                                                                                    │
+                  │   427 │   │   if player:                                                           │
+                  │   428 │   │   │   self.log.debug(f"Player {player.name}")                          │
+                  │   429 │   │   │   self._record_bomb_db(config, server, player, data)               │
+                  │ ❱ 430 │   │   │   await self._update_rangeboards(server, "bomb")                   │
+                  │   431 │   │   else:                                                                │
+                  │   432 │   │   │   self.log.debug(f"Player not found: {data['player']}")            │
+                  │   433                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:339 in _update_rangeboards       │
+                  │                                                                                    │
+                  │   336 │   │   │   │   embed_name=f"bombboard-{server.name}",                       │
+                  │   337 │   │   │   │   channel_id=channel_id,                                       │
+                  │   338 │   │   │   )                                                                │
+                  │ ❱ 339 │   │   │   await report.render(                                             │
+                  │   340 │   │   │   │   server_name=server.name, config=config, board_type=board_typ │
+                  │   341 │   │   │   )                                                                │
+                  │   342 │   │   else:                                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:433 in render                         │
+                  │                                                                                    │
+                  │   430 │   async def render(self, *args, **kwargs) -> ReportEnv:                    │
+                  │   431 │   │   env = None                                                           │
+                  │   432 │   │   try:                                                                 │
+                  │ ❱ 433 │   │   │   env = await super().render(*args, **kwargs)                      │
+                  │   434 │   │   │   file = discord.File(fp=env.buffer or env.filename,               │
+                  │   435 │   │   │   │   │   │   │   │   filename=os.path.basename(env.filename)) if  │
+                  │       else MISSING                                                                 │
+                  │   436 │   │   │   await self.bot.setEmbed(embed_name=self.embed_name, embed=env.em │
+                  │       channel_id=self.channel_id,                                                  │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:127 in render                         │
+                  │                                                                                    │
+                  │   124 │   │   # Handle the 'elements' section                                      │
+                  │   125 │   │   if elements := report_def.get('elements'):                           │
+                  │   126 │   │   │   for element in elements:                                         │
+                  │ ❱ 127 │   │   │   │   await self._process_element(element, env.params)             │
+                  │   128 │   │                                                                        │
+                  │   129 │   │   return env                                                           │
+                  │   130                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:153 in _process_element               │
+                  │                                                                                    │
+                  │   150 │   │                                                                        │
+                  │   151 │   │   # Render the element and handle exceptions                           │
+                  │   152 │   │   try:                                                                 │
+                  │ ❱ 153 │   │   │   await instance.render(**render_args)                             │
+                  │   154 │   │   except (TimeoutError, asyncio.TimeoutError):                         │
+                  │   155 │   │   │   self.log.error(f"Timeout while processing report {self.filename} │
+                  │       elements might be empty.")                                                   │
+                  │   156 │   │   except psycopg.OperationalError:                                     │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\reports.py:408 in render                     │
+                  │                                                                                    │
+                  │   405 │   │   │   #  -                                                             │
+                  │       https://sourceforge.net/projects/portableapps/files/Google%20Chrome%20Portab │
+                  │       omePortable64_109.0.5414.120_online.paf.exe/download                         │
+                  │   406 │   │   │   # Update the browser_exectuable path parameter to it's location  │
+                  │       should work.                                                                 │
+                  │   407 │   │   │   if css_file:                                                     │
+                  │ ❱ 408 │   │   │   │   hti =                                                        │
+                  │       html2image.Html2Image(browser_executable="C:\\Users\\vnaon\\GoogleChromePort │
+                  │       leChromePortable.exe",                                                       │
+                  │   409 │   │   │   │   │   │   │   │   │   │   │                                    │
+                  │       custom_flags=['--default-background-color=00000000', '--hide-scrollbars'])   │
+                  │   410 │   │   │   │   hti.output_path = temp_png.parent                            │
+                  │   411 │   │   │   │   hti.screenshot(                                              │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\html2image.py:107 in __init__   │
+                  │                                                                                    │
+                  │   104 │   │   │   │   disable_logging=disable_logging,                             │
+                  │   105 │   │   │   )                                                                │
+                  │   106 │   │   else:                                                                │
+                  │ ❱ 107 │   │   │   self.browser = browser_class(                                    │
+                  │   108 │   │   │   │   executable=browser_executable,                               │
+                  │   109 │   │   │   │   flags=custom_flags,                                          │
+                  │   110 │   │   │   │   disable_logging=disable_logging,                             │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:189 in       │
+                  │ __init__                                                                           │
+                  │                                                                                    │
+                  │   186 │   """                                                                      │
+                  │   187 │                                                                            │
+                  │   188 │   def __init__(self, executable=None, flags=None, print_command=False,     │
+                  │       disable_logging=False, use_new_headless=False,):                             │
+                  │ ❱ 189 │   │   super().__init__(executable=executable, flags=flags,                 │
+                  │       print_command=print_command, disable_logging=disable_logging,                │
+                  │       use_new_headless=use_new_headless)                                           │
+                  │   190 │                                                                            │
+                  │   191 │   @property                                                                │
+                  │   192 │   def executable(self):                                                    │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chromium.py:30 in      │
+                  │ __init__                                                                           │
+                  │                                                                                    │
+                  │    27 │   """                                                                      │
+                  │    28 │                                                                            │
+                  │    29 │   def __init__(self, executable=None, flags=None, print_command=False,     │
+                  │       disable_logging=False, use_new_headless=False,):                             │
+                  │ ❱  30 │   │   self.executable = executable                                         │
+                  │    31 │   │   if not flags:                                                        │
+                  │    32 │   │   │   self.flags = [                                                   │
+                  │    33 │   │   │   │   '--default-background-color=00000000',                       │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:197 in       │
+                  │ executable                                                                         │
+                  │                                                                                    │
+                  │   194 │                                                                            │
+                  │   195 │   @executable.setter                                                       │
+                  │   196 │   def executable(self, value):                                             │
+                  │ ❱ 197 │   │   self._executable = _find_chrome(value)                               │
+                  │   198                                                                              │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:74 in        │
+                  │ _find_chrome                                                                       │
+                  │                                                                                    │
+                  │    71 │   │   │   │   return command_origin                                        │
+                  │    72 │   │   │                                                                    │
+                  │    73 │   │   │   # cannot validate user_given_executable                          │
+                  │ ❱  74 │   │   │   raise FileNotFoundError()                                        │
+                  │    75 │   │                                                                        │
+                  │    76 │   │   # On a non-Windows OS, we can validate in a basic way that           │
+                  │    77 │   │   # user_given_executable leads to a Chrome / Chromium executable,     │
+                  ╰────────────────────────────────────────────────────────────────────────────────────╯
+                  FileNotFoundError
+18:59:48 ERROR    Error while processing report ./plugins/vnao/reports/rangeboard.json! Some elements might  base.py:159
+                  be empty.
+                  ╭────────────────────────── Traceback (most recent call last) ───────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:153 in _process_element                   │
+                  │                                                                                        │
+                  │   150 │   │                                                                            │
+                  │   151 │   │   # Render the element and handle exceptions                               │
+                  │   152 │   │   try:                                                                     │
+                  │ ❱ 153 │   │   │   await instance.render(**render_args)                                 │
+                  │   154 │   │   except (TimeoutError, asyncio.TimeoutError):                             │
+                  │   155 │   │   │   self.log.error(f"Timeout while processing report {self.filename}! So │
+                  │       elements might be empty.")                                                       │
+                  │   156 │   │   except psycopg.OperationalError:                                         │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\reports.py:408 in render                         │
+                  │                                                                                        │
+                  │   405 │   │   │   #  -                                                                 │
+                  │       https://sourceforge.net/projects/portableapps/files/Google%20Chrome%20Portable/G │
+                  │       omePortable64_109.0.5414.120_online.paf.exe/download                             │
+                  │   406 │   │   │   # Update the browser_exectuable path parameter to it's location and  │
+                  │       should work.                                                                     │
+                  │   407 │   │   │   if css_file:                                                         │
+                  │ ❱ 408 │   │   │   │   hti =                                                            │
+                  │       html2image.Html2Image(browser_executable="C:\\Users\\vnaon\\GoogleChromePortable │
+                  │       leChromePortable.exe",                                                           │
+                  │   409 │   │   │   │   │   │   │   │   │   │   │                                        │
+                  │       custom_flags=['--default-background-color=00000000', '--hide-scrollbars'])       │
+                  │   410 │   │   │   │   hti.output_path = temp_png.parent                                │
+                  │   411 │   │   │   │   hti.screenshot(                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\html2image.py:107 in __init__       │
+                  │                                                                                        │
+                  │   104 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │   105 │   │   │   )                                                                    │
+                  │   106 │   │   else:                                                                    │
+                  │ ❱ 107 │   │   │   self.browser = browser_class(                                        │
+                  │   108 │   │   │   │   executable=browser_executable,                                   │
+                  │   109 │   │   │   │   flags=custom_flags,                                              │
+                  │   110 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:189 in __init__  │
+                  │                                                                                        │
+                  │   186 │   """                                                                          │
+                  │   187 │                                                                                │
+                  │   188 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱ 189 │   │   super().__init__(executable=executable, flags=flags,                     │
+                  │       print_command=print_command, disable_logging=disable_logging,                    │
+                  │       use_new_headless=use_new_headless)                                               │
+                  │   190 │                                                                                │
+                  │   191 │   @property                                                                    │
+                  │   192 │   def executable(self):                                                        │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chromium.py:30 in __init__ │
+                  │                                                                                        │
+                  │    27 │   """                                                                          │
+                  │    28 │                                                                                │
+                  │    29 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱  30 │   │   self.executable = executable                                             │
+                  │    31 │   │   if not flags:                                                            │
+                  │    32 │   │   │   self.flags = [                                                       │
+                  │    33 │   │   │   │   '--default-background-color=00000000',                           │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:197 in           │
+                  │ executable                                                                             │
+                  │                                                                                        │
+                  │   194 │                                                                                │
+                  │   195 │   @executable.setter                                                           │
+                  │   196 │   def executable(self, value):                                                 │
+                  │ ❱ 197 │   │   self._executable = _find_chrome(value)                                   │
+                  │   198                                                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:74 in            │
+                  │ _find_chrome                                                                           │
+                  │                                                                                        │
+                  │    71 │   │   │   │   return command_origin                                            │
+                  │    72 │   │   │                                                                        │
+                  │    73 │   │   │   # cannot validate user_given_executable                              │
+                  │ ❱  74 │   │   │   raise FileNotFoundError()                                            │
+                  │    75 │   │                                                                            │
+                  │    76 │   │   # On a non-Windows OS, we can validate in a basic way that               │
+                  │    77 │   │   # user_given_executable leads to a Chrome / Chromium executable,         │
+                  ╰────────────────────────────────────────────────────────────────────────────────────────╯
+                  FileNotFoundError
+         ERROR    Exception while processing report ./plugins/vnao/reports/rangeboard.json! for server       base.py:443
+                  Shrike Test Server
+                  ╭────────────────────────── Traceback (most recent call last) ───────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:433 in render                             │
+                  │                                                                                        │
+                  │   430 │   async def render(self, *args, **kwargs) -> ReportEnv:                        │
+                  │   431 │   │   env = None                                                               │
+                  │   432 │   │   try:                                                                     │
+                  │ ❱ 433 │   │   │   env = await super().render(*args, **kwargs)                          │
+                  │   434 │   │   │   file = discord.File(fp=env.buffer or env.filename,                   │
+                  │   435 │   │   │   │   │   │   │   │   filename=os.path.basename(env.filename)) if env. │
+                  │       else MISSING                                                                     │
+                  │   436 │   │   │   await self.bot.setEmbed(embed_name=self.embed_name, embed=env.embed, │
+                  │       channel_id=self.channel_id,                                                      │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:127 in render                             │
+                  │                                                                                        │
+                  │   124 │   │   # Handle the 'elements' section                                          │
+                  │   125 │   │   if elements := report_def.get('elements'):                               │
+                  │   126 │   │   │   for element in elements:                                             │
+                  │ ❱ 127 │   │   │   │   await self._process_element(element, env.params)                 │
+                  │   128 │   │                                                                            │
+                  │   129 │   │   return env                                                               │
+                  │   130                                                                                  │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:153 in _process_element                   │
+                  │                                                                                        │
+                  │   150 │   │                                                                            │
+                  │   151 │   │   # Render the element and handle exceptions                               │
+                  │   152 │   │   try:                                                                     │
+                  │ ❱ 153 │   │   │   await instance.render(**render_args)                                 │
+                  │   154 │   │   except (TimeoutError, asyncio.TimeoutError):                             │
+                  │   155 │   │   │   self.log.error(f"Timeout while processing report {self.filename}! So │
+                  │       elements might be empty.")                                                       │
+                  │   156 │   │   except psycopg.OperationalError:                                         │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\reports.py:408 in render                         │
+                  │                                                                                        │
+                  │   405 │   │   │   #  -                                                                 │
+                  │       https://sourceforge.net/projects/portableapps/files/Google%20Chrome%20Portable/G │
+                  │       omePortable64_109.0.5414.120_online.paf.exe/download                             │
+                  │   406 │   │   │   # Update the browser_exectuable path parameter to it's location and  │
+                  │       should work.                                                                     │
+                  │   407 │   │   │   if css_file:                                                         │
+                  │ ❱ 408 │   │   │   │   hti =                                                            │
+                  │       html2image.Html2Image(browser_executable="C:\\Users\\vnaon\\GoogleChromePortable │
+                  │       leChromePortable.exe",                                                           │
+                  │   409 │   │   │   │   │   │   │   │   │   │   │                                        │
+                  │       custom_flags=['--default-background-color=00000000', '--hide-scrollbars'])       │
+                  │   410 │   │   │   │   hti.output_path = temp_png.parent                                │
+                  │   411 │   │   │   │   hti.screenshot(                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\html2image.py:107 in __init__       │
+                  │                                                                                        │
+                  │   104 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │   105 │   │   │   )                                                                    │
+                  │   106 │   │   else:                                                                    │
+                  │ ❱ 107 │   │   │   self.browser = browser_class(                                        │
+                  │   108 │   │   │   │   executable=browser_executable,                                   │
+                  │   109 │   │   │   │   flags=custom_flags,                                              │
+                  │   110 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:189 in __init__  │
+                  │                                                                                        │
+                  │   186 │   """                                                                          │
+                  │   187 │                                                                                │
+                  │   188 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱ 189 │   │   super().__init__(executable=executable, flags=flags,                     │
+                  │       print_command=print_command, disable_logging=disable_logging,                    │
+                  │       use_new_headless=use_new_headless)                                               │
+                  │   190 │                                                                                │
+                  │   191 │   @property                                                                    │
+                  │   192 │   def executable(self):                                                        │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chromium.py:30 in __init__ │
+                  │                                                                                        │
+                  │    27 │   """                                                                          │
+                  │    28 │                                                                                │
+                  │    29 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱  30 │   │   self.executable = executable                                             │
+                  │    31 │   │   if not flags:                                                            │
+                  │    32 │   │   │   self.flags = [                                                       │
+                  │    33 │   │   │   │   '--default-background-color=00000000',                           │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:197 in           │
+                  │ executable                                                                             │
+                  │                                                                                        │
+                  │   194 │                                                                                │
+                  │   195 │   @executable.setter                                                           │
+                  │   196 │   def executable(self, value):                                                 │
+                  │ ❱ 197 │   │   self._executable = _find_chrome(value)                                   │
+                  │   198                                                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:74 in            │
+                  │ _find_chrome                                                                           │
+                  │                                                                                        │
+                  │    71 │   │   │   │   return command_origin                                            │
+                  │    72 │   │   │                                                                        │
+                  │    73 │   │   │   # cannot validate user_given_executable                              │
+                  │ ❱  74 │   │   │   raise FileNotFoundError()                                            │
+                  │    75 │   │                                                                            │
+                  │    76 │   │   # On a non-Windows OS, we can validate in a basic way that               │
+                  │    77 │   │   # user_given_executable leads to a Chrome / Chromium executable,         │
+                  ╰────────────────────────────────────────────────────────────────────────────────────────╯
+                  FileNotFoundError
+         ERROR                                                                                           listener.py:146
+                  ╭──────────────────────── Traceback (most recent call last) ─────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:144 in processEvent                      │
+                  │                                                                                    │
+                  │   141 │                                                                            │
+                  │   142 │   async def processEvent(self, name: str, server: Server, data: dict) -> N │
+                  │   143 │   │   try:                                                                 │
+                  │ ❱ 144 │   │   │   await self.__events__[name](self, server, data)                  │
+                  │   145 │   │   except Exception as ex:                                              │
+                  │   146 │   │   │   self.log.exception(ex)                                           │
+                  │   147                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:43 in __call__                           │
+                  │                                                                                    │
+                  │    40 │   │   self.callback = func                                                 │
+                  │    41 │                                                                            │
+                  │    42 │   async def __call__(self, listener: EventListener, server: Server, data:  │
+                  │       None:                                                                        │
+                  │ ❱  43 │   │   await self.callback(listener, server, data)                          │
+                  │    44                                                                              │
+                  │    45                                                                              │
+                  │    46 def chat_command(name: str = MISSING, cls: Type[ChatCommand] = MISSING, **at │
+                  │       Callable[[Any], ChatCommand]:                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:430 in moose_bomb_result         │
+                  │                                                                                    │
+                  │   427 │   │   if player:                                                           │
+                  │   428 │   │   │   self.log.debug(f"Player {player.name}")                          │
+                  │   429 │   │   │   self._record_bomb_db(config, server, player, data)               │
+                  │ ❱ 430 │   │   │   await self._update_rangeboards(server, "bomb")                   │
+                  │   431 │   │   else:                                                                │
+                  │   432 │   │   │   self.log.debug(f"Player not found: {data['player']}")            │
+                  │   433                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:339 in _update_rangeboards       │
+                  │                                                                                    │
+                  │   336 │   │   │   │   embed_name=f"bombboard-{server.name}",                       │
+                  │   337 │   │   │   │   channel_id=channel_id,                                       │
+                  │   338 │   │   │   )                                                                │
+                  │ ❱ 339 │   │   │   await report.render(                                             │
+                  │   340 │   │   │   │   server_name=server.name, config=config, board_type=board_typ │
+                  │   341 │   │   │   )                                                                │
+                  │   342 │   │   else:                                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:433 in render                         │
+                  │                                                                                    │
+                  │   430 │   async def render(self, *args, **kwargs) -> ReportEnv:                    │
+                  │   431 │   │   env = None                                                           │
+                  │   432 │   │   try:                                                                 │
+                  │ ❱ 433 │   │   │   env = await super().render(*args, **kwargs)                      │
+                  │   434 │   │   │   file = discord.File(fp=env.buffer or env.filename,               │
+                  │   435 │   │   │   │   │   │   │   │   filename=os.path.basename(env.filename)) if  │
+                  │       else MISSING                                                                 │
+                  │   436 │   │   │   await self.bot.setEmbed(embed_name=self.embed_name, embed=env.em │
+                  │       channel_id=self.channel_id,                                                  │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:127 in render                         │
+                  │                                                                                    │
+                  │   124 │   │   # Handle the 'elements' section                                      │
+                  │   125 │   │   if elements := report_def.get('elements'):                           │
+                  │   126 │   │   │   for element in elements:                                         │
+                  │ ❱ 127 │   │   │   │   await self._process_element(element, env.params)             │
+                  │   128 │   │                                                                        │
+                  │   129 │   │   return env                                                           │
+                  │   130                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:153 in _process_element               │
+                  │                                                                                    │
+                  │   150 │   │                                                                        │
+                  │   151 │   │   # Render the element and handle exceptions                           │
+                  │   152 │   │   try:                                                                 │
+                  │ ❱ 153 │   │   │   await instance.render(**render_args)                             │
+                  │   154 │   │   except (TimeoutError, asyncio.TimeoutError):                         │
+                  │   155 │   │   │   self.log.error(f"Timeout while processing report {self.filename} │
+                  │       elements might be empty.")                                                   │
+                  │   156 │   │   except psycopg.OperationalError:                                     │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\reports.py:408 in render                     │
+                  │                                                                                    │
+                  │   405 │   │   │   #  -                                                             │
+                  │       https://sourceforge.net/projects/portableapps/files/Google%20Chrome%20Portab │
+                  │       omePortable64_109.0.5414.120_online.paf.exe/download                         │
+                  │   406 │   │   │   # Update the browser_exectuable path parameter to it's location  │
+                  │       should work.                                                                 │
+                  │   407 │   │   │   if css_file:                                                     │
+                  │ ❱ 408 │   │   │   │   hti =                                                        │
+                  │       html2image.Html2Image(browser_executable="C:\\Users\\vnaon\\GoogleChromePort │
+                  │       leChromePortable.exe",                                                       │
+                  │   409 │   │   │   │   │   │   │   │   │   │   │                                    │
+                  │       custom_flags=['--default-background-color=00000000', '--hide-scrollbars'])   │
+                  │   410 │   │   │   │   hti.output_path = temp_png.parent                            │
+                  │   411 │   │   │   │   hti.screenshot(                                              │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\html2image.py:107 in __init__   │
+                  │                                                                                    │
+                  │   104 │   │   │   │   disable_logging=disable_logging,                             │
+                  │   105 │   │   │   )                                                                │
+                  │   106 │   │   else:                                                                │
+                  │ ❱ 107 │   │   │   self.browser = browser_class(                                    │
+                  │   108 │   │   │   │   executable=browser_executable,                               │
+                  │   109 │   │   │   │   flags=custom_flags,                                          │
+                  │   110 │   │   │   │   disable_logging=disable_logging,                             │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:189 in       │
+                  │ __init__                                                                           │
+                  │                                                                                    │
+                  │   186 │   """                                                                      │
+                  │   187 │                                                                            │
+                  │   188 │   def __init__(self, executable=None, flags=None, print_command=False,     │
+                  │       disable_logging=False, use_new_headless=False,):                             │
+                  │ ❱ 189 │   │   super().__init__(executable=executable, flags=flags,                 │
+                  │       print_command=print_command, disable_logging=disable_logging,                │
+                  │       use_new_headless=use_new_headless)                                           │
+                  │   190 │                                                                            │
+                  │   191 │   @property                                                                │
+                  │   192 │   def executable(self):                                                    │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chromium.py:30 in      │
+                  │ __init__                                                                           │
+                  │                                                                                    │
+                  │    27 │   """                                                                      │
+                  │    28 │                                                                            │
+                  │    29 │   def __init__(self, executable=None, flags=None, print_command=False,     │
+                  │       disable_logging=False, use_new_headless=False,):                             │
+                  │ ❱  30 │   │   self.executable = executable                                         │
+                  │    31 │   │   if not flags:                                                        │
+                  │    32 │   │   │   self.flags = [                                                   │
+                  │    33 │   │   │   │   '--default-background-color=00000000',                       │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:197 in       │
+                  │ executable                                                                         │
+                  │                                                                                    │
+                  │   194 │                                                                            │
+                  │   195 │   @executable.setter                                                       │
+                  │   196 │   def executable(self, value):                                             │
+                  │ ❱ 197 │   │   self._executable = _find_chrome(value)                               │
+                  │   198                                                                              │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:74 in        │
+                  │ _find_chrome                                                                       │
+                  │                                                                                    │
+                  │    71 │   │   │   │   return command_origin                                        │
+                  │    72 │   │   │                                                                    │
+                  │    73 │   │   │   # cannot validate user_given_executable                          │
+                  │ ❱  74 │   │   │   raise FileNotFoundError()                                        │
+                  │    75 │   │                                                                        │
+                  │    76 │   │   # On a non-Windows OS, we can validate in a basic way that           │
+                  │    77 │   │   # user_given_executable leads to a Chrome / Chromium executable,     │
+                  ╰────────────────────────────────────────────────────────────────────────────────────╯
+                  FileNotFoundError
+19:01:17 ERROR    Error while processing report ./plugins/vnao/reports/rangeboard.json! Some elements might  base.py:159
+                  be empty.
+                  ╭────────────────────────── Traceback (most recent call last) ───────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:153 in _process_element                   │
+                  │                                                                                        │
+                  │   150 │   │                                                                            │
+                  │   151 │   │   # Render the element and handle exceptions                               │
+                  │   152 │   │   try:                                                                     │
+                  │ ❱ 153 │   │   │   await instance.render(**render_args)                                 │
+                  │   154 │   │   except (TimeoutError, asyncio.TimeoutError):                             │
+                  │   155 │   │   │   self.log.error(f"Timeout while processing report {self.filename}! So │
+                  │       elements might be empty.")                                                       │
+                  │   156 │   │   except psycopg.OperationalError:                                         │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\reports.py:408 in render                         │
+                  │                                                                                        │
+                  │   405 │   │   │   #  -                                                                 │
+                  │       https://sourceforge.net/projects/portableapps/files/Google%20Chrome%20Portable/G │
+                  │       omePortable64_109.0.5414.120_online.paf.exe/download                             │
+                  │   406 │   │   │   # Update the browser_exectuable path parameter to it's location and  │
+                  │       should work.                                                                     │
+                  │   407 │   │   │   if css_file:                                                         │
+                  │ ❱ 408 │   │   │   │   hti =                                                            │
+                  │       html2image.Html2Image(browser_executable="C:\\Users\\vnaon\\GoogleChromePortable │
+                  │       leChromePortable.exe",                                                           │
+                  │   409 │   │   │   │   │   │   │   │   │   │   │                                        │
+                  │       custom_flags=['--default-background-color=00000000', '--hide-scrollbars'])       │
+                  │   410 │   │   │   │   hti.output_path = temp_png.parent                                │
+                  │   411 │   │   │   │   hti.screenshot(                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\html2image.py:107 in __init__       │
+                  │                                                                                        │
+                  │   104 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │   105 │   │   │   )                                                                    │
+                  │   106 │   │   else:                                                                    │
+                  │ ❱ 107 │   │   │   self.browser = browser_class(                                        │
+                  │   108 │   │   │   │   executable=browser_executable,                                   │
+                  │   109 │   │   │   │   flags=custom_flags,                                              │
+                  │   110 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:189 in __init__  │
+                  │                                                                                        │
+                  │   186 │   """                                                                          │
+                  │   187 │                                                                                │
+                  │   188 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱ 189 │   │   super().__init__(executable=executable, flags=flags,                     │
+                  │       print_command=print_command, disable_logging=disable_logging,                    │
+                  │       use_new_headless=use_new_headless)                                               │
+                  │   190 │                                                                                │
+                  │   191 │   @property                                                                    │
+                  │   192 │   def executable(self):                                                        │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chromium.py:30 in __init__ │
+                  │                                                                                        │
+                  │    27 │   """                                                                          │
+                  │    28 │                                                                                │
+                  │    29 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱  30 │   │   self.executable = executable                                             │
+                  │    31 │   │   if not flags:                                                            │
+                  │    32 │   │   │   self.flags = [                                                       │
+                  │    33 │   │   │   │   '--default-background-color=00000000',                           │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:197 in           │
+                  │ executable                                                                             │
+                  │                                                                                        │
+                  │   194 │                                                                                │
+                  │   195 │   @executable.setter                                                           │
+                  │   196 │   def executable(self, value):                                                 │
+                  │ ❱ 197 │   │   self._executable = _find_chrome(value)                                   │
+                  │   198                                                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:74 in            │
+                  │ _find_chrome                                                                           │
+                  │                                                                                        │
+                  │    71 │   │   │   │   return command_origin                                            │
+                  │    72 │   │   │                                                                        │
+                  │    73 │   │   │   # cannot validate user_given_executable                              │
+                  │ ❱  74 │   │   │   raise FileNotFoundError()                                            │
+                  │    75 │   │                                                                            │
+                  │    76 │   │   # On a non-Windows OS, we can validate in a basic way that               │
+                  │    77 │   │   # user_given_executable leads to a Chrome / Chromium executable,         │
+                  ╰────────────────────────────────────────────────────────────────────────────────────────╯
+                  FileNotFoundError
+         ERROR    Exception while processing report ./plugins/vnao/reports/rangeboard.json! for server       base.py:443
+                  Shrike Test Server
+                  ╭────────────────────────── Traceback (most recent call last) ───────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:433 in render                             │
+                  │                                                                                        │
+                  │   430 │   async def render(self, *args, **kwargs) -> ReportEnv:                        │
+                  │   431 │   │   env = None                                                               │
+                  │   432 │   │   try:                                                                     │
+                  │ ❱ 433 │   │   │   env = await super().render(*args, **kwargs)                          │
+                  │   434 │   │   │   file = discord.File(fp=env.buffer or env.filename,                   │
+                  │   435 │   │   │   │   │   │   │   │   filename=os.path.basename(env.filename)) if env. │
+                  │       else MISSING                                                                     │
+                  │   436 │   │   │   await self.bot.setEmbed(embed_name=self.embed_name, embed=env.embed, │
+                  │       channel_id=self.channel_id,                                                      │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:127 in render                             │
+                  │                                                                                        │
+                  │   124 │   │   # Handle the 'elements' section                                          │
+                  │   125 │   │   if elements := report_def.get('elements'):                               │
+                  │   126 │   │   │   for element in elements:                                             │
+                  │ ❱ 127 │   │   │   │   await self._process_element(element, env.params)                 │
+                  │   128 │   │                                                                            │
+                  │   129 │   │   return env                                                               │
+                  │   130                                                                                  │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:153 in _process_element                   │
+                  │                                                                                        │
+                  │   150 │   │                                                                            │
+                  │   151 │   │   # Render the element and handle exceptions                               │
+                  │   152 │   │   try:                                                                     │
+                  │ ❱ 153 │   │   │   await instance.render(**render_args)                                 │
+                  │   154 │   │   except (TimeoutError, asyncio.TimeoutError):                             │
+                  │   155 │   │   │   self.log.error(f"Timeout while processing report {self.filename}! So │
+                  │       elements might be empty.")                                                       │
+                  │   156 │   │   except psycopg.OperationalError:                                         │
+                  │                                                                                        │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\reports.py:408 in render                         │
+                  │                                                                                        │
+                  │   405 │   │   │   #  -                                                                 │
+                  │       https://sourceforge.net/projects/portableapps/files/Google%20Chrome%20Portable/G │
+                  │       omePortable64_109.0.5414.120_online.paf.exe/download                             │
+                  │   406 │   │   │   # Update the browser_exectuable path parameter to it's location and  │
+                  │       should work.                                                                     │
+                  │   407 │   │   │   if css_file:                                                         │
+                  │ ❱ 408 │   │   │   │   hti =                                                            │
+                  │       html2image.Html2Image(browser_executable="C:\\Users\\vnaon\\GoogleChromePortable │
+                  │       leChromePortable.exe",                                                           │
+                  │   409 │   │   │   │   │   │   │   │   │   │   │                                        │
+                  │       custom_flags=['--default-background-color=00000000', '--hide-scrollbars'])       │
+                  │   410 │   │   │   │   hti.output_path = temp_png.parent                                │
+                  │   411 │   │   │   │   hti.screenshot(                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\html2image.py:107 in __init__       │
+                  │                                                                                        │
+                  │   104 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │   105 │   │   │   )                                                                    │
+                  │   106 │   │   else:                                                                    │
+                  │ ❱ 107 │   │   │   self.browser = browser_class(                                        │
+                  │   108 │   │   │   │   executable=browser_executable,                                   │
+                  │   109 │   │   │   │   flags=custom_flags,                                              │
+                  │   110 │   │   │   │   disable_logging=disable_logging,                                 │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:189 in __init__  │
+                  │                                                                                        │
+                  │   186 │   """                                                                          │
+                  │   187 │                                                                                │
+                  │   188 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱ 189 │   │   super().__init__(executable=executable, flags=flags,                     │
+                  │       print_command=print_command, disable_logging=disable_logging,                    │
+                  │       use_new_headless=use_new_headless)                                               │
+                  │   190 │                                                                                │
+                  │   191 │   @property                                                                    │
+                  │   192 │   def executable(self):                                                        │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chromium.py:30 in __init__ │
+                  │                                                                                        │
+                  │    27 │   """                                                                          │
+                  │    28 │                                                                                │
+                  │    29 │   def __init__(self, executable=None, flags=None, print_command=False,         │
+                  │       disable_logging=False, use_new_headless=False,):                                 │
+                  │ ❱  30 │   │   self.executable = executable                                             │
+                  │    31 │   │   if not flags:                                                            │
+                  │    32 │   │   │   self.flags = [                                                       │
+                  │    33 │   │   │   │   '--default-background-color=00000000',                           │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:197 in           │
+                  │ executable                                                                             │
+                  │                                                                                        │
+                  │   194 │                                                                                │
+                  │   195 │   @executable.setter                                                           │
+                  │   196 │   def executable(self, value):                                                 │
+                  │ ❱ 197 │   │   self._executable = _find_chrome(value)                                   │
+                  │   198                                                                                  │
+                  │                                                                                        │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:74 in            │
+                  │ _find_chrome                                                                           │
+                  │                                                                                        │
+                  │    71 │   │   │   │   return command_origin                                            │
+                  │    72 │   │   │                                                                        │
+                  │    73 │   │   │   # cannot validate user_given_executable                              │
+                  │ ❱  74 │   │   │   raise FileNotFoundError()                                            │
+                  │    75 │   │                                                                            │
+                  │    76 │   │   # On a non-Windows OS, we can validate in a basic way that               │
+                  │    77 │   │   # user_given_executable leads to a Chrome / Chromium executable,         │
+                  ╰────────────────────────────────────────────────────────────────────────────────────────╯
+                  FileNotFoundError
+19:01:18 ERROR                                                                                           listener.py:146
+                  ╭──────────────────────── Traceback (most recent call last) ─────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:144 in processEvent                      │
+                  │                                                                                    │
+                  │   141 │                                                                            │
+                  │   142 │   async def processEvent(self, name: str, server: Server, data: dict) -> N │
+                  │   143 │   │   try:                                                                 │
+                  │ ❱ 144 │   │   │   await self.__events__[name](self, server, data)                  │
+                  │   145 │   │   except Exception as ex:                                              │
+                  │   146 │   │   │   self.log.exception(ex)                                           │
+                  │   147                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:43 in __call__                           │
+                  │                                                                                    │
+                  │    40 │   │   self.callback = func                                                 │
+                  │    41 │                                                                            │
+                  │    42 │   async def __call__(self, listener: EventListener, server: Server, data:  │
+                  │       None:                                                                        │
+                  │ ❱  43 │   │   await self.callback(listener, server, data)                          │
+                  │    44                                                                              │
+                  │    45                                                                              │
+                  │    46 def chat_command(name: str = MISSING, cls: Type[ChatCommand] = MISSING, **at │
+                  │       Callable[[Any], ChatCommand]:                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:430 in moose_bomb_result         │
+                  │                                                                                    │
+                  │   427 │   │   if player:                                                           │
+                  │   428 │   │   │   self.log.debug(f"Player {player.name}")                          │
+                  │   429 │   │   │   self._record_bomb_db(config, server, player, data)               │
+                  │ ❱ 430 │   │   │   await self._update_rangeboards(server, "bomb")                   │
+                  │   431 │   │   else:                                                                │
+                  │   432 │   │   │   self.log.debug(f"Player not found: {data['player']}")            │
+                  │   433                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:339 in _update_rangeboards       │
+                  │                                                                                    │
+                  │   336 │   │   │   │   embed_name=f"bombboard-{server.name}",                       │
+                  │   337 │   │   │   │   channel_id=channel_id,                                       │
+                  │   338 │   │   │   )                                                                │
+                  │ ❱ 339 │   │   │   await report.render(                                             │
+                  │   340 │   │   │   │   server_name=server.name, config=config, board_type=board_typ │
+                  │   341 │   │   │   )                                                                │
+                  │   342 │   │   else:                                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:433 in render                         │
+                  │                                                                                    │
+                  │   430 │   async def render(self, *args, **kwargs) -> ReportEnv:                    │
+                  │   431 │   │   env = None                                                           │
+                  │   432 │   │   try:                                                                 │
+                  │ ❱ 433 │   │   │   env = await super().render(*args, **kwargs)                      │
+                  │   434 │   │   │   file = discord.File(fp=env.buffer or env.filename,               │
+                  │   435 │   │   │   │   │   │   │   │   filename=os.path.basename(env.filename)) if  │
+                  │       else MISSING                                                                 │
+                  │   436 │   │   │   await self.bot.setEmbed(embed_name=self.embed_name, embed=env.em │
+                  │       channel_id=self.channel_id,                                                  │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:127 in render                         │
+                  │                                                                                    │
+                  │   124 │   │   # Handle the 'elements' section                                      │
+                  │   125 │   │   if elements := report_def.get('elements'):                           │
+                  │   126 │   │   │   for element in elements:                                         │
+                  │ ❱ 127 │   │   │   │   await self._process_element(element, env.params)             │
+                  │   128 │   │                                                                        │
+                  │   129 │   │   return env                                                           │
+                  │   130                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\report\base.py:153 in _process_element               │
+                  │                                                                                    │
+                  │   150 │   │                                                                        │
+                  │   151 │   │   # Render the element and handle exceptions                           │
+                  │   152 │   │   try:                                                                 │
+                  │ ❱ 153 │   │   │   await instance.render(**render_args)                             │
+                  │   154 │   │   except (TimeoutError, asyncio.TimeoutError):                         │
+                  │   155 │   │   │   self.log.error(f"Timeout while processing report {self.filename} │
+                  │       elements might be empty.")                                                   │
+                  │   156 │   │   except psycopg.OperationalError:                                     │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\reports.py:408 in render                     │
+                  │                                                                                    │
+                  │   405 │   │   │   #  -                                                             │
+                  │       https://sourceforge.net/projects/portableapps/files/Google%20Chrome%20Portab │
+                  │       omePortable64_109.0.5414.120_online.paf.exe/download                         │
+                  │   406 │   │   │   # Update the browser_exectuable path parameter to it's location  │
+                  │       should work.                                                                 │
+                  │   407 │   │   │   if css_file:                                                     │
+                  │ ❱ 408 │   │   │   │   hti =                                                        │
+                  │       html2image.Html2Image(browser_executable="C:\\Users\\vnaon\\GoogleChromePort │
+                  │       leChromePortable.exe",                                                       │
+                  │   409 │   │   │   │   │   │   │   │   │   │   │                                    │
+                  │       custom_flags=['--default-background-color=00000000', '--hide-scrollbars'])   │
+                  │   410 │   │   │   │   hti.output_path = temp_png.parent                            │
+                  │   411 │   │   │   │   hti.screenshot(                                              │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\html2image.py:107 in __init__   │
+                  │                                                                                    │
+                  │   104 │   │   │   │   disable_logging=disable_logging,                             │
+                  │   105 │   │   │   )                                                                │
+                  │   106 │   │   else:                                                                │
+                  │ ❱ 107 │   │   │   self.browser = browser_class(                                    │
+                  │   108 │   │   │   │   executable=browser_executable,                               │
+                  │   109 │   │   │   │   flags=custom_flags,                                          │
+                  │   110 │   │   │   │   disable_logging=disable_logging,                             │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:189 in       │
+                  │ __init__                                                                           │
+                  │                                                                                    │
+                  │   186 │   """                                                                      │
+                  │   187 │                                                                            │
+                  │   188 │   def __init__(self, executable=None, flags=None, print_command=False,     │
+                  │       disable_logging=False, use_new_headless=False,):                             │
+                  │ ❱ 189 │   │   super().__init__(executable=executable, flags=flags,                 │
+                  │       print_command=print_command, disable_logging=disable_logging,                │
+                  │       use_new_headless=use_new_headless)                                           │
+                  │   190 │                                                                            │
+                  │   191 │   @property                                                                │
+                  │   192 │   def executable(self):                                                    │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chromium.py:30 in      │
+                  │ __init__                                                                           │
+                  │                                                                                    │
+                  │    27 │   """                                                                      │
+                  │    28 │                                                                            │
+                  │    29 │   def __init__(self, executable=None, flags=None, print_command=False,     │
+                  │       disable_logging=False, use_new_headless=False,):                             │
+                  │ ❱  30 │   │   self.executable = executable                                         │
+                  │    31 │   │   if not flags:                                                        │
+                  │    32 │   │   │   self.flags = [                                                   │
+                  │    33 │   │   │   │   '--default-background-color=00000000',                       │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:197 in       │
+                  │ executable                                                                         │
+                  │                                                                                    │
+                  │   194 │                                                                            │
+                  │   195 │   @executable.setter                                                       │
+                  │   196 │   def executable(self, value):                                             │
+                  │ ❱ 197 │   │   self._executable = _find_chrome(value)                               │
+                  │   198                                                                              │
+                  │                                                                                    │
+                  │ C:\Users\naval\.dcssb\Lib\site-packages\html2image\browsers\chrome.py:74 in        │
+                  │ _find_chrome                                                                       │
+                  │                                                                                    │
+                  │    71 │   │   │   │   return command_origin                                        │
+                  │    72 │   │   │                                                                    │
+                  │    73 │   │   │   # cannot validate user_given_executable                          │
+                  │ ❱  74 │   │   │   raise FileNotFoundError()                                        │
+                  │    75 │   │                                                                        │
+                  │    76 │   │   # On a non-Windows OS, we can validate in a basic way that           │
+                  │    77 │   │   # user_given_executable leads to a Chrome / Chromium executable,     │
+                  ╰────────────────────────────────────────────────────────────────────────────────────╯
+                  FileNotFoundError
+19:05:09 ERROR    'ServerImpl' object has no attribute 'server_name'                                     listener.py:146
+                  ╭──────────────────────── Traceback (most recent call last) ─────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:144 in processEvent                      │
+                  │                                                                                    │
+                  │   141 │                                                                            │
+                  │   142 │   async def processEvent(self, name: str, server: Server, data: dict) -> N │
+                  │   143 │   │   try:                                                                 │
+                  │ ❱ 144 │   │   │   await self.__events__[name](self, server, data)                  │
+                  │   145 │   │   except Exception as ex:                                              │
+                  │   146 │   │   │   self.log.exception(ex)                                           │
+                  │   147                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:43 in __call__                           │
+                  │                                                                                    │
+                  │    40 │   │   self.callback = func                                                 │
+                  │    41 │                                                                            │
+                  │    42 │   async def __call__(self, listener: EventListener, server: Server, data:  │
+                  │       None:                                                                        │
+                  │ ❱  43 │   │   await self.callback(listener, server, data)                          │
+                  │    44                                                                              │
+                  │    45                                                                              │
+                  │    46 def chat_command(name: str = MISSING, cls: Type[ChatCommand] = MISSING, **at │
+                  │       Callable[[Any], ChatCommand]:                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:443 in moose_strafe_result       │
+                  │                                                                                    │
+                  │   440 │   │   if player:                                                           │
+                  │   441 │   │   │   self.log.debug(f"Player {player.name}")                          │
+                  │   442 │   │   │   self._record_strafe_db(config, server, player, data)             │
+                  │ ❱ 443 │   │   │   await self._update_rangeboards(server, "strafe")                 │
+                  │   444 │   │   else:                                                                │
+                  │   445 │   │   │   self.log.debug(f"Player not found: {data['player']}")            │
+                  │   446                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:353 in _update_rangeboards       │
+                  │                                                                                    │
+                  │   350 │   │   │   │   channel_id=channel_id,                                       │
+                  │   351 │   │   │   )                                                                │
+                  │   352 │   │   │   await report.render(                                             │
+                  │ ❱ 353 │   │   │   │   server_name=server.server_name, config=config, board_type=bo │
+                  │   354 │   │   │   )                                                                │
+                  │   355 │                                                                            │
+                  │   356 │   def _record_bomb_db(self, config: dict, server: Server, player: Player,  │
+                  ╰────────────────────────────────────────────────────────────────────────────────────╯
+                  AttributeError: 'ServerImpl' object has no attribute 'server_name'
+Plotting Strafe Run for player HOBO11 | Circuit!
+19:06:36 ERROR    'ServerImpl' object has no attribute 'server_name'                                     listener.py:146
+                  ╭──────────────────────── Traceback (most recent call last) ─────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:144 in processEvent                      │
+                  │                                                                                    │
+                  │   141 │                                                                            │
+                  │   142 │   async def processEvent(self, name: str, server: Server, data: dict) -> N │
+                  │   143 │   │   try:                                                                 │
+                  │ ❱ 144 │   │   │   await self.__events__[name](self, server, data)                  │
+                  │   145 │   │   except Exception as ex:                                              │
+                  │   146 │   │   │   self.log.exception(ex)                                           │
+                  │   147                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:43 in __call__                           │
+                  │                                                                                    │
+                  │    40 │   │   self.callback = func                                                 │
+                  │    41 │                                                                            │
+                  │    42 │   async def __call__(self, listener: EventListener, server: Server, data:  │
+                  │       None:                                                                        │
+                  │ ❱  43 │   │   await self.callback(listener, server, data)                          │
+                  │    44                                                                              │
+                  │    45                                                                              │
+                  │    46 def chat_command(name: str = MISSING, cls: Type[ChatCommand] = MISSING, **at │
+                  │       Callable[[Any], ChatCommand]:                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:443 in moose_strafe_result       │
+                  │                                                                                    │
+                  │   440 │   │   if player:                                                           │
+                  │   441 │   │   │   self.log.debug(f"Player {player.name}")                          │
+                  │   442 │   │   │   self._record_strafe_db(config, server, player, data)             │
+                  │ ❱ 443 │   │   │   await self._update_rangeboards(server, "strafe")                 │
+                  │   444 │   │   else:                                                                │
+                  │   445 │   │   │   self.log.debug(f"Player not found: {data['player']}")            │
+                  │   446                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:353 in _update_rangeboards       │
+                  │                                                                                    │
+                  │   350 │   │   │   │   channel_id=channel_id,                                       │
+                  │   351 │   │   │   )                                                                │
+                  │   352 │   │   │   await report.render(                                             │
+                  │ ❱ 353 │   │   │   │   server_name=server.server_name, config=config, board_type=bo │
+                  │   354 │   │   │   )                                                                │
+                  │   355 │                                                                            │
+                  │   356 │   def _record_bomb_db(self, config: dict, server: Server, player: Player,  │
+                  ╰────────────────────────────────────────────────────────────────────────────────────╯
+                  AttributeError: 'ServerImpl' object has no attribute 'server_name'
+Plotting Strafe Run for player HOBO11 | Circuit!
+19:07:55 ERROR    'ServerImpl' object has no attribute 'server_name'                                     listener.py:146
+                  ╭──────────────────────── Traceback (most recent call last) ─────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:144 in processEvent                      │
+                  │                                                                                    │
+                  │   141 │                                                                            │
+                  │   142 │   async def processEvent(self, name: str, server: Server, data: dict) -> N │
+                  │   143 │   │   try:                                                                 │
+                  │ ❱ 144 │   │   │   await self.__events__[name](self, server, data)                  │
+                  │   145 │   │   except Exception as ex:                                              │
+                  │   146 │   │   │   self.log.exception(ex)                                           │
+                  │   147                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:43 in __call__                           │
+                  │                                                                                    │
+                  │    40 │   │   self.callback = func                                                 │
+                  │    41 │                                                                            │
+                  │    42 │   async def __call__(self, listener: EventListener, server: Server, data:  │
+                  │       None:                                                                        │
+                  │ ❱  43 │   │   await self.callback(listener, server, data)                          │
+                  │    44                                                                              │
+                  │    45                                                                              │
+                  │    46 def chat_command(name: str = MISSING, cls: Type[ChatCommand] = MISSING, **at │
+                  │       Callable[[Any], ChatCommand]:                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:443 in moose_strafe_result       │
+                  │                                                                                    │
+                  │   440 │   │   if player:                                                           │
+                  │   441 │   │   │   self.log.debug(f"Player {player.name}")                          │
+                  │   442 │   │   │   self._record_strafe_db(config, server, player, data)             │
+                  │ ❱ 443 │   │   │   await self._update_rangeboards(server, "strafe")                 │
+                  │   444 │   │   else:                                                                │
+                  │   445 │   │   │   self.log.debug(f"Player not found: {data['player']}")            │
+                  │   446                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:353 in _update_rangeboards       │
+                  │                                                                                    │
+                  │   350 │   │   │   │   channel_id=channel_id,                                       │
+                  │   351 │   │   │   )                                                                │
+                  │   352 │   │   │   await report.render(                                             │
+                  │ ❱ 353 │   │   │   │   server_name=server.server_name, config=config, board_type=bo │
+                  │   354 │   │   │   )                                                                │
+                  │   355 │                                                                            │
+                  │   356 │   def _record_bomb_db(self, config: dict, server: Server, player: Player,  │
+                  ╰────────────────────────────────────────────────────────────────────────────────────╯
+                  AttributeError: 'ServerImpl' object has no attribute 'server_name'
+Plotting Strafe Run for player HOBO11 | Circuit!
+19:09:30 ERROR    'ServerImpl' object has no attribute 'server_name'                                     listener.py:146
+                  ╭──────────────────────── Traceback (most recent call last) ─────────────────────────╮
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:144 in processEvent                      │
+                  │                                                                                    │
+                  │   141 │                                                                            │
+                  │   142 │   async def processEvent(self, name: str, server: Server, data: dict) -> N │
+                  │   143 │   │   try:                                                                 │
+                  │ ❱ 144 │   │   │   await self.__events__[name](self, server, data)                  │
+                  │   145 │   │   except Exception as ex:                                              │
+                  │   146 │   │   │   self.log.exception(ex)                                           │
+                  │   147                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\core\listener.py:43 in __call__                           │
+                  │                                                                                    │
+                  │    40 │   │   self.callback = func                                                 │
+                  │    41 │                                                                            │
+                  │    42 │   async def __call__(self, listener: EventListener, server: Server, data:  │
+                  │       None:                                                                        │
+                  │ ❱  43 │   │   await self.callback(listener, server, data)                          │
+                  │    44                                                                              │
+                  │    45                                                                              │
+                  │    46 def chat_command(name: str = MISSING, cls: Type[ChatCommand] = MISSING, **at │
+                  │       Callable[[Any], ChatCommand]:                                                │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:443 in moose_strafe_result       │
+                  │                                                                                    │
+                  │   440 │   │   if player:                                                           │
+                  │   441 │   │   │   self.log.debug(f"Player {player.name}")                          │
+                  │   442 │   │   │   self._record_strafe_db(config, server, player, data)             │
+                  │ ❱ 443 │   │   │   await self._update_rangeboards(server, "strafe")                 │
+                  │   444 │   │   else:                                                                │
+                  │   445 │   │   │   self.log.debug(f"Player not found: {data['player']}")            │
+                  │   446                                                                              │
+                  │                                                                                    │
+                  │ C:\NASGroup\DCSServerBot\plugins\vnao\listener.py:353 in _update_rangeboards       │
+                  │                                                                                    │
+                  │   350 │   │   │   │   channel_id=channel_id,                                       │
+                  │   351 │   │   │   )                                                                │
+                  │   352 │   │   │   await report.render(                                             │
+                  │ ❱ 353 │   │   │   │   server_name=server.server_name, config=config, board_type=bo │
+                  │   354 │   │   │   )                                                                │
+                  │   355 │                                                                            │
+                  │   356 │   def _record_bomb_db(self, config: dict, server: Server, player: Player,  │
+                  ╰────────────────────────────────────────────────────────────────────────────────────╯
+                  AttributeError: 'ServerImpl' object has no attribute 'server_name'
+Plotting Strafe Run for player HOBO11 | Circuit!

@@ -1,6 +1,6 @@
 -- Moose MSRS default Config
 MSRS_Config = {
-    Path = SRS_PATH, -- Path to SRS install directory.
+    Path = "C:/DCS-SimpleRadioStandalone", -- Path to SRS install directory.
     --Port = SRS_PORT,            -- Port of SRS server. Default 5002.
     Port = 5002,
     Backend = "srsexe",     -- Interface to SRS: "srsexe" or "grpc".
@@ -13,7 +13,7 @@ MSRS_Config = {
     Gender = "male",
     Voice = "Microsoft Hazel Desktop", -- Voice that is used if no explicit provider voice is specified.
     Label = "MSRS",   
-    Provider = "gcloud", --Provider for generating TTS (win, gcloud, azure, aws).      
+    --Provider = "gcloud", --Provider for generating TTS (win, gcloud, azure, aws).
     -- Windows
     win = {
     voice = "Microsoft Hazel Desktop",

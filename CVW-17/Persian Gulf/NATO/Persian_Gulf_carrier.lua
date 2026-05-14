@@ -200,7 +200,7 @@ end
 
 
 -- LoneWarrior:SetFunkManOn(10042, "127.0.0.1")
-Teddy:SetMenuRecovery(60, 27, false, 0) --Curcuit changed to prevent boat from circling
+Teddy:SetMenuRecovery(60, 27, false, 0) --Circuit changed to prevent boat from circling
 Teddy:SetAutoSave(TRAPSHEETLOCATION)
 Teddy:SetTrapSheet(TRAPSHEETLOCATION)
 --Teddy:Load()
@@ -213,9 +213,9 @@ Teddy:SetPatrolAdInfinitum()
 Teddy:SetDefaultPlayerSkill(AIRBOSS.Difficulty.NORMAL)
 Teddy:SetMaxSectionSize(4)
 Teddy:SetMPWireCorrection(12)
-Teddy:SetRadioRelayLSO("CVN71_LSORELAY")
-Teddy:SetRadioRelayMarshal("CVN71_MARSHALRELAY")
-Teddy:SetSoundfilesFolder(AIRBOSSBASESOUNDFOLDER .. "/Airboss Soundfiles/")
+Teddy:SetRadioRelayLSO("CVN71_LSORELAY-1")
+Teddy:SetRadioRelayMarshal("CVN71_MARSHALRELAY-1")
+Teddy:SetSoundfilesFolder(AIRBOSSBASESOUNDFOLDER .. "Airboss Soundfiles/")
 Teddy:SetVoiceOversLSOByRaynor(AIRBOSSLSORAYNOR)
 Teddy:SetVoiceOversMarshalByGabriella(AIRBOSSMARSHALGABRIELLA)
 Teddy:SetDespawnOnEngineShutdown()

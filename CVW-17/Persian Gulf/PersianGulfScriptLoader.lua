@@ -15,8 +15,9 @@ local user_folder = "C:/Users/naval/"
 -- GLOBALS
 
 SERVER_LOCATION = user_folder .. "Saved Games/" .. DCSServerBotConfig.INSTANCE_NAME .. "/"
-GOOGLE_CREDS = "C:/Users/naval/Documents/dcs-datis-350723-fe7aab2d9ae1.json"
-SRS_PATH = "E:/DCS-SimpleRadioStandalone-2.0.8.5/ExternalAudio"
+--GOOGLE_CREDS = "C:/Users/naval/Documents/dcs-datis-350723-fe7aab2d9ae1.json"
+SRS_PATH = "C:/DCS-SimpleRadioStandalone"
+--SRS_PATH = "E:/DCS-SimpleRadioStandalone-2.0.8.5/ExternalAudio/"
 SRS_PORT = DCSServerBotConfig.SRS_PORT
 TTS_SERVICE_PORT = 8765
 --SRS_VOICES = {
@@ -75,11 +76,11 @@ COMMONSOUNDSFOLDER = common_scripts_path .. "sound/"
 
 
 -- AIRBOSS/RANGE Sound file locations within the miz file
-AIRBOSSBASESOUNDFOLDER = COMMONSOUNDSFOLDER .. "AIRBOSS/" -- needed for the default pilot sound files used by ariboss
+AIRBOSSBASESOUNDFOLDER = COMMONSOUNDSFOLDER .. "AIRBOSS/" -- needed for the default pilot sound files used by airboss
 AIRBOSSLSORAYNOR = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack LSO Raynor/"
 AIRBOSSMARSHALRAYNOR = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack Marshal Raynor/"
 AIRBOSSMARSHALGABRIELLA = AIRBOSSBASESOUNDFOLDER .. "Airboss Soundpack Marshal Gabriella/"
-RANGESOUNDFOLDER = "Range Soundfiles/"
+RANGESOUNDFOLDER = COMMONSOUNDSFOLDER .. "Range Soundfiles/"
 ATISSOUNDFOLDER = COMMONSOUNDSFOLDER .. "/ATIS/"
 
 -- Target/Trap sheet save locations
@@ -98,6 +99,7 @@ MISSION_TANKER_ALTS.Recovery = 8000
 assert(loadfile(moose_folder .. "Moose.lua"))()
 assert(loadfile(common_scripts_path .. "TTS Test\\SRS_PythonWebSocket.lua"))() -- the order of these two matter this one first
 assert(loadfile(common_scripts_path .. "TTS Test\\tts_init.lua"))() -- the order of these two matter this one second
+MSRS.LoadConfigFile(nil, mission_scripts_path, "Persian_Gulf_msrs_config.lua") -- Note the "." here
 assert(loadfile(common_scripts_path .. "mist.lua"))()
 
 -- Common for all missions

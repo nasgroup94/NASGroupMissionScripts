@@ -106,7 +106,7 @@ LoneWarrior = AIRBOSS:New("CVN-65", "CVN-65")
 --     -- PassingWaypoint(self.carrier:GetName(), n)
 -- end
 
-LoneWarrior:SetFunkManOn(10042, "127.0.0.1")
+--LoneWarrior:SetFunkManOn(10042, "127.0.0.1")
 -- LoneWarrior:SetDebugModeON()
 LoneWarrior:SetMenuRecovery(60, 27, false, 0) --Curcuit changed to prevent boat from circling
 LoneWarrior:SetAutoSave(TRAPSHEETLOCATION)
@@ -123,7 +123,7 @@ LoneWarrior:SetMaxSectionSize(4)
 LoneWarrior:SetMPWireCorrection(12)
 LoneWarrior:SetRadioRelayLSO("CVN65_LSORELAY")
 LoneWarrior:SetRadioRelayMarshal("CVN65_MARSHALRELAY")
-LoneWarrior:SetSoundfilesFolder(AIRBOSSBASESOUNDFOLDER .. "/Airboss Soundfiles/")
+LoneWarrior:SetSoundfilesFolder(AIRBOSSBASESOUNDFOLDER .. "Airboss Soundfiles/")
 LoneWarrior:SetVoiceOversLSOByRaynor(AIRBOSSLSORAYNOR)
 LoneWarrior:SetVoiceOversMarshalByGabriella(AIRBOSSMARSHALGABRIELLA)
 LoneWarrior:SetDespawnOnEngineShutdown()
@@ -132,7 +132,7 @@ LoneWarrior:SetMenuSingleCarrier()
 LoneWarrior:SetHandleAIOFF()
 LoneWarrior:SetIntoWindLegacy()
 
-LoneWarrior.trapsheet = false
+--LoneWarrior.trapsheet = false
 -- LoneWarrior:SetDebugModeON()
 -- LoneWarrior.Debug = True
 
@@ -141,10 +141,62 @@ LoneWarrior.trapsheet = false
 
 function LoneWarrior:OnAfterRecoveryStart(Event, From, To, Case, Offset)
     env.info(string.format("Starting Recovery Case %d ops.", Case))
+
+    MSRS:New(SRS_PATH, 305, radio.modulation.AM, MSRS.Backend.SRSEXE)
+        :SetCoordinate(self:GetCoord())
+        :SetProvider(MSRS.Provider.WINDOWS)
+        :PlaySoundFile(SOUNDFILE:New("BossRecoverAircraft.ogg", COMMONSOUNDSFOLDER, 9, true), 10)
 end
 LoneWarrior:AddRecoveryWindow("8:10","12:00",1,0,true,27,false)
 -- Start airboss class.
 LoneWarrior:Start()
+
+-- LoneWarrior lighting flag values
+-- 0 - AUTO
+-- 1 - NAVIGATION
+-- 2 - LAUNCH
+-- 3 - RECOVERY
+LoneWarriorLighting = USERFLAG:New("750")
+ShipLightingHandler = EVENTHANDLER:New()
+ShipLightingHandler:HandleEvent(EVENTS.Birth)
+function ShipLightingHandler:OnEventBirth(EventData)
+    -- Nil checks.
+    if EventData == nil then
+        self:E("ERROR: EventData=nil in event BIRTH!")
+        self:E(EventData)
+        return
+    end
+    if EventData.IniUnit == nil then
+        self:E("ERROR: EventData.IniUnit=nil in event BIRTH!")
+        self:E(EventData)
+        return
+    end
+
+    if EventData.IniObjectCategory ~= Object.Category.UNIT then return end
+
+    local _gid = EventData.IniGroup:GetID()
+    local _playerUCID = EventData.IniPlayerUCID
+
+    if _gid and _playerUCID then
+         env.info("-------------Lone Warrior client birth group id: " .. _gid)
+        if _gid then
+          local _menuCarrierLighting = missionCommands.addSubMenuForGroup(_gid, "Carrier Lighting")
+            missionCommands.addCommandForGroup(_gid, "Auto", _menuCarrierLighting, function()
+                LoneWarriorLighting:Set("0")
+            end)
+            missionCommands.addCommandForGroup(_gid, "Navigation", _menuCarrierLighting, function()
+                LoneWarriorLighting:Set("1")
+            end)
+            missionCommands.addCommandForGroup(_gid, "Launch", _menuCarrierLighting, function()
+                LoneWarriorLighting:Set("2")
+            end)
+            missionCommands.addCommandForGroup(_gid, "Recovery", _menuCarrierLighting, function()
+                LoneWarriorLighting:Set("3")
+            end)
+        end
+    end
+end
+
 
 
 -- ------------------------------------------------ TARAWA ----------------------------------------------

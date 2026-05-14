@@ -11,7 +11,7 @@ local user_folder = os.getenv('USERPROFILE'):gsub("\\","/") .. "/"
 -- GLOBALS
 SERVER_LOCATION = user_folder .. "Saved Games/" .. DCSServerBotConfig.INSTANCE_NAME .. "/"
 -- GOOGLE_CREDS = "C:/VNAO/API-Keys/cvw7-tracking-11c8a6927776.json"
-SRS_PATH = "C:/DCS-SimpleRadio-Standalone/"
+SRS_PATH = "C:/DCS-SimpleRadioStandalone/ExternalAudio"
 SRS_PORT = DCSServerBotConfig.SRS_PORT
 SRS_VOICES = {
     Female = {
