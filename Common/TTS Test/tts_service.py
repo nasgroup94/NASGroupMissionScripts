@@ -1,21 +1,127 @@
 import argparse
+import asyncio
+import base64
+import hashlib
+import json
 import os
 import shutil
 import subprocess
 import threading
 import time
-import uuid
-from pathlib import Path
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-import asyncio
-import base64
-import hashlib
-import json
 import traceback
+import uuid
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
 import websockets
 
 CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="NASGroupMissionScripts TTS inbox service.")
+
+    parser.add_argument("--host", default=os.getenv("TTS_SERVICE_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.getenv("TTS_SERVICE_PORT", "8765")))
+
+    parser.add_argument("--srs-host", default=os.getenv("SRS_HOST", "127.0.0.1"))
+    parser.add_argument(
+        "--srs-backend",
+        choices=("native", "external_audio", "go_native"),
+        default=os.getenv("TTS_SERVICE_SRS_BACKEND", "go_native"),
+    )
+    parser.add_argument(
+        "--srs-go-sender",
+        default=os.getenv(
+            "SRS_GO_SENDER_EXE",
+            str(Path(__file__).resolve().parent / "srs-tts-send.exe"),
+        ),
+    )
+    parser.add_argument(
+        "--external-awacs-password",
+        default=os.getenv("SRS_EXTERNAL_AWACS_PASSWORD", ""),
+    )
+    parser.add_argument(
+        "--srs-exe",
+        default=os.getenv(
+            "SRS_EXTERNAL_AUDIO_EXE",
+            r"C:\DCS-SimpleRadioStandalone\ExternalAudio\DCS-SR-ExternalAudio.exe",
+        ),
+    )
+
+    parser.add_argument("--instance", default=os.getenv("TTS_SERVICE_INSTANCE", None))
+    parser.add_argument(
+        "--output-dir",
+        default=os.getenv(
+            "TTS_SERVICE_OUTPUT_DIR",
+            r"C:\NASGroup\NASGroupMissionScripts\Common\TTS Test",
+        ),
+    )
+    parser.add_argument("--cache-dir", default=os.getenv("TTS_SERVICE_CACHE_DIR", None))
+    parser.add_argument("--inbox-dir", default=os.getenv("TTS_SERVICE_INBOX_DIR", None))
+    parser.add_argument(
+        "--upstream-uri",
+        default=os.getenv("TTS_UPSTREAM_URI", "ws://96.32.24.78:8080"),
+    )
+
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        default=os.getenv("TTS_SERVICE_VERBOSE", "0").lower() in ("1", "true", "yes", "on"),
+        help="Enable verbose diagnostic logging.",
+    )
+
+    return parser.parse_args()
+
+
+ARGS = parse_args()
+
+INSTANCE_NAME = ARGS.instance or f"tts_{ARGS.port}"
+URI = ARGS.upstream_uri
+
+OUTPUT_DIR = Path(ARGS.output_dir)
+INSTANCE_OUTPUT_DIR = OUTPUT_DIR / "tmp" / INSTANCE_NAME
+CACHE_DIR = Path(ARGS.cache_dir) if ARGS.cache_dir else OUTPUT_DIR / "tts_cache" / INSTANCE_NAME
+INBOX_DIR = Path(ARGS.inbox_dir) if ARGS.inbox_dir else OUTPUT_DIR / "tts_inbox" / INSTANCE_NAME
+
+CACHE_INDEX_FILE = CACHE_DIR / "cache_index.json"
+
+SRS_EXTERNAL_AUDIO_EXE = Path(ARGS.srs_exe)
+SRS_GO_SENDER_EXE = Path(ARGS.srs_go_sender)
+SRS_HOST = ARGS.srs_host
+SRS_BACKEND = ARGS.srs_backend
+SRS_EXTERNAL_AWACS_PASSWORD = ARGS.external_awacs_password
+
+TTS_CONNECT_TIMEOUT_SECONDS = 10
+TTS_RESPONSE_TIMEOUT_SECONDS = 60
+TTS_MAX_RESPONSE_TIMEOUT_SECONDS = 240
+TTS_TIMEOUT_SECONDS_PER_CHARACTER = 0.08
+TTS_MAX_RESPONSE_BYTES = 16 * 1024 * 1024
+
+TTS_INBOX_POLL_SECONDS = 0.10
+TTS_INBOX_DONE_RETENTION_SECONDS = 30
+TTS_INBOX_ERROR_RETENTION_SECONDS = 300
+
+SRS_HARD_TIMEOUT_SECONDS = 600
+
+jobs = {}
+jobs_lock = threading.Lock()
+
+initiator_cache = {}
+cache_lock = threading.Lock()
+
+
+def log_info(message: str):
+    print(message, flush=True)
+
+
+def log_debug(message: str):
+    if ARGS.verbose:
+        print(message, flush=True)
+
+
+def log_error(message: str):
+    print(message, flush=True)
 
 
 def get_subprocess_startupinfo():
@@ -26,183 +132,6 @@ def get_subprocess_startupinfo():
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     startupinfo.wShowWindow = 0
     return startupinfo
-
-
-def get_srs_channel_key(options: dict) -> str:
-    freqs = str(options.get("freqs") or "250.0")
-    modulations = str(options.get("modulations") or "AM")
-    coalition = str(options.get("coalition") or "2")
-    port = str(options.get("port") or "5002")
-
-    return f"freqs={freqs}|modulations={modulations}|coalition={coalition}|port={port}"
-
-
-def get_srs_channel_lock(options: dict) -> threading.Lock:
-    channel_key = get_srs_channel_key(options)
-
-    with srs_channel_locks_lock:
-        lock = srs_channel_locks.get(channel_key)
-
-        if lock is None:
-            lock = threading.Lock()
-            srs_channel_locks[channel_key] = lock
-
-        return lock
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="NASGroupMissionScripts TTS HTTP service.")
-
-    parser.add_argument(
-        "--host",
-        default=os.getenv("TTS_SERVICE_HOST", "127.0.0.1"),
-        help="HTTP bind host.",
-    )
-
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=int(os.getenv("TTS_SERVICE_PORT", "8765")),
-        help="HTTP bind port.",
-    )
-
-    parser.add_argument(
-        "--srs-host",
-        default=os.getenv("SRS_HOST", "127.0.0.1"),
-        help="SRS server host for native Python SRS playback.",
-    )
-
-    parser.add_argument(
-        "--srs-backend",
-        choices=("native", "external_audio", "go_native"),
-        default=os.getenv("TTS_SERVICE_SRS_BACKEND", "native"),
-        help=(
-            "SRS playback backend. "
-            "Use native for the experimental Python UDP sender, "
-            "external_audio for DCS-SR-ExternalAudio.exe, "
-            "or go_native for the SkyEye-based SRS sender."
-        ),
-    )
-
-    parser.add_argument(
-        "--srs-go-sender",
-        default=os.getenv(
-            "SRS_GO_SENDER_EXE",
-            str(Path(__file__).resolve().parent / "srs-tts-send.exe"),
-        ),
-        help="Path to the SkyEye-based native SRS sender executable.",
-    )
-
-    parser.add_argument(
-        "--external-awacs-password",
-        default=os.getenv("SRS_EXTERNAL_AWACS_PASSWORD", ""),
-        help="External AWACS mode password for SRS native Go sender.",
-    )
-
-    parser.add_argument(
-        "--instance",
-        default=os.getenv("TTS_SERVICE_INSTANCE", None),
-        help="Instance name used for logs/cache/temp files. Defaults to port-based name.",
-    )
-
-    parser.add_argument(
-        "--output-dir",
-        default=os.getenv(
-            "TTS_SERVICE_OUTPUT_DIR",
-            r"C:\NASGroup\NASGroupMissionScripts\Common\TTS Test",
-        ),
-        help="Directory for temporary generated audio files.",
-    )
-
-    parser.add_argument(
-        "--cache-dir",
-        default=os.getenv("TTS_SERVICE_CACHE_DIR", None),
-        help="Directory for persistent TTS cache. Defaults to output-dir/tts_cache/<instance>.",
-    )
-
-    parser.add_argument(
-        "--upstream-uri",
-        default=os.getenv("TTS_UPSTREAM_URI", "ws://96.32.24.78:8080"),
-        help="Upstream websocket TTS URI.",
-    )
-
-    parser.add_argument(
-        "--inbox-dir",
-        default=os.getenv("TTS_SERVICE_INBOX_DIR", None),
-        help="Directory watched for JSON TTS request files. Defaults to output-dir/tts_inbox/<instance>.",
-    )
-
-    parser.add_argument(
-        "--srs-exe",
-        default=os.getenv(
-            "SRS_EXTERNAL_AUDIO_EXE",
-            r"C:\DCS-SimpleRadioStandalone\ExternalAudio\DCS-SR-ExternalAudio.exe",
-        ),
-        help="Path to DCS-SR-ExternalAudio.exe.",
-    )
-
-
-
-
-    return parser.parse_args()
-
-
-ARGS = parse_args()
-INSTANCE_NAME = ARGS.instance or f"tts_{ARGS.port}"
-
-URI = ARGS.upstream_uri
-
-OUTPUT_DIR = Path(ARGS.output_dir)
-INSTANCE_OUTPUT_DIR = OUTPUT_DIR / "tmp" / INSTANCE_NAME
-
-if ARGS.cache_dir:
-    CACHE_DIR = Path(ARGS.cache_dir)
-else:
-    CACHE_DIR = OUTPUT_DIR / "tts_cache" / INSTANCE_NAME
-
-if ARGS.inbox_dir:
-    INBOX_DIR = Path(ARGS.inbox_dir)
-else:
-    INBOX_DIR = OUTPUT_DIR / "tts_inbox" / INSTANCE_NAME
-
-CACHE_INDEX_FILE = CACHE_DIR / "cache_index.json"
-
-SRS_EXTERNAL_AUDIO_EXE = Path(ARGS.srs_exe)
-SRS_GO_SENDER_EXE = Path(ARGS.srs_go_sender)
-SRS_HOST = ARGS.srs_host
-SRS_BACKEND = ARGS.srs_backend
-SRS_EXTERNAL_AWACS_PASSWORD = ARGS.external_awacs_password
-
-SUPPRESS_UNCHANGED_TEXT = True
-CACHE_TTS_AUDIO = True
-
-SRS_NO_OUTPUT_TIMEOUT_SECONDS = 30
-SRS_HARD_TIMEOUT_SECONDS = 600
-SRS_MAX_ATTEMPTS = 2
-SRS_FINISH_GRACE_SECONDS = 5.0
-SRS_COOLDOWN_SECONDS = 2.0
-
-# SRS_TIMEOUT_SECONDS = 45
-
-TTS_CONNECT_TIMEOUT_SECONDS = 10
-TTS_RESPONSE_TIMEOUT_SECONDS = 60
-TTS_MAX_RESPONSE_TIMEOUT_SECONDS = 240
-TTS_TIMEOUT_SECONDS_PER_CHARACTER = 0.08
-TTS_MAX_RESPONSE_BYTES = 16 * 1024 * 1024
-
-TTS_INBOX_POLL_SECONDS = 0.25
-TTS_INBOX_DONE_RETENTION_SECONDS = 30
-TTS_INBOX_ERROR_RETENTION_SECONDS = 300
-
-jobs = {}
-jobs_lock = threading.Lock()
-
-srs_channel_locks = {}
-srs_channel_locks_lock = threading.Lock()
-srs_lock = threading.Lock()
-
-initiator_cache = {}
-cache_lock = threading.Lock()
 
 
 def normalize_tts_text(text: str) -> str:
@@ -237,10 +166,10 @@ def get_text_hash(text: str, options: dict) -> str:
 
 def get_initiator(payload: dict, options: dict) -> str:
     initiator = (
-        payload.get("initiator")
-        or payload.get("label")
-        or options.get("initiator")
-        or options.get("label")
+            payload.get("initiator")
+            or payload.get("label")
+            or options.get("initiator")
+            or options.get("label")
     )
 
     freqs = str(options.get("freqs") or "250.0")
@@ -248,10 +177,17 @@ def get_initiator(payload: dict, options: dict) -> str:
     coalition = str(options.get("coalition") or "2")
 
     if initiator:
-        # Include radio routing so two different ATIS/radio sources do not accidentally share.
         return f"{initiator}|freqs={freqs}|modulations={modulations}|coalition={coalition}"
 
     return f"freqs={freqs}|modulations={modulations}|coalition={coalition}"
+
+
+def get_tts_response_timeout_seconds(text: str) -> int:
+    text_length = len(text or "")
+    estimated_timeout = int(
+        TTS_RESPONSE_TIMEOUT_SECONDS + (text_length * TTS_TIMEOUT_SECONDS_PER_CHARACTER)
+    )
+    return min(estimated_timeout, TTS_MAX_RESPONSE_TIMEOUT_SECONDS)
 
 
 def load_cache_index():
@@ -265,14 +201,9 @@ def load_cache_index():
 
     try:
         data = json.loads(CACHE_INDEX_FILE.read_text(encoding="utf-8"))
-
-        if isinstance(data, dict):
-            initiator_cache = data
-        else:
-            initiator_cache = {}
-
+        initiator_cache = data if isinstance(data, dict) else {}
     except Exception as exc:
-        print(f"Failed to load TTS cache index {CACHE_INDEX_FILE}: {exc}", flush=True)
+        log_error(f"Failed to load TTS cache index {CACHE_INDEX_FILE}: {exc}")
         initiator_cache = {}
 
 
@@ -321,13 +252,13 @@ def replace_cached_file_for_initiator(initiator: str, text_hash: str, generated_
                 try:
                     old_file.unlink(missing_ok=True)
                 except Exception as exc:
-                    print(f"Failed to delete old cached TTS file {old_file}: {exc}", flush=True)
+                    log_error(f"Failed to delete old cached TTS file {old_file}: {exc}")
 
         if cache_file.exists():
             try:
                 cache_file.unlink(missing_ok=True)
             except Exception as exc:
-                print(f"Failed to replace cached TTS file {cache_file}: {exc}", flush=True)
+                log_error(f"Failed to replace cached TTS file {cache_file}: {exc}")
 
         shutil.copy2(generated_file, cache_file)
 
@@ -352,64 +283,14 @@ def copy_cached_audio_to_job_file(cached_file: Path, job_id: str) -> Path:
     return output_file
 
 
-
-
-def get_tts_response_timeout_seconds(text: str) -> int:
-    text_length = len(text or "")
-
-    estimated_timeout = int(
-        TTS_RESPONSE_TIMEOUT_SECONDS + (text_length * TTS_TIMEOUT_SECONDS_PER_CHARACTER)
-    )
-
-    return min(estimated_timeout, TTS_MAX_RESPONSE_TIMEOUT_SECONDS)
-
-
-def srs_output_indicates_audio_sent(output: str) -> bool:
-    output = output or ""
-
-    success_markers = [
-        "Finished Sending Audio",
-    ]
-
-    return any(marker in output for marker in success_markers)
-
-
-def srs_output_indicates_disconnect_problem(output: str) -> bool:
-    output_lower = (output or "").lower()
-
-    disconnect_markers = [
-        "disconnect",
-        "disconnecting",
-        "connection reset",
-        "forcibly closed",
-        "udp voice handler thread stop",
-        "closing",
-    ]
-
-    return any(marker in output_lower for marker in disconnect_markers)
-
-
-def srs_output_indicates_disconnect_problem(output: str) -> bool:
-    output_lower = (output or "").lower()
-
-    disconnect_markers = [
-        "disconnect",
-        "disconnecting",
-        "connection reset",
-        "forcibly closed",
-        "udp voice handler thread stop",
-        "closing",
-    ]
-
-    return any(marker in output_lower for marker in disconnect_markers)
+def set_job(job_id: str, updates: dict):
+    with jobs_lock:
+        job = jobs.get(job_id, {})
+        job.update(updates)
+        jobs[job_id] = job
 
 
 async def generate_tts(text: str, job_id: str, options: dict) -> Path:
-    INSTANCE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-    request_payload = {
-        "text": text,
-    }
     INSTANCE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     request_payload = {
@@ -427,10 +308,9 @@ async def generate_tts(text: str, job_id: str, options: dict) -> Path:
 
     response_timeout_seconds = get_tts_response_timeout_seconds(text)
 
-    print(f"[{job_id}] Connecting to upstream TTS websocket: {URI}", flush=True)
-    print(
-        f"[{job_id}] TTS text length={len(text or '')}, response timeout={response_timeout_seconds}s",
-        flush=True,
+    log_debug(f"[{job_id}] Connecting to upstream TTS websocket: {URI}")
+    log_debug(
+        f"[{job_id}] TTS text length={len(text or '')}, response timeout={response_timeout_seconds}s"
     )
 
     try:
@@ -444,29 +324,25 @@ async def generate_tts(text: str, job_id: str, options: dict) -> Path:
     except Exception as exc:
         raise RuntimeError(f"Failed to connect to upstream TTS websocket {URI}: {exc}") from exc
 
-    try:
-        async with websocket:
-            message_to_send = json.dumps(request_payload)
-            print(f"[{job_id}] Sending TTS request to upstream websocket: {message_to_send}", flush=True)
+    async with websocket:
+        message_to_send = json.dumps(request_payload)
 
-            await websocket.send(message_to_send)
+        log_debug(f"[{job_id}] Sending TTS request to upstream websocket: {message_to_send}")
+        await websocket.send(message_to_send)
 
-            print(f"[{job_id}] Waiting for upstream TTS response...", flush=True)
+        log_debug(f"[{job_id}] Waiting for upstream TTS response...")
 
-            try:
-                message = await asyncio.wait_for(
-                    websocket.recv(),
-                    timeout=response_timeout_seconds,
-                )
-            except asyncio.TimeoutError as exc:
-                raise RuntimeError(
-                    f"Timed out after {response_timeout_seconds} seconds waiting for upstream TTS response."
-                ) from exc
+        try:
+            message = await asyncio.wait_for(
+                websocket.recv(),
+                timeout=response_timeout_seconds,
+            )
+        except asyncio.TimeoutError as exc:
+            raise RuntimeError(
+                f"Timed out after {response_timeout_seconds} seconds waiting for upstream TTS response."
+            ) from exc
 
-    except Exception:
-        raise
-
-    print(f"[{job_id}] Received upstream TTS response length: {len(message)}", flush=True)
+    log_debug(f"[{job_id}] Received upstream TTS response length: {len(message)}")
 
     try:
         data = json.loads(message)
@@ -485,65 +361,13 @@ async def generate_tts(text: str, job_id: str, options: dict) -> Path:
     output_file = INSTANCE_OUTPUT_DIR / f"{INSTANCE_NAME}_{job_id}.{ext}"
     output_file.write_bytes(audio)
 
-    print(f"[{INSTANCE_NAME}][{job_id}] Wrote TTS audio file: {output_file} ({len(audio)} bytes)", flush=True)
+    log_debug(f"[{job_id}] Wrote TTS audio file: {output_file} ({len(audio)} bytes)")
 
     if not output_file.exists() or output_file.stat().st_size == 0:
         raise RuntimeError(f"TTS audio file was not written correctly: {output_file}")
 
     return output_file
 
-
-def play_srs_external_audio(output_file: Path, options: dict):
-    freqs = str(options.get("freqs") or "250.0")
-    modulations = str(options.get("modulations") or "AM")
-    coalition = str(options.get("coalition") or "2")
-    port = str(options.get("port") or "5002")
-    gender = options.get("gender")
-    volume = options.get("volume")
-
-    command = [
-        str(SRS_EXTERNAL_AUDIO_EXE),
-        f"--file={str(output_file)}",
-        f"--freqs={freqs}",
-        f"--modulations={modulations}",
-        f"--coalition={coalition}", --
-        f"--port={port}",
-    ]
-
-    if gender:
-        command.append(f"-g={gender}")
-
-    if volume:
-        command.append(f"--volume={volume}")
-
-    print(
-        f"[{INSTANCE_NAME}] Starting SRS ExternalAudio fallback: {' '.join(command)}",
-        flush=True,
-    )
-
-    process = subprocess.run(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        creationflags=CREATE_NO_WINDOW,
-        startupinfo=get_subprocess_startupinfo(),
-        timeout=SRS_HARD_TIMEOUT_SECONDS,
-    )
-
-    if process.stdout:
-        print(process.stdout, flush=True)
-
-    if process.returncode != 0:
-        raise RuntimeError(
-            f"SRS ExternalAudio failed with exit code {process.returncode}: {process.stdout}"
-        )
-
-    return {
-        "success": True,
-        "backend": "external_audio",
-        "returncode": process.returncode,
-    }
 
 def convert_audio_to_skyeye_pcm_f32le(audio_file: Path) -> Path:
     import av
@@ -556,6 +380,8 @@ def convert_audio_to_skyeye_pcm_f32le(audio_file: Path) -> Path:
         layout="mono",
         rate=16000,
     )
+
+    bytes_per_sample = 4
 
     with av.open(str(audio_file)) as container:
         stream = next((s for s in container.streams if s.type == "audio"), None)
@@ -572,79 +398,198 @@ def convert_audio_to_skyeye_pcm_f32le(audio_file: Path) -> Path:
                         resampled = [resampled]
 
                     for out_frame in resampled:
+                        expected_bytes = out_frame.samples * bytes_per_sample
+
                         for plane in out_frame.planes:
-                            out.write(bytes(plane))
+                            out.write(bytes(plane)[:expected_bytes])
 
     if not pcm_file.exists() or pcm_file.stat().st_size == 0:
         raise RuntimeError(f"Failed to convert audio to SkyEye PCM: {pcm_file}")
 
     return pcm_file
 
-def play_srs_go_native(output_file: Path, options: dict):
-    freqs = str(options.get("freqs") or "250.0")
-    modulations = str(options.get("modulations") or "AM")
-    coalition = str(options.get("coalition") or "2")
-    port = str(options.get("port") or "5002")
-    volume = str(options.get("volume") or "1.0")
-    password = str(
-        options.get("external_awacs_mode_password")
-        or SRS_EXTERNAL_AWACS_PASSWORD
-        or ""
+
+def concatenate_audio_files_to_skyeye_pcm_f32le(audio_files: list[Path], job_id: str) -> Path:
+    import av
+
+    INSTANCE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    pcm_file = INSTANCE_OUTPUT_DIR / f"{INSTANCE_NAME}_{job_id}_combined.16k_mono_f32le.pcm"
+
+    resampler = av.audio.resampler.AudioResampler(
+        format="flt",
+        layout="mono",
+        rate=16000,
     )
 
-    pcm_file = convert_audio_to_skyeye_pcm_f32le(output_file)
+    bytes_per_sample = 4
+
+    with pcm_file.open("wb") as out:
+        for audio_file in audio_files:
+            audio_file = Path(audio_file)
+
+            if not audio_file.exists():
+                raise RuntimeError(f"Audio file not found for combined playback: {audio_file}")
+
+            if not audio_file.is_file():
+                raise RuntimeError(f"Audio path is not a file for combined playback: {audio_file}")
+
+            log_debug(f"[{job_id}] Adding audio segment to combined transmission: {audio_file}")
+
+            with av.open(str(audio_file)) as input_container:
+                input_stream = next((s for s in input_container.streams if s.type == "audio"), None)
+
+                if input_stream is None:
+                    raise RuntimeError(f"No audio stream found in {audio_file}")
+
+                for packet in input_container.demux(input_stream):
+                    for frame in packet.decode():
+                        resampled = resampler.resample(frame)
+
+                        if not isinstance(resampled, list):
+                            resampled = [resampled]
+
+                        for out_frame in resampled:
+                            expected_bytes = out_frame.samples * bytes_per_sample
+
+                            for plane in out_frame.planes:
+                                out.write(bytes(plane)[:expected_bytes])
+
+    if not pcm_file.exists() or pcm_file.stat().st_size == 0:
+        raise RuntimeError(f"Combined PCM file was not created correctly: {pcm_file}")
+
+    return pcm_file
+
+
+def get_srs_command_common(options: dict) -> dict:
+    return {
+        "freqs": str(options.get("freqs") or "250.0"),
+        "modulations": str(options.get("modulations") or "AM"),
+        "coalition": str(options.get("coalition") or "2"),
+        "port": str(options.get("port") or "5002"),
+        "volume": str(options.get("volume") or "1.0"),
+        "srs_host": str(options.get("srs_host") or options.get("host") or SRS_HOST),
+        "password": str(
+            options.get("external_awacs_mode_password")
+            or SRS_EXTERNAL_AWACS_PASSWORD
+            or ""
+        ),
+    }
+
+
+def run_srs_go_sender(pcm_file: Path, options: dict, combined: bool = False) -> dict:
+    srs = get_srs_command_common(options)
 
     command = [
         str(SRS_GO_SENDER_EXE),
-        f"--srs-address={SRS_HOST}:{port}",
+        f"--srs-address={srs['srs_host']}:{srs['port']}",
         "--client-name=NASGroup TTS",
-        f"--coalition={coalition}",
-        f"--frequency={freqs}",
-        f"--modulation={modulations}",
-        f"--volume={volume}",
-        f"--external-awacs-password={password}",
+        f"--coalition={srs['coalition']}",
+        f"--frequency={srs['freqs']}",
+        f"--modulation={srs['modulations']}",
+        f"--volume={srs['volume']}",
+        f"--external-awacs-password={srs['password']}",
         f"--file={str(pcm_file)}",
     ]
 
-    print(
-        f"[{INSTANCE_NAME}] Starting Go native SRS sender: "
-        f"exe={SRS_GO_SENDER_EXE}, file={output_file}, pcm={pcm_file}, "
-        f"host={SRS_HOST}, port={port}, freqs={freqs}, "
-        f"modulations={modulations}, coalition={coalition}",
-        flush=True,
+    label = "combined PCM" if combined else "PCM"
+
+    log_info(
+        f"[{INSTANCE_NAME}] Starting Go native SRS sender with {label}: "
+        f"host={srs['srs_host']}, port={srs['port']}, freqs={srs['freqs']}, "
+        f"modulations={srs['modulations']}, coalition={srs['coalition']}, volume={srs['volume']}"
     )
 
-    try:
-        process = subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            creationflags=CREATE_NO_WINDOW,
-            startupinfo=get_subprocess_startupinfo(),
-            timeout=SRS_HARD_TIMEOUT_SECONDS,
+    process = subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        creationflags=CREATE_NO_WINDOW,
+        startupinfo=get_subprocess_startupinfo(),
+        timeout=SRS_HARD_TIMEOUT_SECONDS,
+    )
+
+    if process.stdout:
+        log_debug(process.stdout)
+
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"Go native SRS sender failed with exit code {process.returncode}: {process.stdout}"
         )
 
-        if process.stdout:
-            print(process.stdout, flush=True)
+    return {
+        "success": True,
+        "backend": "go_native",
+        "sender": str(SRS_GO_SENDER_EXE),
+        "returncode": process.returncode,
+    }
 
-        if process.returncode != 0:
-            raise RuntimeError(
-                f"Go native SRS sender failed with exit code {process.returncode}: {process.stdout}"
-            )
 
-        return {
-            "success": True,
-            "backend": "go_native",
-            "sender": str(SRS_GO_SENDER_EXE),
-            "returncode": process.returncode,
-        }
+def play_srs_go_native(output_file: Path, options: dict) -> dict:
+    pcm_file = convert_audio_to_skyeye_pcm_f32le(output_file)
 
+    try:
+        return run_srs_go_sender(pcm_file, options, combined=False)
     finally:
         try:
             pcm_file.unlink(missing_ok=True)
         except Exception as exc:
-            print(f"Failed to delete temporary SkyEye PCM file {pcm_file}: {exc}", flush=True)
+            log_error(f"Failed to delete temporary SkyEye PCM file {pcm_file}: {exc}")
+
+
+def play_srs_go_native_pcm(pcm_file: Path, options: dict) -> dict:
+    return run_srs_go_sender(pcm_file, options, combined=True)
+
+
+def play_srs_external_audio(output_file: Path, options: dict):
+    freqs = str(options.get("freqs") or "250.0")
+    modulations = str(options.get("modulations") or "AM")
+    coalition = str(options.get("coalition") or "2")
+    port = str(options.get("port") or "5002")
+    gender = options.get("gender")
+    volume = options.get("volume")
+
+    command = [
+        str(SRS_EXTERNAL_AUDIO_EXE),
+        f"--file={str(output_file)}",
+        f"--freqs={freqs}",
+        f"--modulations={modulations}",
+        f"--coalition={coalition}",
+        f"--port={port}",
+    ]
+
+    if gender:
+        command.append(f"-g={gender}")
+
+    if volume:
+        command.append(f"--volume={volume}")
+
+    log_info(f"[{INSTANCE_NAME}] Starting SRS ExternalAudio fallback: {' '.join(command)}")
+
+    process = subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        creationflags=CREATE_NO_WINDOW,
+        startupinfo=get_subprocess_startupinfo(),
+        timeout=SRS_HARD_TIMEOUT_SECONDS,
+    )
+
+    if process.stdout:
+        log_debug(process.stdout)
+
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"SRS ExternalAudio failed with exit code {process.returncode}: {process.stdout}"
+        )
+
+    return {
+        "success": True,
+        "backend": "external_audio",
+        "returncode": process.returncode,
+    }
 
 
 def play_srs_native(output_file: Path, options: dict):
@@ -653,13 +598,12 @@ def play_srs_native(output_file: Path, options: dict):
     native_options = dict(options)
     native_options["srs_host"] = native_options.get("srs_host") or SRS_HOST
 
-    print(
+    log_info(
         f"[{INSTANCE_NAME}] Starting native Python SRS playback: "
         f"file={output_file}, host={native_options.get('srs_host')}, "
         f"port={native_options.get('port')}, freqs={native_options.get('freqs')}, "
         f"modulations={native_options.get('modulations')}, "
-        f"coalition={native_options.get('coalition')}",
-        flush=True,
+        f"coalition={native_options.get('coalition')}"
     )
 
     return transmit_file_to_srs(output_file, native_options)
@@ -674,23 +618,14 @@ def play_srs(output_file: Path, options: dict):
 
     return play_srs_external_audio(output_file, options)
 
-def set_job(job_id: str, updates: dict):
-    with jobs_lock:
-        job = jobs.get(job_id, {})
-        job.update(updates)
-        jobs[job_id] = job
-
 
 def process_job(job_id: str, text: str, options: dict, initiator: str, text_hash: str):
     output_file = None
-    cache_hit = False
     cache_file = None
+    cache_hit = False
 
     try:
-        print(
-            f"[{job_id}] Job started: initiator={initiator!r}, text_hash={text_hash}",
-            flush=True,
-        )
+        log_info(f"[{job_id}] TTS job started: initiator={initiator!r}")
 
         set_job(job_id, {
             "status": "running",
@@ -704,36 +639,13 @@ def process_job(job_id: str, text: str, options: dict, initiator: str, text_hash
         if cached_file:
             cache_hit = True
             cache_file = cached_file
-
-            print(
-                f"[{job_id}] Text unchanged for initiator={initiator!r}. "
-                f"Replaying cached MP3: {cached_file}",
-                flush=True,
-            )
-
             output_file = copy_cached_audio_to_job_file(cached_file, job_id)
-
+            log_debug(f"[{job_id}] Replaying cached TTS audio: {cached_file}")
         else:
-            cache_hit = False
-
-            print(
-                f"[{job_id}] Text changed or no cache exists for initiator={initiator!r}. "
-                "Generating new TTS MP3 from websocket.",
-                flush=True,
-            )
-
             generated_file = asyncio.run(generate_tts(text, job_id, options))
             cache_file = replace_cached_file_for_initiator(initiator, text_hash, generated_file)
-
-            # Use the generated file for this immediate playback.
             output_file = generated_file
-
-            print(
-                f"[{job_id}] Updated cache for initiator={initiator!r}: {cache_file}",
-                flush=True,
-            )
-
-        print(f"[{job_id}] Starting SRS playback for: {output_file}", flush=True)
+            log_debug(f"[{job_id}] Updated TTS cache: {cache_file}")
 
         srs_result = play_srs(output_file, options)
 
@@ -741,15 +653,13 @@ def process_job(job_id: str, text: str, options: dict, initiator: str, text_hash
         folder = str(output_file.parent) + "\\"
         path = str(output_file)
 
-        # Delete only the temporary per-job file.
-        # Do not delete the cached initiator file.
         try:
             if output_file and output_file.exists() and output_file != cache_file:
                 output_file.unlink(missing_ok=True)
             deleted = True
         except Exception as delete_exc:
             deleted = False
-            print(f"[{job_id}] Failed to delete temporary TTS file {output_file}: {delete_exc}", flush=True)
+            log_error(f"[{job_id}] Failed to delete temporary TTS file {output_file}: {delete_exc}")
 
         set_job(job_id, {
             "status": "done",
@@ -766,24 +676,17 @@ def process_job(job_id: str, text: str, options: dict, initiator: str, text_hash
             "completed_at": time.time(),
         })
 
-        print(
-            f"[{job_id}] Job completed successfully. "
-            f"initiator={initiator!r}, cache_hit={cache_hit}",
-            flush=True,
-        )
+        log_info(f"[{job_id}] TTS job completed successfully. cache_hit={cache_hit}")
 
     except Exception as exc:
-        print(f"[{job_id}] Job failed: {exc}", flush=True)
+        log_error(f"[{job_id}] TTS job failed: {exc}")
 
         if output_file:
             try:
                 if output_file.exists() and output_file != cache_file:
                     output_file.unlink(missing_ok=True)
             except Exception as delete_exc:
-                print(
-                    f"[{job_id}] Failed to delete temporary TTS file after error {output_file}: {delete_exc}",
-                    flush=True,
-                )
+                log_error(f"[{job_id}] Failed to delete temporary TTS file after error {output_file}: {delete_exc}")
 
         set_job(job_id, {
             "status": "error",
@@ -794,23 +697,125 @@ def process_job(job_id: str, text: str, options: dict, initiator: str, text_hash
             "completed_at": time.time(),
         })
 
-def queue_tts_payload(payload: dict) -> dict:
-    text = payload.get("text", "")
 
-    if not text:
-        raise ValueError("Missing text")
+def process_audio_file_job(job_id: str, audio_file: Path, options: dict, initiator: str):
+    try:
+        log_info(f"[{job_id}] Audio file job started: {audio_file}")
 
-    options = {
-        # Per-initiator repeat cache
+        set_job(job_id, {
+            "status": "running",
+            "initiator": initiator,
+            "audio_file": str(audio_file),
+            "started_at": time.time(),
+        })
+
+        if not audio_file.exists():
+            raise RuntimeError(f"Audio file not found: {audio_file}")
+
+        if not audio_file.is_file():
+            raise RuntimeError(f"Audio path is not a file: {audio_file}")
+
+        if audio_file.suffix.lower() != ".ogg":
+            raise RuntimeError(f"Only .ogg inbox audio files are currently allowed: {audio_file}")
+
+        srs_result = play_srs(audio_file, options)
+
+        set_job(job_id, {
+            "status": "done",
+            "success": True,
+            "filename": audio_file.name,
+            "folder": str(audio_file.parent) + "\\",
+            "path": str(audio_file),
+            "deleted": False,
+            "cache_hit": False,
+            "cache_file": None,
+            "initiator": initiator,
+            "audio_file": str(audio_file),
+            "srs": srs_result,
+            "completed_at": time.time(),
+        })
+
+        log_info(f"[{job_id}] Audio file job completed successfully.")
+
+    except Exception as exc:
+        log_error(f"[{job_id}] Audio file job failed: {exc}")
+
+        set_job(job_id, {
+            "status": "error",
+            "success": False,
+            "error": str(exc),
+            "initiator": initiator,
+            "audio_file": str(audio_file),
+            "completed_at": time.time(),
+        })
+
+
+def process_audio_files_job(job_id: str, audio_files: list[Path], options: dict, initiator: str):
+    combined_file = None
+
+    try:
+        log_info(f"[{job_id}] Combined audio job started: files={len(audio_files)}")
+
+        set_job(job_id, {
+            "status": "running",
+            "initiator": initiator,
+            "audio_files": [str(path) for path in audio_files],
+            "started_at": time.time(),
+        })
+
+        combined_file = concatenate_audio_files_to_skyeye_pcm_f32le(audio_files, job_id)
+
+        if SRS_BACKEND == "go_native":
+            srs_result = play_srs_go_native_pcm(combined_file, options)
+        else:
+            srs_result = play_srs(combined_file, options)
+
+        set_job(job_id, {
+            "status": "done",
+            "success": True,
+            "filename": combined_file.name,
+            "folder": str(combined_file.parent) + "\\",
+            "path": str(combined_file),
+            "deleted": False,
+            "cache_hit": False,
+            "cache_file": None,
+            "initiator": initiator,
+            "audio_files": [str(path) for path in audio_files],
+            "srs": srs_result,
+            "completed_at": time.time(),
+        })
+
+        log_info(f"[{job_id}] Combined audio job completed successfully.")
+
+    except Exception as exc:
+        log_error(f"[{job_id}] Combined audio job failed: {exc}")
+
+        set_job(job_id, {
+            "status": "error",
+            "success": False,
+            "error": str(exc),
+            "initiator": initiator,
+            "audio_files": [str(path) for path in audio_files],
+            "completed_at": time.time(),
+        })
+
+    finally:
+        if combined_file:
+            try:
+                combined_file.unlink(missing_ok=True)
+            except Exception as exc:
+                log_error(f"[{job_id}] Failed to delete combined audio file {combined_file}: {exc}")
+
+
+def get_srs_options_from_payload(payload: dict) -> dict:
+    return {
         "initiator": payload.get("initiator"),
         "label": payload.get("label"),
 
-        # Upstream TTS server options
         "voice": payload.get("voice"),
         "rate": payload.get("rate"),
         "pitch": payload.get("pitch"),
 
-        # SRS options
         "srs_host": payload.get("srs_host", SRS_HOST),
         "freqs": payload.get("freqs", "250.0"),
         "modulations": payload.get("modulations", "AM"),
@@ -824,15 +829,108 @@ def queue_tts_payload(payload: dict) -> dict:
         ),
     }
 
+
+def queue_audio_file_payload(payload: dict) -> dict:
+    audio_file_value = payload.get("file") or payload.get("audio_file") or payload.get("ogg_file")
+
+    if not audio_file_value:
+        raise ValueError("Missing file, audio_file, or ogg_file")
+
+    audio_file = Path(audio_file_value).expanduser().resolve()
+    options = get_srs_options_from_payload(payload)
+    initiator = get_initiator(payload, options)
+    job_id = uuid.uuid4().hex
+
+    log_info(f"[{job_id}] Received audio file request: initiator={initiator!r}, file={audio_file}")
+
+    with jobs_lock:
+        jobs[job_id] = {
+            "status": "queued",
+            "success": None,
+            "initiator": initiator,
+            "audio_file": str(audio_file),
+            "options": options,
+            "created_at": time.time(),
+        }
+
+    thread = threading.Thread(
+        target=process_audio_file_job,
+        args=(job_id, audio_file, options, initiator),
+        daemon=True,
+    )
+    thread.start()
+
+    return {
+        "success": True,
+        "status": "queued",
+        "job_id": job_id,
+        "initiator": initiator,
+        "audio_file": str(audio_file),
+    }
+
+
+def queue_audio_files_payload(payload: dict) -> dict:
+    audio_file_values = payload.get("files") or payload.get("audio_files") or payload.get("ogg_files")
+
+    if not audio_file_values:
+        raise ValueError("Missing files, audio_files, or ogg_files")
+
+    if not isinstance(audio_file_values, list):
+        raise ValueError("files, audio_files, or ogg_files must be a list")
+
+    audio_files = [Path(value).expanduser().resolve() for value in audio_file_values]
+
+    options = get_srs_options_from_payload(payload)
+    initiator = get_initiator(payload, options)
+    job_id = uuid.uuid4().hex
+
+    log_info(f"[{job_id}] Received combined audio request: initiator={initiator!r}, files={len(audio_files)}")
+
+    with jobs_lock:
+        jobs[job_id] = {
+            "status": "queued",
+            "success": None,
+            "initiator": initiator,
+            "audio_files": [str(path) for path in audio_files],
+            "options": options,
+            "created_at": time.time(),
+        }
+
+    thread = threading.Thread(
+        target=process_audio_files_job,
+        args=(job_id, audio_files, options, initiator),
+        daemon=True,
+    )
+    thread.start()
+
+    return {
+        "success": True,
+        "status": "queued",
+        "job_id": job_id,
+        "initiator": initiator,
+        "audio_files": [str(path) for path in audio_files],
+    }
+
+
+def queue_tts_payload(payload: dict) -> dict:
+    if payload.get("files") or payload.get("audio_files") or payload.get("ogg_files"):
+        return queue_audio_files_payload(payload)
+
+    if payload.get("file") or payload.get("audio_file") or payload.get("ogg_file"):
+        return queue_audio_file_payload(payload)
+
+    text = payload.get("text", "")
+
+    if not text:
+        raise ValueError("Missing text")
+
+    options = get_srs_options_from_payload(payload)
+
     initiator = get_initiator(payload, options)
     text_hash = get_text_hash(text, options)
     job_id = uuid.uuid4().hex
 
-    print(
-        f"[{job_id}] Received TTS request: initiator={initiator!r}, "
-        f"text_hash={text_hash}, text_length={len(text)}",
-        flush=True,
-    )
+    log_info(f"[{job_id}] Received TTS request: initiator={initiator!r}, text_length={len(text)}")
 
     with jobs_lock:
         jobs[job_id] = {
@@ -860,6 +958,7 @@ def queue_tts_payload(payload: dict) -> dict:
         "text_hash": text_hash,
     }
 
+
 def cleanup_inbox_status_files():
     now = time.time()
 
@@ -877,7 +976,7 @@ def cleanup_inbox_status_files():
                     file_path.unlink(missing_ok=True)
 
             except Exception as exc:
-                print(f"Failed to clean up TTS inbox status file {file_path}: {exc}", flush=True)
+                log_error(f"Failed to clean up TTS inbox status file {file_path}: {exc}")
 
 
 def process_inbox_file(file_path: Path):
@@ -889,14 +988,16 @@ def process_inbox_file(file_path: Path):
         file_path.replace(processing_file)
 
         payload = json.loads(processing_file.read_text(encoding="utf-8-sig"))
+        log_debug(f"Loaded TTS inbox payload from {processing_file}: {payload}")
+
         result = queue_tts_payload(payload)
 
         done_file.write_text(json.dumps(result, indent=2), encoding="utf-8")
         processing_file.unlink(missing_ok=True)
 
-    except Exception as exc:
+    except Exception:
         error_text = traceback.format_exc()
-        print(f"Failed to process TTS inbox file {file_path}: {exc}", flush=True)
+        log_error(f"Failed to process TTS inbox file {file_path}: {error_text}")
 
         try:
             error_file.write_text(error_text, encoding="utf-8")
@@ -912,7 +1013,7 @@ def process_inbox_file(file_path: Path):
 def inbox_watcher_loop():
     INBOX_DIR.mkdir(parents=True, exist_ok=True)
 
-    print(f"TTS inbox:   {INBOX_DIR}", flush=True)
+    log_info(f"TTS inbox:   {INBOX_DIR}")
 
     while True:
         try:
@@ -922,10 +1023,9 @@ def inbox_watcher_loop():
             cleanup_inbox_status_files()
 
         except Exception as exc:
-            print(f"TTS inbox watcher error: {exc}", flush=True)
+            log_error(f"TTS inbox watcher error: {exc}")
 
         time.sleep(TTS_INBOX_POLL_SECONDS)
-
 
 
 class TTSHandler(BaseHTTPRequestHandler):
@@ -989,13 +1089,6 @@ class TTSHandler(BaseHTTPRequestHandler):
             "text_hash": job.get("text_hash"),
         }
 
-        if job.get("status") == "skipped":
-            response.update({
-                "success": True,
-                "skipped": True,
-                "reason": job.get("reason"),
-            })
-
         if job.get("status") == "done":
             response.update({
                 "success": True,
@@ -1031,19 +1124,23 @@ if __name__ == "__main__":
             server = ThreadingHTTPServer((ARGS.host, ARGS.port), TTSHandler)
             server.daemon_threads = True
 
-            print(f"TTS service instance: {INSTANCE_NAME}")
-            print(f"TTS service running at http://{ARGS.host}:{ARGS.port}")
-            print(f"POST job:   http://{ARGS.host}:{ARGS.port}/tts")
-            print(f"GET status: http://{ARGS.host}:{ARGS.port}/tts/<job_id>")
-            print(f"TTS output: {INSTANCE_OUTPUT_DIR}")
-            print(f"TTS cache:  {CACHE_DIR}")
-            print(f"TTS inbox:  {INBOX_DIR}")
+            log_info(f"TTS service instance: {INSTANCE_NAME}")
+            log_info(f"TTS service running at http://{ARGS.host}:{ARGS.port}")
+            log_info(f"POST job:   http://{ARGS.host}:{ARGS.port}/tts")
+            log_info(f"GET status: http://{ARGS.host}:{ARGS.port}/tts/<job_id>")
+            log_info(f"TTS output: {INSTANCE_OUTPUT_DIR}")
+            log_info(f"TTS cache:  {CACHE_DIR}")
+            log_info(f"TTS inbox:  {INBOX_DIR}")
+            log_info(f"SRS backend: {SRS_BACKEND}")
+            log_info(f"SRS host:    {SRS_HOST}")
+            log_info(f"SRS sender:  {SRS_GO_SENDER_EXE}")
+            log_info(f"Verbose:     {ARGS.verbose}")
 
             server.serve_forever()
 
         except KeyboardInterrupt:
-            print(f"TTS service stopped by user: {INSTANCE_NAME}")
+            log_info(f"TTS service stopped by user: {INSTANCE_NAME}")
             break
 
         except Exception as exc:
-            print(f"TTS service crashed: {INSTANCE_NAME}: {exc}")
+            log_error(f"TTS service crashed: {INSTANCE_NAME}: {exc}")

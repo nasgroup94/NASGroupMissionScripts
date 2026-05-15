@@ -13,7 +13,8 @@ set "TTS_SERVICE_HOST=127.0.0.1"
 set "TTS_SERVICE_PORT=8765"
 set "TTS_SERVICE_INSTANCE=main"
 set "TTS_SERVICE_SRS_BACKEND=go_native"
-set "SRS_HOST=96.32.24.78"
+REM set "SRS_HOST=96.32.24.78"
+set "SRS_HOST=127.0.0.1"
 set "SRS_GO_SENDER_EXE=%~dp0srs-tts-send.exe"
 
 if not exist "%~dp0tts_service.py" (
@@ -38,6 +39,7 @@ py -u "%~dp0tts_service.py" ^
   --srs-host "%SRS_HOST%" ^
   --srs-go-sender "%SRS_GO_SENDER_EXE%" ^
   --external-awacs-password "%SRS_EXTERNAL_AWACS_PASSWORD%" ^
-  --inbox-dir "%USERPROFILE%\Saved Games\DCS.Test\Logs\tts_inbox\main"
+  --inbox-dir "C:\Users\naval\Saved Games\DCS.Test\Logs\tts_inbox\main"^
+  --verbose
 
 pause

@@ -21,9 +21,12 @@ NAS_SCRIPT_RELOADER.ScriptFiles = NAS_SCRIPT_RELOADER.ScriptFiles or {
     -- Usually safer to leave Moose.lua alone and reload only your mission layer.
     -- "C:\\Path\\To\\Moose.lua",
 
-    "C:\\Path\\To\\NASGroupMissionScripts\\SRS_PythonWebSocket.lua",
-    "C:\\Path\\To\\NASGroupMissionScripts\\ATIS_PythonWebSocket.lua",
-    "C:\\Path\\To\\NASGroupMissionScripts\\MissionMain.lua",
+
+"C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\SRS_PythonWebSocket.lua",
+"C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\tts_init.lua",
+"C:\\NASGroup\\NASGroupMissionScripts\\CVW-17\\Persian Gulf\\NATO\\Persian_Gulf_carrier.lua",
+"C:\\NASGroup\\NASGroupMissionScripts\\CVW-17\\Persian Gulf\\NATO\\ATIS.lua",
+
 }
 
 --- Optional cleanup hooks called before scripts are reloaded.

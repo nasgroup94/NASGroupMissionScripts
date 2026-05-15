@@ -4,7 +4,7 @@
 atisDubaiInt = ATIS:New(AIRBASE.PersianGulf.Dubai_Intl, 131.7, radio.modulation.AM)
 atisDubaiInt:SetRadioRelayUnitName("AMAFBRelay")
 atisDubaiInt:SetSRS("", "female", "en-US")
-NASG_TTS:Use(atisDubaiInt.msrs, "Al Minhad ATIS", "Zoe", 200, 1.0)
+NASG_TTS:Use(atisDubaiInt.msrs, "Al Minhad ATIS", "Zoe")
 atisDubaiInt:SetQueueUpdateTime(100)
 atisDubaiInt:__Start(20)
 
@@ -12,7 +12,7 @@ atisDubaiInt:__Start(20)
 atisAbuDhabi = ATIS:New(AIRBASE.PersianGulf.Abu_Dhabi_Intl, 125.1, radio.modulation.AM)
 atisAbuDhabi:SetRadioRelayUnitName("AbuDhabiRelay")
 atisAbuDhabi:SetSRS("", "male", "en-US")
-NASG_TTS:Use(atisAbuDhabi.msrs, "Abu Dhabi ATIS", "Nathan", 200, 1.0)
+NASG_TTS:Use(atisAbuDhabi.msrs, "Abu Dhabi ATIS", "Nathan" )
 atisAbuDhabi:SetQueueUpdateTime(100)
 atisAbuDhabi:__Start(25)
 
@@ -20,6 +20,11 @@ atisAbuDhabi:__Start(25)
 
 
 --examples below
+--latest
+--MSRS:New(SRS_PATH, 264, radio.modulation.AM, MSRS.Backend.PYWS)
+--    :SetCoalition(coalition.side.BLUE)
+--    :PlaySoundFile(SOUNDFILE:New("navy_wistle.ogg", COMMONSOUNDSFOLDER, 1, true), 0)
+
 
 --NASG_TTS = {}
 --

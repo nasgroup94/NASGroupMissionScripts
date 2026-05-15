@@ -17,7 +17,6 @@ local user_folder = "C:/Users/naval/"
 SERVER_LOCATION = user_folder .. "Saved Games/" .. DCSServerBotConfig.INSTANCE_NAME .. "/"
 --GOOGLE_CREDS = "C:/Users/naval/Documents/dcs-datis-350723-fe7aab2d9ae1.json"
 SRS_PATH = "C:/DCS-SimpleRadioStandalone/ExternalAudio"
---SRS_PATH = "E:/DCS-SimpleRadioStandalone-2.0.8.5/ExternalAudio/"
 SRS_PORT = DCSServerBotConfig.SRS_PORT
 TTS_SERVICE_PORT = 8765
 --SRS_VOICES = {
@@ -95,11 +94,14 @@ MISSION_TANKER_ALTS.Probe = 24000
 MISSION_TANKER_ALTS.Offgoing = 18000
 MISSION_TANKER_ALTS.Recovery = 8000
 
+NASG_PYWS_DEBUG = false
+
 -- Moose/mist (really need to getrid of MIST one of these days!)
 assert(loadfile(moose_folder .. "Moose.lua"))()
+assert(loadfile(common_scripts_path .. "Test/NASG_ReloadScriptsMenu.lua"))()
 assert(loadfile(common_scripts_path .. "TTS Test\\SRS_PythonWebSocket.lua"))() -- the order of these two matter this one first
-assert(loadfile(common_scripts_path .. "TTS Test\\tts_init.lua"))() -- the order of these two matter this one second
 MSRS.LoadConfigFile(nil, mission_scripts_path, "Persian_Gulf_msrs_config.lua") -- Note the "." here
+assert(loadfile(common_scripts_path .. "TTS Test\\tts_init.lua"))() -- the order of these two matter this one second
 assert(loadfile(common_scripts_path .. "mist.lua"))()
 
 -- Common for all missions

@@ -179,10 +179,34 @@ Awacs:SetModex(611)
 Awacs:SetTACAN(69,"WZ6")
 Awacs:__Start(150)
 
+
+
 Teddy = AIRBOSS:New("CSG-1-1", "CVN-71 Rough Rider")
 
 function Teddy:OnAfterStart(From, Event, To)
     self:DeleteAllRecoveryWindows()
+
+    env.info("[NASG_TTS] Teddy OnAfterStart configuring AIRBOSS MSRS/SRS.")
+
+    if self.SRS then
+        env.info("[NASG_TTS] Teddy.SRS backend before=" .. tostring(self.SRS.backend))
+        NASG_TTS:Use(self.SRS, "Teddy AIRBOSS", "Raynor")
+        env.info("[NASG_TTS] Teddy.SRS backend after=" .. tostring(self.SRS.backend))
+    else
+        env.info("[NASG_TTS] Teddy.SRS is nil in OnAfterStart.")
+    end
+
+    if self.msrsLSO then
+        NASG_TTS:Use(self.msrsLSO, "Teddy LSO", "Raynor")
+    end
+
+    if self.msrsMarshal then
+        NASG_TTS:Use(self.msrsMarshal, "Teddy Marshal", "Gabriella")
+    end
+
+    if self.msrs then
+        NASG_TTS:Use(self.msrs, "Teddy", "Raynor")
+    end
 
     -- Recording waypoint to be used in the persistence script
     -- PassingWaypoint(self.carrier:GetName(), 1)
@@ -214,7 +238,7 @@ Teddy:SetDefaultPlayerSkill(AIRBOSS.Difficulty.NORMAL)
 Teddy:SetMaxSectionSize(4)
 Teddy:SetMPWireCorrection(12)
 Teddy:SetRadioRelayLSO("CVN71_LSORELAY")
-Teddy:SetRadioRelayMarshal("CVN71_MARSHALRELAY-1")
+Teddy:SetRadioRelayMarshal("CVN71_MARSHALRELAY")
 Teddy:SetSoundfilesFolder(AIRBOSSBASESOUNDFOLDER .. "Airboss Soundfiles/")
 Teddy:SetVoiceOversLSOByRaynor(AIRBOSSLSORAYNOR)
 Teddy:SetVoiceOversMarshalByGabriella(AIRBOSSMARSHALGABRIELLA)
@@ -237,19 +261,28 @@ Teddy:SetHandleAIOFF()
 -- Start airboss class.
 Teddy:Start()
 
-
-MSRS:New(SRS_PATH, 264, radio.modulation.AM, MSRS.Backend.SRSEXE)
-    :SetCoalition(coalition.side.BLUE)
-    :SetProvider(MSRS.Provider.WINDOWS)
-    :PlaySoundFile(SOUNDFILE:New("navy_wistle.ogg", COMMONSOUNDSFOLDER, 1, true), 0)
-
-if Teddy.msrsLSO then
-    NASG_TTS:Use(Teddy.msrs, "Teddy LSO", "Raynor", 200, 1.0)
-end
-
---if Teddy.msrsMarshal then
---    NASG_TTS:Use(Teddy.msrsMarshal, "Teddy Marshal", "Gabriella", 200, 1.0)
+--if Teddy.msrsLSO then
+--    NASG_TTS:Use(Teddy.msrsLSO, "Teddy LSO", "Raynor")
 --end
+--
+--if Teddy.msrsMarshal then
+--    NASG_TTS:Use(Teddy.msrsMarshal, "Teddy Marshal", "Gabriella")
+--end
+--
+--if Teddy.msrs then
+--    NASG_TTS:Use(Teddy.msrs, "Teddy", "Raynor")
+--end
+--
+--if Teddy.SRS then
+--    NASG_TTS:Use(Teddy.SRS, "Teddy AIRBOSS", "Raynor")
+--end
+
+env.info("[NASG_TTS] Teddy.SRS=" .. tostring(Teddy.SRS))
+env.info("[NASG_TTS] Teddy.msrs=" .. tostring(Teddy.msrs))
+env.info("[NASG_TTS] Teddy.msrsLSO=" .. tostring(Teddy.msrsLSO))
+env.info("[NASG_TTS] Teddy.msrsMarshal=" .. tostring(Teddy.msrsMarshal))
+
+
 
 -- LoneWarrior lighting flag values
 -- 0 - AUTO
@@ -286,6 +319,13 @@ function ShipLightingHandler:OnEventBirth(EventData)
             -- local _menuCarrierLighting = missionCommands.addSubMenuForGroup(_gid, "Carrier Lighting", _shipLighting)
             local _menuCarrierLighting = missionCommands.addSubMenuForGroup(_gid, "Carrier Lighting")
             missionCommands.addCommandForGroup(_gid, "Auto", _menuCarrierLighting, function()
+                local testMsrs = MSRS:New(SRS_PATH, 264, radio.modulation.AM, MSRS.Backend.PYWS)
+
+                NASG_TTS:Use(testMsrs, "Carrier Lighting Test", nil, nil, 0.45)
+
+                testMsrs
+                        :SetCoalition(coalition.side.BLUE)
+                        :PlaySoundFile(SOUNDFILE:New("navy_wistle.ogg", COMMONSOUNDSFOLDER, 1, true), 0)
                 TeddyLighting:Set("0")
             end)
             missionCommands.addCommandForGroup(_gid, "Navigation", _menuCarrierLighting, function()
