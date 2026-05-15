@@ -505,8 +505,8 @@ def play_srs_external_audio(output_file: Path, options: dict):
         str(SRS_EXTERNAL_AUDIO_EXE),
         f"--file={str(output_file)}",
         f"--freqs={freqs}",
-        # f"--modulations={modulations}",
-        f"--coalition={coalition}",
+        f"--modulations={modulations}",
+        f"--coalition={coalition}", --
         f"--port={port}",
     ]
 

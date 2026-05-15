@@ -1,6 +1,6 @@
 -- Moose MSRS default Config
 MSRS_Config = {
-    Path = "C:/DCS-SimpleRadioStandalone", -- Path to SRS install directory.
+    Path = SRS_PATH, -- Path to SRS install directory.
     --Port = SRS_PORT,            -- Port of SRS server. Default 5002.
     Port = 5002,
     Backend = "srsexe",     -- Interface to SRS: "srsexe" or "grpc".

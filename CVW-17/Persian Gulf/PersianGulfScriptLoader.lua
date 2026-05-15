@@ -16,7 +16,7 @@ local user_folder = "C:/Users/naval/"
 
 SERVER_LOCATION = user_folder .. "Saved Games/" .. DCSServerBotConfig.INSTANCE_NAME .. "/"
 --GOOGLE_CREDS = "C:/Users/naval/Documents/dcs-datis-350723-fe7aab2d9ae1.json"
-SRS_PATH = "C:/DCS-SimpleRadioStandalone"
+SRS_PATH = "C:/DCS-SimpleRadioStandalone/ExternalAudio"
 --SRS_PATH = "E:/DCS-SimpleRadioStandalone-2.0.8.5/ExternalAudio/"
 SRS_PORT = DCSServerBotConfig.SRS_PORT
 TTS_SERVICE_PORT = 8765

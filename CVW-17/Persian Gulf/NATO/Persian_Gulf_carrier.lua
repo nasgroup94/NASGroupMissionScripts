@@ -213,7 +213,7 @@ Teddy:SetPatrolAdInfinitum()
 Teddy:SetDefaultPlayerSkill(AIRBOSS.Difficulty.NORMAL)
 Teddy:SetMaxSectionSize(4)
 Teddy:SetMPWireCorrection(12)
-Teddy:SetRadioRelayLSO("CVN71_LSORELAY-1")
+Teddy:SetRadioRelayLSO("CVN71_LSORELAY")
 Teddy:SetRadioRelayMarshal("CVN71_MARSHALRELAY-1")
 Teddy:SetSoundfilesFolder(AIRBOSSBASESOUNDFOLDER .. "Airboss Soundfiles/")
 Teddy:SetVoiceOversLSOByRaynor(AIRBOSSLSORAYNOR)
@@ -225,17 +225,31 @@ Teddy:SetHandleAIOFF()
 -- LoneWarrior:SetIntoWindLegacy( SwitchOn )  -- uncomment this to use old turn into wind calculation
 -- LoneWarrior.trapsheet = false
 
-function Teddy:OnAfterRecoveryStart(Event, From, To, Case, Offset)
-    env.info(string.format("Starting Recovery Case %d ops.", Case))
-
-    MSRS:New(SRS_PATH, 305, radio.modulation.AM, MSRS.Backend.SRSEXE)
-        :SetCoordinate(self:GetCoord())
-        :SetProvider(MSRS.Provider.WINDOWS)
-        :PlaySoundFile(SOUNDFILE:New("BossRecoverAircraft.ogg", COMMONSOUNDSFOLDER, 9, true), 10)
-end
+--function Teddy:OnAfterRecoveryStart(Event, From, To, Case, Offset)
+--    env.info(string.format("Starting Recovery Case %d ops.", Case))
+--
+--    MSRS:New(SRS_PATH, 305, radio.modulation.AM, MSRS.Backend.SRSEXE)
+--        :SetCoordinate(self:GetCoord())
+--        :SetProvider(MSRS.Provider.WINDOWS)
+--        :PlaySoundFile(SOUNDFILE:New("BossRecoverAircraft.ogg", COMMONSOUNDSFOLDER, 9, true), 10)
+--end
 
 -- Start airboss class.
 Teddy:Start()
+
+
+MSRS:New(SRS_PATH, 264, radio.modulation.AM, MSRS.Backend.SRSEXE)
+    :SetCoalition(coalition.side.BLUE)
+    :SetProvider(MSRS.Provider.WINDOWS)
+    :PlaySoundFile(SOUNDFILE:New("navy_wistle.ogg", COMMONSOUNDSFOLDER, 1, true), 0)
+
+if Teddy.msrsLSO then
+    NASG_TTS:Use(Teddy.msrs, "Teddy LSO", "Raynor", 200, 1.0)
+end
+
+--if Teddy.msrsMarshal then
+--    NASG_TTS:Use(Teddy.msrsMarshal, "Teddy Marshal", "Gabriella", 200, 1.0)
+--end
 
 -- LoneWarrior lighting flag values
 -- 0 - AUTO
