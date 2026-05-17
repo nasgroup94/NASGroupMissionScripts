@@ -61,23 +61,56 @@ northAAR:AssignSquadrons({Tank})
 
 
 -- AWACS Setup
- awacsZones= {
-    {
+awacsZones = {
+    North = {
         zone = ZONE:FindByName("AWACS North"),
-        alt = 3000,
+        alt = 30000,
         spd = 300,
         hdg = 90,
         leg = 60,
     },
+    South = {
+        zone = ZONE:FindByName("AWACS South"),
+        alt = 30000,
+        spd = 300,
+        hdg = 180,
+        leg = 30,
+    },
 }
 
-AWACS = SQUADRON:New("AWACS",4,"Al Minad AWACS")
-    :AddMissionCapability({AUFTRAG.Type.AWACS})
-    :SetCallsign(CALLSIGN.Aircraft.Magic,5)
-    :SetFuelLowThreshold(0.3)
-    :SetRadio(262, radio.modulation.AM)
+AWACS = SQUADRON:New("AWACS", 4, "Al Minad AWACS")
+                :AddMissionCapability({ AUFTRAG.Type.AWACS })
+                :SetCallsign(CALLSIGN.Aircraft.Magic, 5)
+                :SetFuelLowThreshold(0.3)
+                :SetRadio(262, radio.modulation.AM)
 
 AWACS:SetParkingIDs(AlMinadSquadronParkingIDs.AWACS)
 
 AMAW:AddSquadron(AWACS)
-AMAW:NewPayload(GROUP:FindByName("AWACS"),4,{AUFTRAG.Type.AWACS})
+AMAW:NewPayload(GROUP:FindByName("AWACS"), 4, { AUFTRAG.Type.AWACS })
+
+northAWACS = AUFTRAG:NewAWACS(
+        awacsZones.North.zone:GetCoordinate(),
+        awacsZones.North.alt,
+        awacsZones.North.spd,
+        awacsZones.North.hdg,
+        awacsZones.North.leg
+)
+                    :SetTime(1)
+                    :SetRepeat(10)
+                    :SetMissionRange(500)
+                    :SetName("North AWACS")
+                    :AssignSquadrons({ AWACS })
+
+southAWACS = AUFTRAG:NewAWACS(
+        awacsZones.South.zone:GetCoordinate(),
+        awacsZones.South.alt,
+        awacsZones.South.spd,
+        awacsZones.South.hdg,
+        awacsZones.South.leg
+)
+                    :SetTime(1)
+                    :SetRepeat(10)
+                    :SetMissionRange(500)
+                    :SetName("South AWACS")
+                    :AssignSquadrons({ AWACS })

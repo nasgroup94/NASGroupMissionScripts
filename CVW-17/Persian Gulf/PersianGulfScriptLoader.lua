@@ -15,64 +15,12 @@ local user_folder = "C:/Users/naval/"
 -- GLOBALS
 
 SERVER_LOCATION = user_folder .. "Saved Games/" .. DCSServerBotConfig.INSTANCE_NAME .. "/"
---GOOGLE_CREDS = "C:/Users/naval/Documents/dcs-datis-350723-fe7aab2d9ae1.json"
 SRS_PATH = "C:/DCS-SimpleRadioStandalone/ExternalAudio"
 SRS_PORT = DCSServerBotConfig.SRS_PORT
 TTS_SERVICE_PORT = 8765
---SRS_VOICES = {
---    Female = {
---        en_AU_Standard_A = "en-AU-Standard-A",
---        en_AU_Standard_C = "en-AU-Standard-C",
---        en_AU_Wavenet_A = "en-AU-Wavenet-A",
---        en_AU_Wavenet_C = "en-AU-Wavenet-C",
---        en_IN_Standard_A = "en-IN-Standard-A",
---        en_IN_Standard_D = "en-IN-Standard-D",
---        en_IN_Wavenet_A = "en-IN-Wavenet-A",
---        en_IN_Wavenet_D = "en-IN-Wavenet-D",
---        en_GB_Standard_A = "en-GB-Standard-A",
---        en_GB_Standard_C = "en-GB-Standard-C",
---        en_GB_Standard_F = "en-GB-Standard-F",
---        en_GB_Wavenet_A = "en-GB-Wavenet-A",
---        en_GB_Wavenet_C = "en-GB-Wavenet-C",
---        en_GB_Wavenet_F = "en-GB-Wavenet-F",
---        en_US_Standard_C = "en-US-Standard-C",
---        en_US_Standard_E = "en-US-Standard-E",
---        en_US_Standard_F = "en-US-Standard-F",
---        en_US_Standard_G = "en-US-Standard-G",
---        en_US_Standard_H = "en-US-Standard-H",
---        en_US_Wavenet_C = "en-US-Wavenet-C",
---        en_US_Wavenet_E = "en-US-Wavenet-E",
---        en_US_Wavenet_F = "en-US-Wavenet-F",
---        en_US_Wavenet_G = "en-US-Wavenet-G",
---        en_US_Wavenet_H = "en-US-Wavenet-H"
---    },
---    Male = {
---        en_AU_Standard_B = "en-AU-Standard-B",
---        en_AU_Standard_D = "en-AU-Standard-D",
---        en_AU_Wavenet_B = "en-AU-Wavenet-B",
---        en_AU_Wavenet_D = "en-AU-Wavenet-D",
---        en_IN_Standard_B = "en-IN-Standard-B",
---        en_IN_Standard_C = "en-IN-Standard-C",
---        en_IN_Wavenet_B = "en-IN-Wavenet-B",
---        en_IN_Wavenet_C = "en-IN-Wavenet-C",
---        en_GB_Standard_B = "en-GB-Standard-B",
---        en_GB_Standard_D = "en-GB-Standard-D",
---        en_GB_Wavenet_B = "en-GB-Wavenet-B",
---        en_GB_Wavenet_D = "en-GB-Wavenet-D",
---        en_US_Standard_A = "en-US-Standard-A",
---        en_US_Standard_B = "en-US-Standard-B",
---        en_US_Standard_D = "en-US-Standard-D",
---        en_US_Standard_I = "en-US-Standard-I",
---        en_US_Standard_J = "en-US-Standard-J",
---        en_US_Wavenet_A = "en-US-Wavenet-A",
---        en_US_Wavenet_B = "en-US-Wavenet-B",
---        en_US_Wavenet_D = "en-US-Wavenet-D",
---        en_US_Wavenet_I = "en-US-Wavenet-I",
---        en_US_Wavenet_J = "en-US-Wavenet-J"
---    }
---}
-COMMONSOUNDSFOLDER = common_scripts_path .. "sound/"
 
+
+COMMONSOUNDSFOLDER = common_scripts_path .. "sound/"
 
 -- AIRBOSS/RANGE Sound file locations within the miz file
 AIRBOSSBASESOUNDFOLDER = COMMONSOUNDSFOLDER .. "AIRBOSS/" -- needed for the default pilot sound files used by airboss
@@ -122,6 +70,7 @@ assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\BlueATC.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\SEADRangeIADS.lua"))()
+assert(loadfile(mission_scripts_path .. "Training\\AAPVERange.lua"))()
 
 
 
