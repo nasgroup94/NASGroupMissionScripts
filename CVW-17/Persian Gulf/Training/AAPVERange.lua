@@ -86,6 +86,14 @@ AAPVERange.CapAssignmentModulation = radio.modulation.AM
 AAPVERange.CapAssignmentVoice = "Nathan"
 AAPVERange.CapAssignmentLabel = "Magic"
 
+AAPVERange.TTSFrequency = 262
+AAPVERange.TTSModulation = radio.modulation.AM
+AAPVERange.TTSVoice = "Nathan"
+AAPVERange.TTSLabel = "Magic"
+AAPVERange.TTSSpeed = 200
+AAPVERange.TTSVolume = 1.0
+AAPVERange.TTSEndpoint = "http://127.0.0.1:8765/tts"
+
 AAPVERange.RedAwacsTemplate = "redawacs"
 AAPVERange.RedAwacsZone = ZONE:New("AAPVE_REDAWACS_ZONE")
 AAPVERange.RedAwacsAltitude = 30000
@@ -114,12 +122,12 @@ AAPVERange.DetectionCheckSeconds = 10
 
 AAPVERange.CapScenarioActive = false
 AAPVERange.CapScenarioScheduler = nil
-AAPVERange.CapScenarioIntervalSeconds = 180
-AAPVERange.CapScenarioInitialDelaySeconds = 20
+AAPVERange.CapScenarioIntervalSeconds = 500
+AAPVERange.CapScenarioInitialDelaySeconds = 60
 
-AAPVERange.CapScenarioMaxActiveGroups = 6
+AAPVERange.CapScenarioMaxActiveGroups = 2
 AAPVERange.CapScenarioBaseGroupsPerPlayer = 1
-AAPVERange.CapScenarioMaxGroupsPerWave = 4
+AAPVERange.CapScenarioMaxGroupsPerWave = 1
 
 AAPVERange.CapScenarioHostileChance = 70
 AAPVERange.CapScenarioFriendlyChance = 20
@@ -274,6 +282,55 @@ AAPVERange.EventHandler:HandleEvent(EVENTS.PilotDead)
 -- Put TTS calls in these functions.
 ---------------------------------------------------------------------------
 
+function AAPVERange:SendRangeTTS(messageText, label, voice)
+    if not messageText or messageText == "" then
+        return
+    end
+
+    if not MSRS then
+        env.info("[AAPVERange] MSRS unavailable. TTS skipped: " .. tostring(messageText))
+        return
+    end
+
+    local msrs = nil
+
+    pcall(function()
+        msrs = MSRS:New(
+                "",
+                self.TTSFrequency or self.CapAssignmentFrequency or 262,
+                self.TTSModulation or self.CapAssignmentModulation or radio.modulation.AM
+        )
+    end)
+
+    if not msrs then
+        env.info("[AAPVERange] Failed to create MSRS object. TTS skipped: " .. tostring(messageText))
+        return
+    end
+
+    pcall(function()
+        msrs:SetBackendPythonWebSocket(self.TTSEndpoint or "http://127.0.0.1:8765/tts")
+    end)
+
+    pcall(function()
+        msrs:SetCoalition(coalition.side.BLUE)
+    end)
+
+    pcall(function()
+        msrs:SetLabel(label or self.TTSLabel or "Magic")
+    end)
+
+    pcall(function()
+        msrs:SetVolume(self.TTSVolume or 1.0)
+    end)
+
+    msrs.voice = voice or self.TTSVoice or self.CapAssignmentVoice or "Nathan"
+    msrs.speed = self.TTSSpeed or 200
+
+    pcall(function()
+        msrs:PlayText(messageText, 0)
+    end)
+end
+
 function AAPVERange:OnAfterSpawned(spawnedGroup, aircraftName, count, skill, engageRangeNm)
     MESSAGE:New(
             string.format(
@@ -298,6 +355,15 @@ function AAPVERange:OnAfterClientInZone(client)
             ),
             10
     ):ToCoalition(coalition.side.BLUE)
+    self:SendRangeTTS(
+            string.format(
+                    "You Have entered the Air to air range.",
+                    playerCount or 0
+            ),
+            "Magic",
+            "Nathan"
+    )
+
 
     -- TTS hook example:
     -- "Fight's on."
@@ -382,6 +448,14 @@ function AAPVERange:OnAfterCapScenarioStarted(playerCount)
             ),
             15
     ):ToCoalition(coalition.side.BLUE)
+    self:SendRangeTTS(
+            string.format(
+                    "Magic, CAP hold task is active. Hold assigned CAP. Players in the zone, %d. Sanitize the airspace.",
+                    playerCount or 0
+            ),
+            "Magic",
+            "Nathan"
+    )
 
     -- TTS hook example:
     -- "You are tasked to hold CAP. Use AWACS to classify contacts."
@@ -434,6 +508,7 @@ function AAPVERange:OnAfterNonThreatRemoved(groupName, reason)
     ):ToCoalition(coalition.side.BLUE)
 
     self:RetaskToAssignedCap("Track no factor.")
+
 
     -- TTS hook example:
     -- "Track faded."
@@ -642,6 +717,57 @@ function AAPVERange:GetActiveScenarioGroupCount()
     end
 
     return count
+end
+
+
+function AAPVERange:GetActiveScenarioGroupCount()
+    local count = 0
+
+    for _, group in pairs(self.ActiveGroups) do
+        if group and group:IsAlive() then
+            local groupName = group:GetName()
+
+            if groupName and string.find(groupName, "AAPVE_CAPTASK", 1, true) ~= nil then
+                count = count + 1
+            end
+        end
+    end
+
+    return count
+end
+
+function AAPVERange:GetActiveScenarioHostileAircraftCount()
+    local count = 0
+
+    for _, group in pairs(self.ActiveGroups) do
+        if group and group:IsAlive() then
+            local groupName = group:GetName()
+
+            if groupName and string.find(groupName, "AAPVE_CAPTASK_Hostile", 1, true) ~= nil then
+                local units = nil
+
+                pcall(function()
+                    units = group:GetUnits()
+                end)
+
+                if units then
+                    for _, unit in pairs(units) do
+                        if unit and unit:IsAlive() then
+                            count = count + 1
+                        end
+                    end
+                else
+                    count = count + 1
+                end
+            end
+        end
+    end
+
+    return count
+end
+
+function AAPVERange:GetRandomCapScenarioRole()
+    return "Hostile"
 end
 
 function AAPVERange:GetRandomCapScenarioRole()
@@ -1229,10 +1355,6 @@ function AAPVERange:SpawnCapScenarioGroup(roleName)
 
     local groupSize = 1
 
-    if roleName == "Hostile" then
-        groupSize = math.random(1, 2)
-    end
-
     local altitude = math.random(self.CapScenarioMinAltitude, self.CapScenarioMaxAltitude)
     local speed = math.random(self.CapScenarioMinSpeed, self.CapScenarioMaxSpeed)
 
@@ -1290,29 +1412,23 @@ function AAPVERange:SpawnCapScenarioWave()
         return
     end
 
-    local activeScenarioGroups = self:GetActiveScenarioGroupCount()
+    local activeHostileAircraft = self:GetActiveScenarioHostileAircraftCount()
+    local maxHostileAircraft = playerCount
 
-    if activeScenarioGroups >= self.CapScenarioMaxActiveGroups then
+    if activeHostileAircraft >= maxHostileAircraft then
         return
     end
 
-    local desiredGroups = playerCount * self.CapScenarioBaseGroupsPerPlayer
+    local desiredGroups = maxHostileAircraft - activeHostileAircraft
 
     if desiredGroups > self.CapScenarioMaxGroupsPerWave then
         desiredGroups = self.CapScenarioMaxGroupsPerWave
     end
 
-    local availableSlots = self.CapScenarioMaxActiveGroups - activeScenarioGroups
-
-    if desiredGroups > availableSlots then
-        desiredGroups = availableSlots
-    end
-
     local spawnedGroups = {}
 
     for _ = 1, desiredGroups do
-        local roleName = self:GetRandomCapScenarioRole()
-        local spawnedGroup = self:SpawnCapScenarioGroup(roleName)
+        local spawnedGroup = self:SpawnCapScenarioGroup("Hostile")
 
         if spawnedGroup then
             spawnedGroups[#spawnedGroups + 1] = spawnedGroup
@@ -1381,7 +1497,7 @@ function AAPVERange:RetaskToAssignedCap(reason)
     local radioMessage = string.format(
             "Magic, %s Resume %s, %s.",
             reason or "contact resolved.",
-            self.AssignedCapHold.Name or "assigned CAP",
+            self.AssignedCapHold.Name or "assigned cap",
             bullseyeString
     )
 

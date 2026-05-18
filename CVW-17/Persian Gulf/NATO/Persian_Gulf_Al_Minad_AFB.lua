@@ -82,7 +82,7 @@ AWACS = SQUADRON:New("AWACS", 4, "Al Minad AWACS")
                 :AddMissionCapability({ AUFTRAG.Type.AWACS })
                 :SetCallsign(CALLSIGN.Aircraft.Magic, 5)
                 :SetFuelLowThreshold(0.3)
-                :SetRadio(262, radio.modulation.AM)
+                :SetRadio(305, radio.modulation.AM)
 
 AWACS:SetParkingIDs(AlMinadSquadronParkingIDs.AWACS)
 
