@@ -46,7 +46,7 @@ NASG_PYWS_DEBUG = false
 
 -- Moose/mist (really need to getrid of MIST one of these days!)
 assert(loadfile(moose_folder .. "Moose.lua"))()
-assert(loadfile(common_scripts_path .. "Test/NASG_ReloadScriptsMenu.lua"))()
+--assert(loadfile(common_scripts_path .. "Test/NASG_ReloadScriptsMenu.lua"))()
 assert(loadfile(common_scripts_path .. "TTS Test\\SRS_PythonWebSocket.lua"))() -- the order of these two matter this one first
 MSRS.LoadConfigFile(nil, mission_scripts_path, "Persian_Gulf_msrs_config.lua") -- Note the "." here
 assert(loadfile(common_scripts_path .. "TTS Test\\tts_init.lua"))() -- the order of these two matter this one second
@@ -70,7 +70,7 @@ assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\BlueATC.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\SEADRangeIADS.lua"))()
-assert(loadfile(mission_scripts_path .. "Training\\AAPVERange.lua"))()
+assert(loadfile(mission_scripts_path .. "Training\\AAPVERange_MOOSE.lua"))()
 
 
 
