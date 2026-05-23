@@ -4223,7 +4223,7 @@ function AAPVE_MOOSE.EventHandler:OnEventDead(EventData)
 end
 
 function AAPVE_MOOSE.EventHandler:OnEventCrash(EventData)
-    AAP_MOOSE:HandleDeathEvent(EventData)
+    AAPVE_MOOSE:HandleDeathEvent(EventData)
 end
 
 function AAPVE_MOOSE.EventHandler:OnEventPilotDead(EventData)
