@@ -54,7 +54,7 @@ Red_Bomber_Airwing:Start()
 function Check_In_DMZ(mission)
     for _, missionObj in pairs(Bombing_missions) do
         if missionObj ~= nil then
-            -- trigger.action.outText(missionObj.mission.name .. " - Checking DMZ...", 5)
+            -- trigger.action.outText(missionObj.mission.json.name .. " - Checking DMZ...", 5)
             local mission_group = missionObj.mission:GetOpsGroups()
             if mission_group[1] ~= nil then
                 -- trigger.action.outText("Checking group: " .. mission_group[1].groupname, 5)
@@ -65,7 +65,7 @@ function Check_In_DMZ(mission)
                     if dmz_zone:IsCoordinateInZone(mission_group_coord) then
                         math.random(); math.random(); math.random()
                         local choice = math.random(1, 4)
-                        -- trigger.action.outText(missionObj.mission.name .. " - Choice was: " .. tostring(choice), 240)
+                        -- trigger.action.outText(missionObj.mission.json.name .. " - Choice was: " .. tostring(choice), 240)
                         if choice <= 3 then
                             missionObj.mission:Cancel()
                             missionObj.mission_timer:Stop()

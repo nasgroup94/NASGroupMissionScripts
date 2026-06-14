@@ -271,13 +271,13 @@ func (a *Application) Run(ctx context.Context, cancel context.CancelFunc, wg *sy
 	})
 
 	wg.Go(func() {
-		log.Info().Msg("updating mission time and bullseye")
+		log.Info().Msg("updating mission.json time and bullseye")
 		ticker := time.NewTicker(2*time.Second + 100*time.Millisecond)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
-				log.Info().Msg("stopping mission time and bullseye updates due to context cancellation")
+				log.Info().Msg("stopping mission.json time and bullseye updates due to context cancellation")
 				return
 			case <-ticker.C:
 				a.updateMissionTime()
@@ -385,7 +385,7 @@ func (a *Application) Run(ctx context.Context, cancel context.CancelFunc, wg *sy
 	return nil
 }
 
-// updateMissionTime updates the mission time on the radar.
+// updateMissionTime updates the mission.json time on the radar.
 func (a *Application) updateMissionTime() {
 	missionTime := a.telemetryClient.Time()
 	a.radar.SetMissionTime(missionTime)

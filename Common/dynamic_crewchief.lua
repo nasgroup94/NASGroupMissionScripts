@@ -66,7 +66,7 @@ BASE:I("Dynamic Crewchief loading.")
                     local the_crew = {
                         chief = {
                             --crewchief located front left (will salute)
-                            spawn_group_name = "Crewchief", -- mission editor group name
+                            spawn_group_name = "Crewchief", -- mission.json editor group name
                             crew_group = nil,
                             radial_from_aircraft = 335, -- the angle from center of aircraft to place the crew member
                             distance_from_aircraft = 17, -- the distance from center of aircraft to place the crew member
@@ -77,7 +77,7 @@ BASE:I("Dynamic Crewchief loading.")
                         },
                         support1 = {
                             -- crew member left rear (will point)
-                            spawn_group_name = "Crewchief-support-1", -- mission editor group name
+                            spawn_group_name = "Crewchief-support-1", -- mission.json editor group name
                             crew_group = nil,
                             radial_from_aircraft = 210, -- the angle from center of aircraft to place the crew member
                             distance_from_aircraft = 12, -- the distance from center of aircraft to place the crew member
@@ -87,7 +87,7 @@ BASE:I("Dynamic Crewchief loading.")
                         },
                         support2 = {
                             -- crew member right rear (crouched)
-                            spawn_group_name = "Crewchief-support-2", -- mission editor group name
+                            spawn_group_name = "Crewchief-support-2", -- mission.json editor group name
                             crew_group = nil,
                             radial_from_aircraft = 150, -- the angle from center of aircraft to place the crew member
                             distance_from_aircraft = 10, -- the distance from center of aircraft to place the crew member
@@ -97,7 +97,7 @@ BASE:I("Dynamic Crewchief loading.")
                         },
                         support3 = {
                             -- crew member right side (will point)
-                            spawn_group_name = "Crewchief-support-3", -- mission editor group name
+                            spawn_group_name = "Crewchief-support-3", -- mission.json editor group name
                             crew_group = nil,
                             radial_from_aircraft = 75, -- the angle from center of aircraft to place the crew member
                             distance_from_aircraft = 10, -- the distance from center of aircraft to place the crew member

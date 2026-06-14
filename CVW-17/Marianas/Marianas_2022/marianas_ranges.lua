@@ -277,7 +277,7 @@ local pitSmoker = PITSMOKER:Start(PaganRange.rangezone, 1, 10)
 --     result.attackHdg = math.random(360)
 --     result.attackAlt = math.random(5000, 10000)
 --     result.attackVel = math.random(300, 500)
---     result.theatre = env.mission.theatre
+--     result.theatre = env.mission.json.theatre
     
 --     env.info("FF Test bomb! Expect impact in 1 seconds..")
     

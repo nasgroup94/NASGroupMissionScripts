@@ -203,7 +203,7 @@ func (c *streamingClient) collectUpdates() []sim.Updated {
 func (c *streamingClient) handleLines(ctx context.Context, reader *bufio.Reader) error {
 	log.Info().Msg("resetting ACMI client state")
 	c.reset()
-	log.Info().Msg("sending mission start message")
+	log.Info().Msg("sending mission.json start message")
 	c.starts <- sim.Started{}
 
 	// result holds a line read from the ACMI stream or an error from the reader goroutine.

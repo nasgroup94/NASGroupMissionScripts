@@ -18,11 +18,26 @@ import websockets
 CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="NASGroupMissionScripts TTS inbox service.")
+def parse_args() -> argparse.Namespace:
+    script_path = Path(__file__).resolve()
+    python_dir = script_path.parent
+    atc_root = python_dir.parent
+    atc_bin_dir = atc_root / "bin"
+    atc_tmp_dir = atc_root / "tmp"
+    atc_tts_cache_dir = atc_root / "tts_cache"
+
+    parser = argparse.ArgumentParser(description="NASG TTS websocket service")
 
     parser.add_argument("--host", default=os.getenv("TTS_SERVICE_HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.getenv("TTS_SERVICE_PORT", "8765")))
+    parser.add_argument(
+        "--stop-file",
+        default=os.getenv("TTS_SERVICE_STOP_FILE", str(atc_tmp_dir / "nasg_tts_service.stop")),
+    )
+    parser.add_argument(
+        "--upstream-uri",
+        default=os.getenv("TTS_UPSTREAM_URI", "ws://127.0.0.1:8766"),
+    )
 
     parser.add_argument("--srs-host", default=os.getenv("SRS_HOST", "127.0.0.1"))
     parser.add_argument(
@@ -34,7 +49,7 @@ def parse_args():
         "--srs-go-sender",
         default=os.getenv(
             "SRS_GO_SENDER_EXE",
-            str(Path(__file__).resolve().parent / "srs-tts-send.exe"),
+            str(atc_bin_dir / "srs-tts-send.exe"),
         ),
     )
     parser.add_argument(
@@ -54,22 +69,24 @@ def parse_args():
         "--output-dir",
         default=os.getenv(
             "TTS_SERVICE_OUTPUT_DIR",
-            r"C:\NASGroup\NASGroupMissionScripts\Common\TTS Test",
+            str(atc_tmp_dir / "tts_output"),
         ),
     )
-    parser.add_argument("--cache-dir", default=os.getenv("TTS_SERVICE_CACHE_DIR", None))
-    parser.add_argument("--inbox-dir", default=os.getenv("TTS_SERVICE_INBOX_DIR", None))
     parser.add_argument(
-        "--upstream-uri",
-        default=os.getenv("TTS_UPSTREAM_URI", "ws://96.32.24.78:8080"),
+        "--cache-dir",
+        default=os.getenv(
+            "TTS_SERVICE_CACHE_DIR",
+            str(atc_tts_cache_dir),
+        ),
     )
-
     parser.add_argument(
-        "--verbose",
-        action="store_true",
-        default=os.getenv("TTS_SERVICE_VERBOSE", "0").lower() in ("1", "true", "yes", "on"),
-        help="Enable verbose diagnostic logging.",
+        "--inbox-dir",
+        default=os.getenv(
+            "TTS_SERVICE_INBOX_DIR",
+            str(atc_tmp_dir / "tts_inbox" / "main"),
+        ),
     )
+    parser.add_argument("--verbose", action="store_true")
 
     return parser.parse_args()
 
@@ -290,27 +307,121 @@ def set_job(job_id: str, updates: dict):
         jobs[job_id] = job
 
 
+TTS_RUNTIME_CONFIG_FILE = os.environ.get(
+    "NASG_TTS_CONFIG_FILE",
+    str(Path(__file__).parent / "tmp" / "nasg_tts_config.json"),
+)
+
+TTS_RUNTIME_CONFIG = {
+    "default_voice": None,
+    "default_rate": None,
+    "default_pitch": None,
+    "default_volume": 1.0,
+    "facilities": {},
+}
+
+TTS_RUNTIME_CONFIG_MTIME = None
+
+
+def load_tts_runtime_config_if_changed() -> None:
+    global TTS_RUNTIME_CONFIG
+    global TTS_RUNTIME_CONFIG_MTIME
+
+    config_path = Path(TTS_RUNTIME_CONFIG_FILE)
+
+    if not config_path.exists():
+        return
+
+    try:
+        current_mtime = config_path.stat().st_mtime
+    except OSError:
+        return
+
+    if TTS_RUNTIME_CONFIG_MTIME == current_mtime:
+        return
+
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        log_debug(f"Failed to load TTS runtime config {config_path}: {exc}")
+        return
+
+    if not isinstance(data, dict):
+        return
+
+    TTS_RUNTIME_CONFIG.update(data)
+    TTS_RUNTIME_CONFIG_MTIME = current_mtime
+
+    log_debug(f"Loaded TTS runtime config: {config_path}")
+
+
+def resolve_tts_options(options: dict) -> dict:
+    load_tts_runtime_config_if_changed()
+
+    options = options or {}
+
+    facility = options.get("facility") or options.get("service") or "ground"
+    airport_id = options.get("airport_id")
+
+    facility_key = None
+
+    if airport_id:
+        facility_key = f"{airport_id}_{facility}"
+
+    facility_defaults = {}
+
+    facilities = TTS_RUNTIME_CONFIG.get("facilities") or {}
+
+    if facility_key and facility_key in facilities:
+        facility_defaults = facilities.get(facility_key) or {}
+    elif facility in facilities:
+        facility_defaults = facilities.get(facility) or {}
+
+    return {
+        "facility": facility,
+        "airport_id": airport_id,
+        "callsign": options.get("callsign") or facility_defaults.get("callsign"),
+        "voice": options.get("voice") or facility_defaults.get("voice") or TTS_RUNTIME_CONFIG.get("default_voice"),
+        "rate": options.get("rate") or facility_defaults.get("rate") or TTS_RUNTIME_CONFIG.get("default_rate"),
+        "pitch": options.get("pitch") or facility_defaults.get("pitch") or TTS_RUNTIME_CONFIG.get("default_pitch"),
+        "volume": options.get("volume") or facility_defaults.get("volume") or TTS_RUNTIME_CONFIG.get("default_volume"),
+        "format": options.get("format") or TTS_RUNTIME_CONFIG.get("default_format"),
+        "radio_effect": options.get("radio_effect", facility_defaults.get("radio_effect", True)),
+    }
+
+
 async def generate_tts(text: str, job_id: str, options: dict) -> Path:
     INSTANCE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    resolved_options = resolve_tts_options(options)
 
     request_payload = {
         "text": text,
     }
 
-    if options.get("voice") is not None:
-        request_payload["voice"] = options["voice"]
+    if resolved_options.get("voice") is not None:
+        request_payload["voice"] = resolved_options["voice"]
 
-    if options.get("rate") is not None:
-        request_payload["rate"] = options["rate"]
+    if resolved_options.get("rate") is not None:
+        request_payload["rate"] = resolved_options["rate"]
 
-    if options.get("pitch") is not None:
-        request_payload["pitch"] = options["pitch"]
+    if resolved_options.get("pitch") is not None:
+        request_payload["pitch"] = resolved_options["pitch"]
+
+    if resolved_options.get("format") is not None:
+        request_payload["format"] = resolved_options["format"]
 
     response_timeout_seconds = get_tts_response_timeout_seconds(text)
 
     log_debug(f"[{job_id}] Connecting to upstream TTS websocket: {URI}")
     log_debug(
-        f"[{job_id}] TTS text length={len(text or '')}, response timeout={response_timeout_seconds}s"
+        f"[{job_id}] facility={resolved_options.get('facility')} "
+        f"airport={resolved_options.get('airport_id')} "
+        f"callsign={resolved_options.get('callsign')} "
+        f"voice={resolved_options.get('voice')} "
+        f"rate={resolved_options.get('rate')} "
+        f"pitch={resolved_options.get('pitch')} "
+        f"text length={len(text or '')}, response timeout={response_timeout_seconds}s"
     )
 
     try:
@@ -1119,10 +1230,19 @@ if __name__ == "__main__":
     )
     inbox_thread.start()
 
+    stop_file = Path(ARGS.stop_file).expanduser().resolve()
+
+    if stop_file.exists():
+        try:
+            stop_file.unlink()
+        except OSError:
+            pass
+
     while True:
         try:
             server = ThreadingHTTPServer((ARGS.host, ARGS.port), TTSHandler)
             server.daemon_threads = True
+            server.timeout = 1.0
 
             log_info(f"TTS service instance: {INSTANCE_NAME}")
             log_info(f"TTS service running at http://{ARGS.host}:{ARGS.port}")
@@ -1131,12 +1251,24 @@ if __name__ == "__main__":
             log_info(f"TTS output: {INSTANCE_OUTPUT_DIR}")
             log_info(f"TTS cache:  {CACHE_DIR}")
             log_info(f"TTS inbox:  {INBOX_DIR}")
+            log_info(f"TTS stop file: {stop_file}")
             log_info(f"SRS backend: {SRS_BACKEND}")
             log_info(f"SRS host:    {SRS_HOST}")
             log_info(f"SRS sender:  {SRS_GO_SENDER_EXE}")
             log_info(f"Verbose:     {ARGS.verbose}")
 
-            server.serve_forever()
+            while not stop_file.exists():
+                server.handle_request()
+
+            log_info(f"TTS service stop file detected: {stop_file}")
+            server.server_close()
+
+            try:
+                stop_file.unlink()
+            except OSError:
+                pass
+
+            break
 
         except KeyboardInterrupt:
             log_info(f"TTS service stopped by user: {INSTANCE_NAME}")

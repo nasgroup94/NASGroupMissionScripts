@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "theater": "Nevada",
+  "area": "NTTR",
+  "coordinate_system": "dcs_world",
+  "source": {
+    "type": "dcs_mission_nav_points",
+    "file": "Misc/FLIPS/mission.json",
+    "table": "mission.coalition.blue.nav_points",
+    "not_for_real_navigation": true
+  },
+  "points": {
+    "ACTON": {
+      "id": "ACTON",
+      "name": "ACTON",
+      "type": "fix",
+      "mission_nav_id": 5134,
+      "dcs": {
+        "x": -341112.31644357,
+        "y": 19613.278311207
+      }
+    },
+    "APEX": {
+      "id": "APEX",
+      "name": "APEX",
+      "type": "fix",
+      "mission_nav_id": 5147,
+      "dcs": {
+        "x": -384143.32792027,
+        "y": -6077.8827747319
+      }
+    },
+    "ARCOE": {
+      "id": "ARCOE",
+      "name": "ARCOE",
+      "type": "fix",
+      "mission_nav_id": 1865,
+      "dcs": {
+        "x": -342231.73157678,
+        "y": -8019.0271172115
+      }
+    },
+    "CUVAX": {
+      "id": "CUVAX",
+      "name": "CUVAX",
+      "type": "fix",
+      "mission_nav_id": 2458,
+      "dcs": {
+        "x": -376185.07783795,
+        "y": 318.31028166258
+      }
+    },
+    "DREAM": {
+      "id": "DREAM",
+      "name": "DREAM",
+      "type": "fix",
+      "mission_nav_id": 2557,
+      "dcs": {
+        "x": -294144.9299824,
+        "y": -15742.414444969
+      }
+    },
+    "FYTTR": {
+      "id": "FYTTR",
+      "name": "FYTTR",
+      "type": "fix",
+      "mission_nav_id": 2934,
+      "dcs": {
+        "x": -385651.27362448,
+        "y": -76562.550055511
+      }
+    },
+    "LAS": {
+      "id": "LAS",
+      "name": "Las Vegas",
+      "type": "vortac",
+      "mission_nav_id": 5467,
+      "frequency_mhz": 116.9,
+      "channel": "116",
+      "dcs": {
+        "x": -415686.03542857,
+        "y": -28303.395714286
+      }
+    },
+    "LSV": {
+      "id": "LSV",
+      "name": "Nellis",
+      "type": "tacan",
+      "mission_nav_id": 5610,
+      "channel": "12",
+      "dcs": {
+        "x": -397135.92601307,
+        "y": -16545.701499916
+      }
+    },
+    "MMM21": {
+      "id": "MMM21",
+      "name": "MMM 21 DME",
+      "type": "dme_fix",
+      "mission_nav_id": 3799,
+      "dcs": {
+        "x": -377286.20867172,
+        "y": -8922.6676164023
+      }
+    },
+    "MMM38": {
+      "id": "MMM38",
+      "name": "MMM 38 DME",
+      "type": "dme_fix",
+      "mission_nav_id": 3800,
+      "dcs": {
+        "x": -385854.51570229,
+        "y": -1955.2982698817
+      }
+    },
+    "MMM47": {
+      "id": "MMM47",
+      "name": "MMM 47 DME",
+      "type": "dme_fix",
+      "mission_nav_id": 3801,
+      "dcs": {
+        "x": -386755.36564076,
+        "y": -22639.824701688
+      }
+    },
+    "MINTT": {
+      "id": "MINTT",
+      "name": "MINTT",
+      "type": "fix",
+      "mission_nav_id": 3789,
+      "dcs": {
+        "x": -345390.18853375,
+        "y": -24732.02012372
+      }
+    },
+    "RYAAN": {
+      "id": "RYAAN",
+      "name": "RYAAN",
+      "type": "fix",
+      "mission_nav_id": 4424,
+      "dcs": {
+        "x": -386754.88839215,
+        "y": -22639.775982629
+      }
+    },
+    "STRYK": {
+      "id": "STRYK",
+      "name": "STRYK",
+      "type": "fix",
+      "mission_nav_id": 4500,
+      "dcs": {
+        "x": -377681.83865799,
+        "y": -60585.498972096
+      }
+    },
+    "JUNNO": {
+      "id": "JUNNO",
+      "name": "JUNNO",
+      "type": "fix",
+      "mission_nav_id": 3387,
+      "dcs": {
+        "x": -343007.75491153,
+        "y": -4645.5387672084
+      }
+    },
+    "SIMNS": {
+      "id": "SIMNS",
+      "name": "SIMNS",
+      "type": "fix",
+      "mission_nav_id": 5758,
+      "dcs": {
+        "x": -392498.54971429,
+        "y": -30481.91
+      }
+    },
+    "CRAIG": {
+      "id": "CRAIG",
+      "name": "CRAIG",
+      "type": "visual_reference",
+      "mission_nav_id": 5359,
+      "dcs": {
+        "x": -396280.49257143,
+        "y": -26690.395714285
+      }
+    },
+    "GASS PK": {
+      "id": "GASS PK",
+      "name": "GASS PEAK",
+      "type": "visual_reference",
+      "mission_nav_id": 5402,
+      "dcs": {
+        "x": -379923.40685714,
+        "y": -30594.110000001
+      }
+    },
+    "PHINN": {
+      "id": "PHINN",
+      "name": "PHINN",
+      "type": "fix",
+      "mission_nav_id": 5646,
+      "dcs": {
+        "x": -390077.23542857,
+        "y": -10552.681428571
+      }
+    },
+    "ATALF": {
+      "id": "ATALF",
+      "name": "ATALF",
+      "type": "fix",
+      "mission_nav_id": 1920,
+      "dcs": {
+        "x": -380503.72819422,
+        "y": -3157.3627525245
+      }
+    },
+    "HEREM": {
+      "id": "HEREM",
+      "name": "HEREM",
+      "type": "fix",
+      "mission_nav_id": 3098,
+      "dcs": {
+        "x": -382343.42904479,
+        "y": -3084.4728921995
+      }
+    },
+    "ZINAX": {
+      "id": "ZINAX",
+      "name": "ZINAX",
+      "type": "fix",
+      "mission_nav_id": 5019,
+      "dcs": {
+        "x": -380631.29489902,
+        "y": -1245.3203777065
+      }
+    },
+    "KLSV.03L": {
+      "id": "KLSV.03L",
+      "name": "Nellis Runway 03L",
+      "type": "runway_reference",
+      "mission_nav_id": 5461,
+      "dcs": {
+        "x": -399152.83542857,
+        "y": -18438.138571429
+      }
+    },
+    "KLSV.03R": {
+      "id": "KLSV.03R",
+      "name": "Nellis Runway 03R",
+      "type": "runway_reference",
+      "mission_nav_id": 5462,
+      "dcs": {
+        "x": -399347.17828572,
+        "y": -18203.024285714
+      }
+    },
+    "KLSV.21L": {
+      "id": "KLSV.21L",
+      "name": "Nellis Runway 21L",
+      "type": "runway_reference",
+      "mission_nav_id": 5463,
+      "dcs": {
+        "x": -397038.264,
+        "y": -16258.395714286
+      }
+    },
+    "KLSV.21R": {
+      "id": "KLSV.21R",
+      "name": "Nellis Runway 21R",
+      "type": "runway_reference",
+      "mission_nav_id": 5464,
+      "dcs": {
+        "x": -396826.20685714,
+        "y": -16477.452857143
+      }
+    }
+  }
+}

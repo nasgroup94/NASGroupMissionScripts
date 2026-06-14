@@ -7,10 +7,10 @@ import (
 	"github.com/paulmach/orb"
 )
 
-// StartedCallback is a callback function that is called when a new mission is started.
+// StartedCallback is a callback function that is called when a new mission.json is started.
 type StartedCallback func()
 
-// SetStartedCallback sets the callback function that is called when a new mission is started.
+// SetStartedCallback sets the callback function that is called when a new mission.json is started.
 func (r *Radar) SetStartedCallback(callback StartedCallback) {
 	r.callbackLock.Lock()
 	defer r.callbackLock.Unlock()

@@ -1,4 +1,4 @@
--- Instructions: include flightlog.lua in a mission either with a DO SCRIPT FILE, or a
+-- Instructions: include flightlog.lua in a mission.json either with a DO SCRIPT FILE, or a
 -- DO SCRIPT containing the following:
 -- assert(loadfile("C:/VNAO/VNAO-Mission_Scripts/Common/flightlog.lua"))()
 
@@ -15,7 +15,7 @@ local uuid = require("uuid_generator")
 
 
 -- Table to store the Flight Log information.  This is Global so that it can be used in
--- mission scipts
+-- mission.json scipts
 PilotFlightRecord = {}
 
 local function sendToFunkman(result)
@@ -309,7 +309,7 @@ local function FlightLoggingMissionEndHandler(event)
             dcsbot.sendBotMessage('Mission End Handler')
         end
 
-        -- If the mission has ended loop through everything in the flight log and submit flight logs
+        -- If the mission.json has ended loop through everything in the flight log and submit flight logs
         -- for any elements that haven't landed
         for flID, v in pairs(PilotFlightRecord) do
             if v.flightlog.airborne == true then

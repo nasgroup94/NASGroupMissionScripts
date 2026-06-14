@@ -5,7 +5,7 @@ import (
 	"github.com/dharmab/skyeye/pkg/trackfiles"
 )
 
-// Started is a message sent when a new mission starts.
+// Started is a message sent when a new mission.json starts.
 type Started struct {
 }
 

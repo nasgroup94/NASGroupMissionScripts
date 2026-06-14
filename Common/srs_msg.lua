@@ -16,7 +16,7 @@
 -- BASE:TraceOn()
 --]]
 
--- TODO Rebuild this differently. It's not very flexable and should not require the end mission developer to use different
+-- TODO Rebuild this differently. It's not very flexable and should not require the end mission.json developer to use different
 -- event functions than the original MOOSE ones.
 
 SRSSETTINGS = {
@@ -209,7 +209,7 @@ function RESCUEHELOMSRS:OnAfterRescue(From, Event, To, RescueCoord)
 
     self:_SendComms(msg)
 
-    -- Trigger the extended event to be used by mission devs.
+    -- Trigger the extended event to be used by mission.json devs.
     self:__RescueMSRS(10)
 end
 
@@ -226,7 +226,7 @@ function RESCUEHELOMSRS:OnAfterReturned(From, Event, To, airbase)
 
     self:_SendComms(msg)
 
-    -- Trigger the extended event to be used by mission devs.
+    -- Trigger the extended event to be used by mission.json devs.
     self:__ReturnedMSRS(10)
 end
 
@@ -245,7 +245,7 @@ function RESCUEHELOMSRS:OnAfterRTB(From, Event, To, airbase)
     self:_SendComms(msg)
     -- TIMER:New(RESCUEHELOMSRS._SendComms, self, msg):Start(120)
 
-    -- Trigger the extended event to be used by mission devs.
+    -- Trigger the extended event to be used by mission.json devs.
     self:__RTBMSRS(10)
 end
 
@@ -286,7 +286,7 @@ function RESCUEHELOMSRS:OnAfterStart(From, Event, To)
     -- Delay the radio call to time it with the sim.
     TIMER:New(RESCUEHELOMSRS._SendComms, self, msg3):Start(330)
 
-    -- Trigger the extended event to be used by mission devs.
+    -- Trigger the extended event to be used by mission.json devs.
     self:__StartMSRS(10)
 end
 
@@ -303,7 +303,7 @@ function RESCUEHELOMSRS:OnAfterRun(From, Event, To)
 
     self:_SendComms(msg)
 
-    -- Trigger the extended event to be used by mission devs.
+    -- Trigger the extended event to be used by mission.json devs.
     self:__RunMSRS(10)
 end
 
@@ -375,7 +375,7 @@ function RANGEMSRS:TurnCommsOFF()
 end
 
 function RANGEMSRS:SendCurrentWX()
-    -- Make sure we have valid weather data. DCS weather never changes in the mission,
+    -- Make sure we have valid weather data. DCS weather never changes in the mission.json,
     -- so this only needs to be called once the first time it's needed.
     if self.CurrentWX.WindSpd == nil then
         local zonePoint = self.rangezone:GetCoordinate()

@@ -13,7 +13,7 @@ do
 
 end
 
---DEBUG (Comment out prior to final mission or there will be an overlay)
+--DEBUG (Comment out prior to final mission.json or there will be an overlay)
  if IADSDebug == true then  
     local islandIADSDebug = islandIADS:getDebugSettings()
     islandIADSDebug.IADSStatus = true

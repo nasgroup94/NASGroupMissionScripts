@@ -13,7 +13,7 @@ function vnao.onNetMissionChanged(newMissionName)
     f:write(missionName)
     f:close()
 
-    net.log('VNAO: Current mission: ' .. missionName)
+    net.log('VNAO: Current mission.json: ' .. missionName)
 end
 
 DCS.setUserCallbacks(vnao)

@@ -55,7 +55,7 @@ do
     redIADS:activate()
     
 
---DEBUG (Comment out prior to final mission or there will be an overlay)
+--DEBUG (Comment out prior to final mission.json or there will be an overlay)
     --Seems that the last IADS made is the only overlay that shows up. Comment out the others to debug if nessasary.
     local iadsDebug = redIADS:getDebugSettings()
     iadsDebug.IADSStatus = true

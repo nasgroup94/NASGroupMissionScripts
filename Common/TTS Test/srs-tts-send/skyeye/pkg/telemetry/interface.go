@@ -18,6 +18,6 @@ type Client interface {
 	Stream(context.Context, *sync.WaitGroup, chan<- sim.Started, chan<- sim.Updated, chan<- sim.Faded)
 	// Bullseye returns the position of the given coalition's bullseye.
 	Bullseye(coalitions.Coalition) (orb.Point, error)
-	// Time returns the current mission time.
+	// Time returns the current mission.json time.
 	Time() time.Time
 }

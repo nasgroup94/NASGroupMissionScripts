@@ -28,7 +28,7 @@ do
  
 
 
-    -- creates a new factory object from a static unit placed in the mission editor.
+    -- creates a new factory object from a static unit placed in the mission.json editor.
     -- Sets coalition from the static object
     -- @param #FACTORY self
     -- @param Wrapper.Static#STATIC factory The object used to represent the factory

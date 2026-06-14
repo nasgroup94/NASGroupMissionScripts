@@ -105,7 +105,7 @@
 #
 # If authentication is enabled on the DCS-gRPC server, set the API key here.
 # Authentication is STORNGLY RECOMMENDED if the DCS-gRPC server is exposed over
-# a network, as it allows powerful control over the DCS World server and mission.
+# a network, as it allows powerful control over the DCS World server and mission.json.
 #grpc-password: passwordgoeshere
 
 # IDENTITY
@@ -189,7 +189,7 @@
 # At a close enough range, any hostile aircraft with air-to-air capabilities is
 # considred a threat regardless of its platform. The default value (25 nautical
 # miles) is a reasonable choice for a modern setting, but you may wish to tune
-# this based on mission requirements and player skill level.
+# this based on mission.json requirements and player skill level.
 #mandatory-threat-radius: 25
 #
 # The GCI may issue threat calls using either BRAA or Bullseye format.

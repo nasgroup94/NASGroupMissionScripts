@@ -107,7 +107,7 @@ AircraftData["A-10C_2"]         = { FuelMax = 5000 }
 --[[ My attempt at capturing refueling events in MP
     The general outline is that when a client is with in a zone around a tanker, start monitoring the clients fuel amount to see if
     it is increasing or not and keep track of total fuel received and how many times the client connected while not leaving the zone. 
-    After the client has left the zone then a function is called where mission designers can report the results.
+    After the client has left the zone then a function is called where mission.json designers can report the results.
 
     Tanker zones are created based on a unit set that is filtered based on a naming convention used in the tankers name .  For e.g. 
     using names that contain words like "Shell", "Texaco", "Arco" or "Tanker".

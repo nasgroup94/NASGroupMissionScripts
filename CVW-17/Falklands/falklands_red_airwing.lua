@@ -43,7 +43,7 @@ RedIslandChief:__Start(2)
 --Create a CAP Mission altitude 8k meters and 300 kts
 local missionCAP = AUFTRAG:NewCAP(islandCAPZone,8000,300)
 
---- add this mission to the island air wing
+--- add this mission.json to the island air wing
 RedIslandAW:AddMission(missionCAP)
 RedIslandAW:SetNumberCAP(2)
 

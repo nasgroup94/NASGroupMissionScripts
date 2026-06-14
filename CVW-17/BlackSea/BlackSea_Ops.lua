@@ -63,12 +63,12 @@ function Ops_Prowler()
     Prowler_1:SetAirboss(Truman)
     Prowler_1:Activate()
 
-    -- Assign the F14s to escort the prowler and submit mission.
+    -- Assign the F14s to escort the prowler and submit mission.json.
     Auftrag_Escort_Prowler = AUFTRAG:NewESCORT(Prowler_1:GetGroup(), {x=-100, y=1828, z=200}, 5, {'Air'})
     CVW7_Airwing:AddMission(Auftrag_Escort_Prowler)
 end
 
--- After the Prowler is back to the ship, cancel the mission and assign both flights as clear to land.
+-- After the Prowler is back to the ship, cancel the mission.json and assign both flights as clear to land.
 function Prowler_1:onafterHolding(From, Event, To)
     env.info('VNAO: BlackSea_Ops: Prowler_1:onafterHolding: Prowler_1 is now in holding.')
     Auftrag_Escort_Prowler:Cancel()

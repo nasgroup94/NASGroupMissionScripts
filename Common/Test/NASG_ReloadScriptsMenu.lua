@@ -1,5 +1,5 @@
 --- NAS Reload Scripts Menu
--- Adds F10 Other menu commands to reload mission scripts from disk.
+-- Adds F10 Other menu commands to reload mission.json scripts from disk.
 --
 -- Load this file after MOOSE is loaded.
 --
@@ -18,7 +18,7 @@ NAS_SCRIPT_RELOADER.ConfirmCommandName = "CONFIRM Reload Mission Scripts"
 -- Update these paths for your server / local machine.
 NAS_SCRIPT_RELOADER.ScriptFiles = NAS_SCRIPT_RELOADER.ScriptFiles or {
     -- MOOSE first if you really want to reload the framework.
-    -- Usually safer to leave Moose.lua alone and reload only your mission layer.
+    -- Usually safer to leave Moose.lua alone and reload only your mission.json layer.
     -- "C:\\Path\\To\\Moose.lua",
 
 
@@ -30,7 +30,7 @@ NAS_SCRIPT_RELOADER.ScriptFiles = NAS_SCRIPT_RELOADER.ScriptFiles or {
 }
 
 --- Optional cleanup hooks called before scripts are reloaded.
--- Add functions here from your mission code if they need explicit shutdown.
+-- Add functions here from your mission.json code if they need explicit shutdown.
 NAS_SCRIPT_RELOADER.CleanupHooks = NAS_SCRIPT_RELOADER.CleanupHooks or {}
 
 function NAS_SCRIPT_RELOADER:AddCleanupHook(Name, Func)
@@ -99,9 +99,9 @@ function NAS_SCRIPT_RELOADER:_StopKnownSchedulers()
 end
 
 function NAS_SCRIPT_RELOADER:_UnloadGlobals()
-    self:_Log("Clearing selected mission globals.")
+    self:_Log("Clearing selected mission.json globals.")
 
-    -- Put your own mission globals here.
+    -- Put your own mission.json globals here.
     -- Do NOT blindly nil MOOSE classes unless you fully reload MOOSE and know the side effects.
     --
     -- Example:
@@ -109,7 +109,7 @@ function NAS_SCRIPT_RELOADER:_UnloadGlobals()
     -- MY_DISPATCHER = nil
     -- MY_ATIS = nil
 
-    -- If your mission stores active objects in a namespace, clear that namespace:
+    -- If your mission.json stores active objects in a namespace, clear that namespace:
     NAS_MISSION = nil
 end
 
@@ -133,7 +133,7 @@ function NAS_SCRIPT_RELOADER:_LoadScript(FilePath)
 end
 
 function NAS_SCRIPT_RELOADER:ReloadScripts()
-    self:_Message("Reloading mission scripts...", 10)
+    self:_Message("Reloading mission.json scripts...", 10)
 
     self:_RunCleanupHooks()
     self:_StopKnownSchedulers()
@@ -199,7 +199,7 @@ function NAS_SCRIPT_RELOADER:CreateMenu()
                 end
         )
 
-        self:_Log("MOOSE mission menu created.")
+        self:_Log("MOOSE mission.json menu created.")
         return
     end
 

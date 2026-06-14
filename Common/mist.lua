@@ -7,7 +7,7 @@ Lua functions included in the simulator scripting engine.
 
 MIST functions and databases provide ready-made solutions to many common
 scripting tasks and challenges, enabling easier scripting and saving
-mission scripters time. The table mist.flagFuncs contains a set of
+mission.json scripters time. The table mist.flagFuncs contains a set of
 Lua functions (that are similar to Slmod functions) that do not
 require detailed Lua knowledge to use.
 
@@ -371,7 +371,7 @@ do -- the main scope
 					end --for cntry_id, cntry_data in pairs(coa_data.country) do
 				end --if coa_data.country then --there is a country table
 			end --if coa_name == 'red' or coa_name == 'blue' and type(coa_data) == 'table' then
-		end --for coa_name, coa_data in pairs(mission.coalition) do
+		end --for coa_name, coa_data in pairs(mission.json.coalition) do
 
 		mist.DBs.unitsByName = {}
 		mist.DBs.unitsById = {}
@@ -1434,7 +1434,7 @@ do -- the main scope
 	end
 
 	local function groupSpawned(event)
-		-- dont need to add units spawned in at the start of the mission if mist is loaded in init line
+		-- dont need to add units spawned in at the start of the mission.json if mist is loaded in init line
 		if event.id == world.event.S_EVENT_BIRTH and timer.getTime0() < timer.getAbsTime() then
 
 			if Object.getCategory(event.initiator) == 1 and not Unit.getPlayerName(event.initiator) then -- simple player check, will need to later check to see if unit was spawned with a player in a flight
@@ -1621,7 +1621,7 @@ do -- the main scope
 					local name = s:getName()
 					if not mist.DBs.unitsByName[name] then
 						dbLog:warn('$1 Not found in DB yet. ID: $2', name, StaticObject.getID(s))
-						if string.len(name) > 0 then  -- because in this mission someone sent the name was returning as an empty string. Gotta be careful.
+						if string.len(name) > 0 then  -- because in this mission.json someone sent the name was returning as an empty string. Gotta be careful.
 							tempSpawnedGroups[s:getName()] = {type = 'static'}
 							tempSpawnGroupsCounter = tempSpawnGroupsCounter + 1
 						end
@@ -2048,9 +2048,9 @@ do -- the main scope
 	-- Modified Slmod task scheduler, superior to timer.scheduleFunction
 	-- @tparam function f function to schedule
 	-- @tparam table vars array containing all parameters passed to the function
-	-- @tparam number t time in seconds from mission start to schedule the function to.
+	-- @tparam number t time in seconds from mission.json start to schedule the function to.
 	-- @tparam[opt] number rep time between repetitions of the function
-	-- @tparam[opt] number st time in seconds from mission start at which the function
+	-- @tparam[opt] number st time in seconds from mission.json start at which the function
 	-- should stop to be rescheduled.
 	-- @treturn number scheduled function id.
 	function mist.scheduleFunction(f, vars, t, rep, st)
@@ -2324,7 +2324,7 @@ do
 					end --for cntry_id, cntry_data in pairs(coa_data.country) do
 				end --if coa_data.country then --there is a country table
 			end --if coa_name == 'red' or coa_name == 'blue' and type(coa_data) == 'table' then
-		end --for coa_name, coa_data in pairs(mission.coalition) do
+		end --for coa_name, coa_data in pairs(mission.json.coalition) do
 	end
 
 	--- getUnitAttitude(unit) return values.
@@ -5913,7 +5913,7 @@ do -- mist.debug scope
 
 
 
-	-- write all object types in mission.
+	-- write all object types in mission.json.
 	function mist.debug.writeTypes(fName)
 		local wt = 'mistDebugWriteTypes.lua'
 		if fName and type(fName) == 'string' and string.find(fName, '.lua') then
@@ -6104,7 +6104,7 @@ end
 -- that detect a game condition and set a flag when that game condition is met.
 --
 -- They are intended to be used by persons with little or no experience in Lua
--- programming, but with a good knowledge of the DCS mission editor.
+-- programming, but with a good knowledge of the DCS mission.json editor.
 -- @section mist.flagFunc
 do -- mist.flagFunc scope
 	mist.flagFunc = {}
@@ -6112,7 +6112,7 @@ do -- mist.flagFunc scope
 	--- Sets a flag if map objects are destroyed inside a zone.
 	-- Once this function is run, it will start a continuously evaluated process
 	-- that will set a flag true if map objects (such as bridges, buildings in
-	-- town, etc.) die (or have died) in a mission editor zone (or set of zones).
+	-- town, etc.) die (or have died) in a mission.json editor zone (or set of zones).
 	-- This will only happen once; once the flag is set true, the process ends.
 	-- @usage
 	-- -- Example vars table
@@ -8425,7 +8425,7 @@ do -- mist.time scope
 		local cal = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31} --
 		local date = {}
 
-		if not env.mission.date then -- Not likely to happen. Resaving mission auto updates this to remove it.
+		if not env.mission.date then -- Not likely to happen. Resaving mission.json auto updates this to remove it.
 			date.d = 0
 			date.m = 6
 			date.y = 2011
@@ -8541,7 +8541,7 @@ do -- group tasks scope
 	mist.ship = {}
 
 	--- Tasks group to follow a route.
-	-- This sets the mission task for the given group.
+	-- This sets the mission.json task for the given group.
 	-- Any wrapped actions inside the path (like enroute
 	-- tasks) will be executed.
 	-- @tparam Group group group to task.
@@ -8621,7 +8621,7 @@ do -- group tasks scope
 
 												return points
 											end
-											log:error('Group route not defined in mission editor for groupId: $1', gpId)
+											log:error('Group route not defined in mission.json editor for groupId: $1', gpId)
 											return
 										end	--if group_data and group_data.name and group_data.name == 'groupname'
 									end --for group_num, group_data in pairs(obj_cat_data.group) do
@@ -8631,7 +8631,7 @@ do -- group tasks scope
 					end --for cntry_id, cntry_data in pairs(coa_data.country) do
 				end --if coa_data.country then --there is a country table
 			end --if coa_name == 'red' or coa_name == 'blue' and type(coa_data) == 'table' then
-		end --for coa_name, coa_data in pairs(mission.coalition) do
+		end --for coa_name, coa_data in pairs(mission.json.coalition) do
 	end
 
 	-- function mist.ground.buildPath() end -- ????
@@ -9253,10 +9253,10 @@ end
 
 --- Mission data
 -- @table mist.DBs.missionData
--- @field startTime mission start time
--- @field theatre mission theatre/map e.g. Caucasus
--- @field version mission version
--- @field files mission resources
+-- @field startTime mission.json start time
+-- @field theatre mission.json theatre/map e.g. Caucasus
+-- @field version mission.json version
+-- @field files mission.json resources
 
 --- Tables used as parameters.
 -- @section varTables

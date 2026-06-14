@@ -1,0 +1,375 @@
+--NASG_GROUND_CONTROL = NASG_GROUND_CONTROL or {}
+--
+--NASG_GROUND_CONTROL.SpeechEventFile = NASG_GROUND_CONTROL.SpeechEventFile
+--        or "C:/NASGroup/NASGroupMissionScripts/Common/TTS Test/tmp/nasg_ground_control_events.jsonl"
+--
+--NASG_GROUND_CONTROL.STTConfigFile = NASG_GROUND_CONTROL.STTConfigFile
+--        or "C:/NASGroup/NASGroupMissionScripts/Common/TTS Test/tmp/nasg_stt_config.json"
+--
+--NASG_GROUND_CONTROL.STTBridgeStopFile = NASG_GROUND_CONTROL.STTBridgeStopFile
+--        or "C:/NASGroup/NASGroupMissionScripts/Common/TTS Test/tmp/nasg_stt_bridge.stop"
+--
+--NASG_GROUND_CONTROL.STTBridgeBatchFile = NASG_GROUND_CONTROL.STTBridgeBatchFile
+--        or "C:/NASGroup/NASGroupMissionScripts/Common/TTS Test/start_stt_bridge.bat"
+--
+--NASG_GROUND_CONTROL.STTBridgeWorkingDirectory = NASG_GROUND_CONTROL.STTBridgeWorkingDirectory
+--        or "C:/NASGroup/NASGroupMissionScripts/Common/TTS Test"
+--
+--NASG_GROUND_CONTROL.STTBridgeScript = NASG_GROUND_CONTROL.STTBridgeScript
+--        or "C:/NASGroup/NASGroupMissionScripts/Common/TTS Test/srs_stt_bridge.py"
+--
+--NASG_GROUND_CONTROL.STTBridgeListenerExe = NASG_GROUND_CONTROL.STTBridgeListenerExe
+--        or "C:/NASGroup/NASGroupMissionScripts/Common/TTS Test/srs-stt-listen.exe"
+--
+--NASG_GROUND_CONTROL.STTBridgeProcessLogFile = NASG_GROUND_CONTROL.STTBridgeProcessLogFile
+--        or "C:/NASGroup/NASGroupMissionScripts/Common/TTS Test/tmp/nasg_stt_bridge_process.log"
+--
+--NASG_GROUND_CONTROL.STTBridgeAutoStart = NASG_GROUND_CONTROL.STTBridgeAutoStart
+--if NASG_GROUND_CONTROL.STTBridgeAutoStart == nil then
+--    NASG_GROUND_CONTROL.STTBridgeAutoStart = true
+--end
+--
+--NASG_GROUND_CONTROL.STTBridgeStartRequested = NASG_GROUND_CONTROL.STTBridgeStartRequested or false
+--NASG_GROUND_CONTROL.STTBridgeStartedByLua = NASG_GROUND_CONTROL.STTBridgeStartedByLua or false
+--
+---- Important:
+---- These are intentionally reset on script load/reload.
+---- NASG_GROUND_CONTROL survives reloads, so preserving these can prevent the bridge
+---- from being started after a script reload.
+--NASG_GROUND_CONTROL.STTBridgeStartRequested = false
+--NASG_GROUND_CONTROL.STTBridgeStartedByLua = false
+--
+--NASG_GROUND_CONTROL.SpeechEventScheduler = NASG_GROUND_CONTROL.SpeechEventScheduler or nil
+--NASG_GROUND_CONTROL.STTBridgeMissionEndHandler = NASG_GROUND_CONTROL.STTBridgeMissionEndHandler or nil
+--
+--function NASG_GROUND_CONTROL:JsonEscape(value)
+--    local text = tostring(value or "")
+--
+--    text = text:gsub("\\", "\\\\")
+--    text = text:gsub("\"", "\\\"")
+--    text = text:gsub("\n", "\\n")
+--    text = text:gsub("\r", "\\r")
+--    text = text:gsub("\t", "\\t")
+--
+--    return text
+--end
+--
+--function NASG_GROUND_CONTROL:GetModulationName(modulation)
+--    if modulation == radio.modulation.FM then
+--        return "FM"
+--    end
+--
+--    return "AM"
+--end
+--
+--function NASG_GROUND_CONTROL:BuildSTTBridgeConfigJson()
+--    local channels = {}
+--
+--    for _, airport in pairs(self.Airports or {}) do
+--        if airport and airport.Ground and airport.Ground.Frequency then
+--            channels[#channels + 1] = string.format(
+--                    [[{"id":"%s_ground","airport_id":"%s","service":"ground","client_name":"NASGroup Ground Listener - %s","frequency":%.3f,"modulation":"%s","coalition":%d}]],
+--                    self:JsonEscape(airport.Id),
+--                    self:JsonEscape(airport.Id),
+--                    self:JsonEscape(airport.Name or airport.Id),
+--                    tonumber(airport.Ground.Frequency) or 0,
+--                    self:GetModulationName(airport.Ground.Modulation),
+--                    tonumber(airport.Coalition or self.Defaults.Coalition or coalition.side.BLUE) or coalition.side.BLUE
+--            )
+--        end
+--    end
+--
+--    return string.format(
+--            [[{"version":1,"srs_address":"127.0.0.1:%d","event_file":"%s","channels":[%s]}]],
+--            tonumber(SRS_PORT or 5002) or 5002,
+--            self:JsonEscape(self.SpeechEventFile),
+--            table.concat(channels, ",")
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:WriteSTTBridgeConfig()
+--    if not self.STTConfigFile or self.STTConfigFile == "" then
+--        return
+--    end
+--
+--    local file = io.open(self.STTConfigFile, "w")
+--
+--    if not file then
+--        self:Log("Unable to write STT bridge config: " .. tostring(self.STTConfigFile))
+--        return
+--    end
+--
+--    file:write(self:BuildSTTBridgeConfigJson())
+--    file:close()
+--
+--    self:Log("Wrote STT bridge config: " .. tostring(self.STTConfigFile))
+--end
+--
+--function NASG_GROUND_CONTROL:DecodeSpeechEventJson(line)
+--    if not line or line == "" then
+--        return nil
+--    end
+--
+--    if net and net.json2lua then
+--        local ok, result = pcall(function()
+--            return net.json2lua(line)
+--        end)
+--
+--        if ok and result then
+--            return result
+--        end
+--    end
+--
+--    if json and json.decode then
+--        local ok, result = pcall(function()
+--            return json.decode(line)
+--        end)
+--
+--        if ok and result then
+--            return result
+--        end
+--    end
+--
+--    self:Log("Could not decode speech event JSON. No JSON decoder available.")
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:ReadSpeechEventLines()
+--    local filePath = self.SpeechEventFile
+--
+--    if not filePath or filePath == "" then
+--        return {}
+--    end
+--
+--    local file = io.open(filePath, "r")
+--
+--    if not file then
+--        return {}
+--    end
+--
+--    local lines = {}
+--
+--    for line in file:lines() do
+--        if line and line ~= "" then
+--            lines[#lines + 1] = line
+--        end
+--    end
+--
+--    file:close()
+--
+--    local clearFile = io.open(filePath, "w")
+--
+--    if clearFile then
+--        clearFile:write("")
+--        clearFile:close()
+--    end
+--
+--    return lines
+--end
+--
+--function NASG_GROUND_CONTROL:PollSpeechEvents()
+--    local lines = self:ReadSpeechEventLines()
+--
+--    for _, line in ipairs(lines) do
+--        local event = self:DecodeSpeechEventJson(line)
+--
+--        if event then
+--            self:Log(
+--                    string.format(
+--                            "Received speech event source=%s channel=%s airport=%s client=%s intent=%s atis=%s text=%s",
+--                            tostring(event.source),
+--                            tostring(event.channel_id),
+--                            tostring(event.airport_id),
+--                            tostring(event.client_name),
+--                            tostring(event.intent),
+--                            tostring(event.atis_letter),
+--                            tostring(event.raw_text)
+--                    )
+--            )
+--
+--            self:HandleSpeechEvent(event)
+--        end
+--    end
+--end
+--
+--function NASG_GROUND_CONTROL:StartSpeechEventPoller()
+--    if self.SpeechEventScheduler then
+--        return
+--    end
+--
+--    self.SpeechEventScheduler = SCHEDULER:New(nil, function()
+--        NASG_GROUND_CONTROL:PollSpeechEvents()
+--    end, {}, 1, 1)
+--
+--    self:Log("Started speech event poller: " .. tostring(self.SpeechEventFile))
+--end
+--
+--function NASG_GROUND_CONTROL:StopSpeechEventPoller()
+--    if self.SpeechEventScheduler then
+--        pcall(function()
+--            self.SpeechEventScheduler:Stop()
+--        end)
+--
+--        self.SpeechEventScheduler = nil
+--    end
+--
+--    self:Log("Stopped speech event poller")
+--end
+--
+--function NASG_GROUND_CONTROL:NormalizeWindowsPath(path)
+--    return tostring(path or ""):gsub("/", "\\")
+--end
+--
+--function NASG_GROUND_CONTROL:DeleteFileIfExists(path)
+--    if not path or path == "" then
+--        return
+--    end
+--
+--    local file = io.open(path, "r")
+--
+--    if file then
+--        file:close()
+--        os.remove(path)
+--    end
+--end
+--
+--function NASG_GROUND_CONTROL:CreateStopFile()
+--    if not self.STTBridgeStopFile or self.STTBridgeStopFile == "" then
+--        return
+--    end
+--
+--    local file = io.open(self.STTBridgeStopFile, "w")
+--
+--    if file then
+--        file:write("stop")
+--        file:close()
+--        self:Log("Created STT bridge stop file: " .. tostring(self.STTBridgeStopFile))
+--    else
+--        self:Log("Unable to create STT bridge stop file: " .. tostring(self.STTBridgeStopFile))
+--    end
+--end
+--
+--function NASG_GROUND_CONTROL:StartSTTBridgeProcess()
+--    self:Log("StartSTTBridgeProcess called")
+--
+--    if self.STTBridgeStartRequested then
+--        self:Log("STT bridge start already requested")
+--        return
+--    end
+--
+--    if not self.STTBridgeAutoStart then
+--        self:Log("STT bridge auto-start disabled")
+--        return
+--    end
+--
+--    if not os then
+--        self:Log("Cannot start STT bridge: os table unavailable")
+--        return
+--    end
+--
+--    if not os.execute then
+--        self:Log("Cannot start STT bridge: os.execute unavailable")
+--        return
+--    end
+--
+--    self.STTBridgeStartRequested = true
+--
+--    self:DeleteFileIfExists(self.STTBridgeStopFile)
+--    self:WriteSTTBridgeConfig()
+--
+--    local batchPath = self:NormalizeWindowsPath(self.STTBridgeBatchFile)
+--
+--    local command = string.format(
+--            'cmd.exe /c start "NASG STT Bridge" /min "%s"',
+--            batchPath
+--    )
+--
+--    self:Log("Starting STT bridge process")
+--    self:Log("STT bridge batch file: " .. tostring(batchPath))
+--    self:Log("STT bridge command: " .. tostring(command))
+--
+--    local ok, result1, result2, result3 = pcall(function()
+--        return os.execute(command)
+--    end)
+--
+--    self:Log(
+--            string.format(
+--                    "STT bridge os.execute result ok=%s r1=%s r2=%s r3=%s",
+--                    tostring(ok),
+--                    tostring(result1),
+--                    tostring(result2),
+--                    tostring(result3)
+--            )
+--    )
+--
+--    if ok then
+--        self.STTBridgeStartedByLua = true
+--        self:Log("STT bridge start command issued")
+--    else
+--        self.STTBridgeStartRequested = false
+--        self:Log("Failed to start STT bridge: " .. tostring(result1))
+--    end
+--end
+--
+--function NASG_GROUND_CONTROL:StopSTTBridgeProcess()
+--    self.STTBridgeStartRequested = false
+--
+--    if not self.STTBridgeStartedByLua then
+--        self:Log("STT bridge was not marked as started by Lua; creating stop file anyway")
+--    end
+--
+--    self:CreateStopFile()
+--    self.STTBridgeStartedByLua = false
+--end
+--
+--function NASG_GROUND_CONTROL:StartSTTBridgeMissionEndHandler()
+--    if self.STTBridgeMissionEndHandler then
+--        return
+--    end
+--
+--    self.STTBridgeMissionEndHandler = EVENTHANDLER:New()
+--    self.STTBridgeMissionEndHandler:HandleEvent(EVENTS.MissionEnd)
+--
+--    function self.STTBridgeMissionEndHandler:OnEventMissionEnd(eventData)
+--        NASG_GROUND_CONTROL:Log("MissionEnd detected; stopping STT bridge")
+--        NASG_GROUND_CONTROL:StopSTTBridgeProcess()
+--    end
+--
+--    self:Log("Started STT bridge mission.json-end handler")
+--end
+--
+--NASG_GROUND_CONTROL.OriginalRegisterAirportForSTTBridge = NASG_GROUND_CONTROL.OriginalRegisterAirportForSTTBridge
+--        or NASG_GROUND_CONTROL.RegisterAirport
+--
+--function NASG_GROUND_CONTROL:RegisterAirport(config)
+--    self:OriginalRegisterAirportForSTTBridge(config)
+--    self:WriteSTTBridgeConfig()
+--end
+--
+--NASG_GROUND_CONTROL.OriginalStartForSTTBridge = NASG_GROUND_CONTROL.OriginalStartForSTTBridge
+--        or NASG_GROUND_CONTROL.Start
+--
+--function NASG_GROUND_CONTROL:Start()
+--    self:OriginalStartForSTTBridge()
+--    self:WriteSTTBridgeConfig()
+--    self:StartSpeechEventPoller()
+--    self:StartSTTBridgeMissionEndHandler()
+--    self:StartSTTBridgeProcess()
+--end
+--
+--NASG_GROUND_CONTROL.OriginalStopForSTTBridge = NASG_GROUND_CONTROL.OriginalStopForSTTBridge
+--        or NASG_GROUND_CONTROL.Stop
+--
+--function NASG_GROUND_CONTROL:Stop()
+--    self:StopSpeechEventPoller()
+--    self:StopSTTBridgeProcess()
+--    self:OriginalStopForSTTBridge()
+--end
+--
+--self = nil
+--
+--NASG_GROUND_CONTROL:Log("NASG_GroundControl_STTBridge loaded")
+--NASG_GROUND_CONTROL:WriteSTTBridgeConfig()
+--NASG_GROUND_CONTROL:StartSpeechEventPoller()
+--NASG_GROUND_CONTROL:StartSTTBridgeMissionEndHandler()
+--NASG_GROUND_CONTROL:StartSTTBridgeProcess()

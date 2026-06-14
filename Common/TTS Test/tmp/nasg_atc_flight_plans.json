@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "generated_at": "2026-05-25T19:00:00Z",
+  "source": "sample",
+  "flight_plans": [
+    {
+      "id": "HOBO11_20260525",
+      "callsign": "HOBO11",
+      "aliases": [
+        "HOBO11",
+        "HOBO 11",
+        "HOBO 1-1",
+        "HOBO one one",
+        "HOBO11 | CIRCUIT"
+      ],
+      "pilot_name": "fpere",
+      "aircraft_type": "F/A-18C",
+      "coalition": "blue",
+
+      "departure": {
+        "airport_id": "al_minhad",
+        "name": "Al Minhad",
+        "planned_runway": "27",
+        "planned_initial_turn": "right"
+      },
+
+      "arrival": {
+        "airport_id": "al_minhad",
+        "name": "Al Minhad",
+        "planned_runway": "27",
+        "planned_recovery": "overhead"
+      },
+
+      "diverts": [
+        {
+          "airport_id": "al_dhafra",
+          "name": "Al Dhafra"
+        }
+      ],
+
+      "waypoints": [
+        {
+          "waypoint": 1,
+          "name": "WP1",
+          "role": "departure",
+          "lat": 25.0500,
+          "lon": 55.4500,
+          "altitude_ft": 8000,
+          "speed_kts": 300
+        },
+        {
+          "waypoint": 2,
+          "name": "RANGE_ENTRY",
+          "role": "range_entry",
+          "lat": 25.1600,
+          "lon": 55.7600,
+          "altitude_ft": 14000,
+          "speed_kts": 350
+        },
+        {
+          "waypoint": 3,
+          "name": "AAPVE",
+          "role": "range",
+          "lat": 25.2600,
+          "lon": 56.0500,
+          "altitude_ft": 18000,
+          "speed_kts": 350,
+          "metadata": {
+            "range_name": "AAPVE"
+          }
+        },
+        {
+          "waypoint": 4,
+          "name": "TEXACO",
+          "role": "tanker",
+          "lat": 25.4200,
+          "lon": 55.8400,
+          "altitude_ft": 22000,
+          "speed_kts": 300,
+          "metadata": {
+            "tanker_name": "Texaco"
+          }
+        },
+        {
+          "waypoint": 5,
+          "name": "HOME",
+          "role": "recovery",
+          "lat": 25.0269,
+          "lon": 55.3662,
+          "altitude_ft": 6000,
+          "airport_id": "al_minhad"
+        }
+      ],
+
+      "sequences": [
+        {
+          "name": "departure_to_range",
+          "role": "outbound",
+          "waypoints": [1, 2, 3],
+          "max_lateral_error_nm": 5
+        },
+        {
+          "name": "range_to_tanker",
+          "role": "aar",
+          "waypoints": [3, 4],
+          "max_lateral_error_nm": 10
+        },
+        {
+          "name": "recovery",
+          "role": "inbound",
+          "waypoints": [4, 5],
+          "max_lateral_error_nm": 8
+        }
+      ],
+
+      "marsa": {
+        "allowed": true,
+        "default_scope": "assigned_airspace",
+        "assigned_airspace": "AAPVE",
+        "allowed_block_altitudes": [
+          {
+            "name": "range_block",
+            "min_ft": 16000,
+            "max_ft": 22000,
+            "area": "AAPVE"
+          }
+        ]
+      },
+
+      "mission": {
+        "type": "training",
+        "package": "HOBO",
+        "primary_task": "range",
+        "requested_services": [
+          "range",
+          "aar"
+        ],
+        "notes": "Sample ATC flight plan for STT/Center controller testing."
+      }
+    }
+  ]
+}

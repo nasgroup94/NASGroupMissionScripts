@@ -1,0 +1,2410 @@
+--NASG_GROUND_CONTROL = NASG_GROUND_CONTROL or {}
+--
+--if NASG_GROUND_CONTROL.Stop then
+--    pcall(function()
+--        NASG_GROUND_CONTROL:Stop()
+--    end)
+--end
+--
+--NASG_GROUND_CONTROL.Version = "0.3.0"
+--NASG_GROUND_CONTROL.DebugEnabled = NASG_GROUND_CONTROL.DebugEnabled or false
+--
+--NASG_GROUND_CONTROL.ClientSessions = NASG_GROUND_CONTROL.ClientSessions or {}
+--NASG_GROUND_CONTROL.Airports = NASG_GROUND_CONTROL.Airports or {}
+--NASG_GROUND_CONTROL.EventHandler = NASG_GROUND_CONTROL.EventHandler or nil
+--NASG_GROUND_CONTROL.Scanner = NASG_GROUND_CONTROL.Scanner or nil
+--
+--NASG_GROUND_CONTROL.Defaults = {
+--    RequireCorrectATIS = true,
+--    EngineHotSpeedThresholdKnots = 1,
+--    ClientScanIntervalSeconds = 10,
+--    TTSRate = 200,
+--    TTSVolume = 1.0,
+--    TTSVoice = "Nathan",
+--    Coalition = coalition.side.BLUE,
+--}
+--
+--NASG_GROUND_CONTROL.Facilities = {
+--    GROUND = "ground",
+--    TOWER = "tower",
+--    CENTER = "center",
+--    AWACS = "awacs",
+--}
+--
+--NASG_GROUND_CONTROL.Intents = {
+--    REQUEST_STARTUP = "request_startup",
+--    REQUEST_PUSHBACK = "request_pushback",
+--    PUSHBACK_COMPLETE = "pushback_complete",
+--    REQUEST_TAXI = "request_taxi",
+--    REQUEST_PROGRESSIVE_TAXI = "request_progressive_taxi",
+--    REQUEST_RUNWAY_CROSSING = "request_runway_crossing",
+--    HOLDING_SHORT_READY = "holding_short_ready",
+--    REQUEST_TAXI_BACK = "request_taxi_back",
+--    REQUEST_PARKING = "request_parking",
+--    REQUEST_REARM_REFUEL = "request_rearm_refuel",
+--    ABORT_TAXI = "abort_taxi",
+--    EMERGENCY_GROUND = "emergency_ground",
+--
+--    TOWER_CHECK_IN_DEPARTURE = "tower_check_in_departure",
+--    REQUEST_TAKEOFF = "request_takeoff",
+--    ABORT_TAKEOFF = "abort_takeoff",
+--    INBOUND_FULL_STOP = "inbound_full_stop",
+--    INBOUND_TOUCH_AND_GO = "inbound_touch_and_go",
+--    INBOUND_OVERHEAD = "inbound_overhead",
+--    REPORT_INITIAL = "report_initial",
+--    REPORT_DOWNWIND = "report_downwind",
+--    REPORT_BASE = "report_base",
+--    REPORT_FINAL = "report_final",
+--    REPORT_CLEAR_OF_RUNWAY = "report_clear_of_runway",
+--    GOING_AROUND = "going_around",
+--    REQUEST_CLOSED_TRAFFIC = "request_closed_traffic",
+--
+--    CENTER_CHECK_IN = "center_check_in",
+--    REQUEST_FLIGHT_FOLLOWING = "request_flight_following",
+--    REQUEST_DIRECT = "request_direct",
+--    REQUEST_RECOVERY = "request_recovery",
+--    REQUEST_FREQUENCY_CHANGE = "request_frequency_change",
+--
+--    AWACS_CHECK_IN = "awacs_check_in",
+--    REQUEST_PICTURE = "request_picture",
+--    REQUEST_BOGEY_DOPE = "request_bogey_dope",
+--    REQUEST_VECTOR_TO_TARGET = "request_vector_to_target",
+--    REQUEST_VECTOR_TO_HOME_PLATE = "request_vector_to_home_plate",
+--    REQUEST_COMBAT_RECOVERY = "request_combat_recovery",
+--
+--    RADIO_CHECK = "radio_check",
+--    SAY_AGAIN = "say_again",
+--    READBACK = "readback",
+--}
+--
+--NASG_GROUND_CONTROL.States = {
+--    CLIENT_DETECTED = "CLIENT_DETECTED",
+--
+--    WAITING_FOR_STARTUP_REQUEST = "WAITING_FOR_STARTUP_REQUEST",
+--    STARTUP_APPROVED = "STARTUP_APPROVED",
+--    WAITING_FOR_PUSHBACK_REQUEST = "WAITING_FOR_PUSHBACK_REQUEST",
+--    PUSHBACK_APPROVED = "PUSHBACK_APPROVED",
+--    WAITING_FOR_TAXI_REQUEST = "WAITING_FOR_TAXI_REQUEST",
+--    TAXI_CLEARANCE_ISSUED = "TAXI_CLEARANCE_ISSUED",
+--    TAXIING = "TAXIING",
+--    HOLDING_POSITION = "HOLDING_POSITION",
+--    HOLDING_SHORT = "HOLDING_SHORT",
+--    TRANSFERRED_TO_TOWER = "TRANSFERRED_TO_TOWER",
+--    GROUND_COMPLETE = "GROUND_COMPLETE",
+--    GROUND_EMERGENCY = "GROUND_EMERGENCY",
+--
+--    WAITING_FOR_TOWER_CHECKIN = "WAITING_FOR_TOWER_CHECKIN",
+--    LINEUP_AND_WAIT = "LINEUP_AND_WAIT",
+--    TAKEOFF_CLEARED = "TAKEOFF_CLEARED",
+--    AIRBORNE = "AIRBORNE",
+--    DEPARTURE_TRANSFERRED = "DEPARTURE_TRANSFERRED",
+--
+--    CENTER_CONTROL = "CENTER_CONTROL",
+--    AWACS_CONTROL = "AWACS_CONTROL",
+--
+--    INBOUND = "INBOUND",
+--    PATTERN = "PATTERN",
+--    INITIAL = "INITIAL",
+--    DOWNWIND = "DOWNWIND",
+--    FINAL = "FINAL",
+--    LANDING_CLEARED = "LANDING_CLEARED",
+--    LANDED = "LANDED",
+--    GO_AROUND = "GO_AROUND",
+--    TRANSFERRED_TO_GROUND = "TRANSFERRED_TO_GROUND",
+--    TOWER_EMERGENCY = "TOWER_EMERGENCY",
+--
+--    READBACK = "readback",
+--}
+-----------------------------------------------------------------------------
+---- Logging.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:Log(message)
+--    env.info("[NASG_GROUND_CONTROL] " .. tostring(message))
+--end
+--
+--function NASG_GROUND_CONTROL:Debug(message)
+--    if self.DebugEnabled then
+--        self:Log(message)
+--    end
+--end
+--
+-----------------------------------------------------------------------------
+---- Shared speech formatting.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:GetSpeechFormatter()
+--    return NASG_RADIO_SPEECH
+--end
+--
+--function NASG_GROUND_CONTROL:FormatTextForSpeech(text)
+--    if NASG_RADIO_SPEECH and NASG_RADIO_SPEECH.FormatText then
+--        return NASG_RADIO_SPEECH:FormatText(text)
+--    end
+--
+--    return tostring(text or "")
+--end
+--
+--function NASG_GROUND_CONTROL:FormatCallsignForSpeech(callsign)
+--    if NASG_RADIO_SPEECH and NASG_RADIO_SPEECH.FormatCallsign then
+--        return NASG_RADIO_SPEECH:FormatCallsign(callsign)
+--    end
+--
+--    return tostring(callsign or "Aircraft")
+--end
+--
+--function NASG_GROUND_CONTROL:FormatFrequency(frequency)
+--    if NASG_RADIO_SPEECH and NASG_RADIO_SPEECH.FormatFrequency then
+--        return NASG_RADIO_SPEECH:FormatFrequency(frequency)
+--    end
+--
+--    return tostring(frequency or "")
+--end
+--
+--function NASG_GROUND_CONTROL:NormalizeRunway(runway)
+--    if NASG_RADIO_SPEECH and NASG_RADIO_SPEECH.FormatRunway then
+--        return NASG_RADIO_SPEECH:FormatRunway(runway)
+--    end
+--
+--    return tostring(runway or "")
+--end
+--
+--function NASG_GROUND_CONTROL:NormalizeATISLetter(value)
+--    if NASG_RADIO_SPEECH and NASG_RADIO_SPEECH.NormalizeATISLetter then
+--        return NASG_RADIO_SPEECH:NormalizeATISLetter(value)
+--    end
+--
+--    return tostring(value or "")
+--end
+--
+--function NASG_GROUND_CONTROL:GetATISLetterForSpeech(value)
+--    if NASG_RADIO_SPEECH and NASG_RADIO_SPEECH.FormatATISLetter then
+--        return NASG_RADIO_SPEECH:FormatATISLetter(value)
+--    end
+--
+--    return tostring(value or "")
+--end
+--
+-----------------------------------------------------------------------------
+---- General helpers.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:SetPendingReadback(session, readback)
+--    if not session then
+--        return
+--    end
+--
+--    readback.IssuedAt = timer.getTime()
+--    readback.ExpiresAt = timer.getTime() + 60
+--
+--    session.PendingReadback = readback
+--end
+--
+--function NASG_GROUND_CONTROL:JoinTaxiRoute(route)
+--    if not route or #route == 0 then
+--        return nil
+--    end
+--
+--    if #route == 1 then
+--        return tostring(route[1])
+--    end
+--
+--    local parts = {}
+--
+--    for _, taxiway in ipairs(route) do
+--        parts[#parts + 1] = tostring(taxiway)
+--    end
+--
+--    return table.concat(parts, ", ")
+--end
+--
+--function NASG_GROUND_CONTROL:NormalizeClientName(name)
+--    local text = tostring(name or "")
+--
+--    text = text:gsub("^%s+", "")
+--    text = text:gsub("%s+$", "")
+--
+--    local pipeIndex = string.find(text, "|", 1, true)
+--
+--    if pipeIndex then
+--        text = string.sub(text, 1, pipeIndex - 1)
+--        text = text:gsub("^%s+", "")
+--        text = text:gsub("%s+$", "")
+--    end
+--
+--    return text
+--end
+--
+--function NASG_GROUND_CONTROL:NormalizeLookupText(value)
+--    local text = tostring(value or "")
+--
+--    text = text:gsub("^%s+", "")
+--    text = text:gsub("%s+$", "")
+--    text = text:gsub("|.*$", "")
+--    text = text:gsub("^%s+", "")
+--    text = text:gsub("%s+$", "")
+--    text = string.upper(text)
+--
+--    return text
+--end
+--
+--function NASG_GROUND_CONTROL:NormalizeCallsignText(value)
+--    local text = self:NormalizeLookupText(value)
+--
+--    text = text:gsub("%s+", "")
+--    text = text:gsub("%-", "")
+--    text = text:gsub("_", "")
+--
+--    return text
+--end
+--
+--function NASG_GROUND_CONTROL:DoesTextStartWithPrefix(value, prefix)
+--    local normalizedValue = self:NormalizeCallsignText(value)
+--    local normalizedPrefix = self:NormalizeCallsignText(prefix)
+--
+--    if normalizedValue == "" or normalizedPrefix == "" then
+--        return false
+--    end
+--
+--    return string.sub(normalizedValue, 1, string.len(normalizedPrefix)) == normalizedPrefix
+--end
+--
+--function NASG_GROUND_CONTROL:GetClientNameSafe(client)
+--    if not client then
+--        return nil
+--    end
+--
+--    local name = nil
+--
+--    pcall(function()
+--        name = client:GetName()
+--    end)
+--
+--    return name
+--end
+--
+--function NASG_GROUND_CONTROL:GetClientPlayerNameSafe(client)
+--    if not client then
+--        return nil
+--    end
+--
+--    local playerName = nil
+--
+--    pcall(function()
+--        playerName = client:GetPlayerName()
+--    end)
+--
+--    return playerName
+--end
+--
+--function NASG_GROUND_CONTROL:GetFacilityConfig(airport, facility)
+--    if not airport then
+--        return nil
+--    end
+--
+--    facility = tostring(facility or self.Facilities.GROUND):lower()
+--
+--    if facility == self.Facilities.GROUND then
+--        return airport.Ground
+--    end
+--
+--    if facility == self.Facilities.TOWER then
+--        return airport.Tower
+--    end
+--
+--    if facility == self.Facilities.CENTER then
+--        return airport.Center
+--    end
+--
+--    if facility == self.Facilities.AWACS then
+--        return airport.AWACS
+--    end
+--
+--    return airport.Ground
+--end
+--
+--function NASG_GROUND_CONTROL:GetFacilityCallsign(airport, facility)
+--    local config = self:GetFacilityConfig(airport, facility)
+--
+--    if config and config.Callsign then
+--        return config.Callsign
+--    end
+--
+--    if facility == self.Facilities.TOWER then
+--        return "Tower"
+--    end
+--
+--    if facility == self.Facilities.CENTER then
+--        return "Center"
+--    end
+--
+--    if facility == self.Facilities.AWACS then
+--        return "AWACS"
+--    end
+--
+--    return "Ground"
+--end
+--
+--function NASG_GROUND_CONTROL:GetFacilityFrequency(airport, facility)
+--    local config = self:GetFacilityConfig(airport, facility)
+--
+--    if config then
+--        return config.Frequency
+--    end
+--
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:SendFacilityTTS(airport, facility, messageText)
+--    if not messageText or messageText == "" then
+--        return
+--    end
+--
+--    messageText = self:FormatTextForSpeech(messageText)
+--
+--    local config = self:GetFacilityConfig(airport, facility)
+--
+--    if not airport or not config then
+--        self:Log("Cannot send facility TTS: missing config for facility=" .. tostring(facility))
+--        return
+--    end
+--
+--    if not MSRS then
+--        self:Log("Cannot send facility TTS: MSRS unavailable. Message: " .. tostring(messageText))
+--        return
+--    end
+--
+--    local msrs = nil
+--
+--    pcall(function()
+--        msrs = MSRS:New(
+--                "",
+--                config.Frequency,
+--                config.Modulation or radio.modulation.AM
+--        )
+--    end)
+--
+--    if not msrs then
+--        self:Log("Failed to create MSRS object for facility TTS: " .. tostring(facility))
+--        return
+--    end
+--
+--    pcall(function()
+--        msrs:SetBackendPythonWebSocket(airport.TTSEndpoint or "http://127.0.0.1:8765/tts")
+--    end)
+--
+--    pcall(function()
+--        msrs:SetCoalition(airport.Coalition or self.Defaults.Coalition)
+--    end)
+--
+--    pcall(function()
+--        msrs:SetLabel(config.Callsign or self:GetFacilityCallsign(airport, facility))
+--    end)
+--
+--    pcall(function()
+--        msrs:SetVolume(config.Volume or self.Defaults.TTSVolume)
+--    end)
+--
+--    msrs.voice = config.Voice or self.Defaults.TTSVoice
+--    msrs.speed = config.Speed or self.Defaults.TTSRate
+--
+--    pcall(function()
+--        msrs:PlayText(messageText, 0)
+--    end)
+--end
+--
+-----------------------------------------------------------------------------
+---- Airport registration / ATIS object support.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:RegisterAirport(config)
+--    if not config then
+--        error("RegisterAirport requires config")
+--    end
+--
+--    if not config.Id then
+--        error("Ground airport config requires Id")
+--    end
+--
+--    if not config.AirbaseName then
+--        error("Ground airport config requires AirbaseName")
+--    end
+--
+--    self:InitializeAirportATIS(config)
+--
+--    self.Airports[config.Id] = config
+--    self:Log("Registered airport: " .. tostring(config.Id))
+--end
+--
+--function NASG_GROUND_CONTROL:GetAirport(airportId)
+--    return self.Airports[airportId]
+--end
+--
+--function NASG_GROUND_CONTROL:GetAirportATISObject(airport)
+--    if not airport or not airport.ATIS then
+--        return nil
+--    end
+--
+--    if airport.ATIS.Object then
+--        return airport.ATIS.Object
+--    end
+--
+--    if airport.ATISObject then
+--        return airport.ATISObject
+--    end
+--
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:SafeCallObjectMethod(object, methodName, ...)
+--    if not object or not methodName then
+--        return nil
+--    end
+--
+--    local method = object[methodName]
+--
+--    if type(method) ~= "function" then
+--        return nil
+--    end
+--
+--    local args = { ... }
+--
+--    local ok, result = pcall(function()
+--        return method(object, table.unpack(args))
+--    end)
+--
+--    if ok then
+--        return result
+--    end
+--
+--    self:Debug("SafeCallObjectMethod failed: " .. tostring(methodName) .. " | " .. tostring(result))
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:InitializeAirportATIS(airport)
+--    if not airport or not airport.ATIS then
+--        return nil
+--    end
+--
+--    if airport.ATIS.Object then
+--        airport.ATISObject = airport.ATIS.Object
+--        return airport.ATISObject
+--    end
+--
+--    if not airport.ATIS.AutoCreate then
+--        return nil
+--    end
+--
+--    if not ATIS then
+--        self:Log("Cannot auto-create ATIS for " .. tostring(airport.Id) .. ": MOOSE ATIS unavailable")
+--        return nil
+--    end
+--
+--    local atisObject = nil
+--
+--    local ok, err = pcall(function()
+--        atisObject = ATIS:New(
+--                airport.AirbaseName,
+--                airport.ATIS.Frequency,
+--                airport.ATIS.Modulation or radio.modulation.AM
+--        )
+--    end)
+--
+--    if not ok or not atisObject then
+--        self:Log("Failed to auto-create ATIS for " .. tostring(airport.Id) .. ": " .. tostring(err))
+--        return nil
+--    end
+--
+--    if airport.ATIS.SRSPath and atisObject.SetSRS then
+--        pcall(function()
+--            atisObject:SetSRS(
+--                    airport.ATIS.SRSPath,
+--                    airport.ATIS.SRSPort or SRS_PORT,
+--                    airport.ATIS.SRSVoice or self.Defaults.TTSVoice,
+--                    airport.ATIS.SRSGender,
+--                    airport.ATIS.SRSCulture,
+--                    airport.ATIS.SRSProvider
+--            )
+--        end)
+--    end
+--
+--    if atisObject.Start then
+--        pcall(function()
+--            atisObject:Start()
+--        end)
+--    end
+--
+--    airport.ATISObject = atisObject
+--    self:Log("Auto-created ATIS for airport: " .. tostring(airport.Id))
+--
+--    return atisObject
+--end
+--
+--function NASG_GROUND_CONTROL:GetCurrentATISLetter(airport)
+--    if not airport then
+--        return nil
+--    end
+--
+--    local atisObject = self:GetAirportATISObject(airport)
+--
+--    if atisObject then
+--        local currentInformation = atisObject.CurrentInformation or atisObject.Information
+--
+--        if currentInformation then
+--            return tostring(currentInformation)
+--        end
+--    end
+--
+--    if airport.GetCurrentATISLetter and type(airport.GetCurrentATISLetter) == "function" then
+--        local ok, result = pcall(function()
+--            return airport:GetCurrentATISLetter()
+--        end)
+--
+--        if ok and result then
+--            return tostring(result)
+--        end
+--    end
+--
+--    if airport.ATIS and airport.ATIS.CurrentInformation then
+--        return tostring(airport.ATIS.CurrentInformation)
+--    end
+--
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:IsATISCorrect(airport, receivedLetter)
+--    local currentLetter = self:GetCurrentATISLetter(airport)
+--
+--    if not currentLetter or currentLetter == "" then
+--        return true
+--    end
+--
+--    if not receivedLetter or receivedLetter == "" then
+--        return false
+--    end
+--
+--    local normalizedCurrent = self:NormalizeATISLetter(currentLetter)
+--    local normalizedReceived = self:NormalizeATISLetter(receivedLetter)
+--
+--    self:Debug(
+--            string.format(
+--                    "ATIS check current=%s normalizedCurrent=%s received=%s normalizedReceived=%s",
+--                    tostring(currentLetter),
+--                    tostring(normalizedCurrent),
+--                    tostring(receivedLetter),
+--                    tostring(normalizedReceived)
+--            )
+--    )
+--
+--    return normalizedCurrent == normalizedReceived
+--end
+--
+--function NASG_GROUND_CONTROL:GetActiveRunway(airport, takeoff)
+--    if not airport then
+--        return nil
+--    end
+--
+--    local atisObject = self:GetAirportATISObject(airport)
+--
+--    if atisObject then
+--        local activeRunway = self:SafeCallObjectMethod(atisObject, "GetActiveRunway", takeoff ~= false)
+--
+--        if activeRunway then
+--            activeRunway = tostring(activeRunway)
+--
+--            local runwayWithoutLR = self:SafeCallObjectMethod(atisObject, "GetRunwayWithoutLR", activeRunway)
+--
+--            if runwayWithoutLR then
+--                return tostring(runwayWithoutLR)
+--            end
+--
+--            return activeRunway
+--        end
+--    end
+--
+--    if airport.ActiveRunway then
+--        return tostring(airport.ActiveRunway)
+--    end
+--
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:GetATISSRSText(airport)
+--    local atisObject = self:GetAirportATISObject(airport)
+--
+--    if not atisObject then
+--        return nil
+--    end
+--
+--    local srsText = self:SafeCallObjectMethod(atisObject, "GetSRSText")
+--
+--    if srsText and srsText ~= "" then
+--        return tostring(srsText)
+--    end
+--
+--    return nil
+--end
+--
+-----------------------------------------------------------------------------
+---- Client lookup / matching.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:GetClientKey(client)
+--    if not client then
+--        return nil
+--    end
+--
+--    local name = nil
+--
+--    pcall(function()
+--        name = client:GetName()
+--    end)
+--
+--    return name
+--end
+--
+--function NASG_GROUND_CONTROL:GetClientCallsign(client, event)
+--    if event and event.callsign and event.callsign ~= "" then
+--        return self:FormatCallsignForSpeech(event.callsign)
+--    end
+--
+--    if client then
+--        local playerName = self:GetClientPlayerNameSafe(client)
+--
+--        if playerName and playerName ~= "" then
+--            return self:FormatCallsignForSpeech(self:NormalizeClientName(playerName))
+--        end
+--
+--        local clientName = self:GetClientNameSafe(client)
+--
+--        if clientName and clientName ~= "" then
+--            return self:FormatCallsignForSpeech(self:NormalizeClientName(clientName))
+--        end
+--    end
+--
+--    if event and event.client_name then
+--        return self:FormatCallsignForSpeech(self:NormalizeClientName(event.client_name))
+--    end
+--
+--    return "Aircraft"
+--end
+--
+--function NASG_GROUND_CONTROL:FindClientByMooseSetPrefix(clientNamePrefix)
+--    if not clientNamePrefix or clientNamePrefix == "" then
+--        return nil
+--    end
+--
+--    local matchedClient = nil
+--
+--    local clientSet = SET_CLIENT:New()
+--                                :FilterCoalitions("blue")
+--                                :FilterActive()
+--                                :FilterStart()
+--
+--    clientSet:ForEachClient(function(client)
+--        if matchedClient then
+--            return
+--        end
+--
+--        if client then
+--            local unitName = NASG_GROUND_CONTROL:GetClientNameSafe(client)
+--            local playerName = NASG_GROUND_CONTROL:GetClientPlayerNameSafe(client)
+--
+--            if NASG_GROUND_CONTROL:DoesTextStartWithPrefix(unitName, clientNamePrefix)
+--                    or NASG_GROUND_CONTROL:DoesTextStartWithPrefix(playerName, clientNamePrefix) then
+--                matchedClient = client
+--            end
+--        end
+--    end)
+--
+--    return matchedClient
+--end
+--
+--function NASG_GROUND_CONTROL:FindClientByDCSPlayerPrefix(clientNamePrefix)
+--    if not clientNamePrefix or clientNamePrefix == "" then
+--        return nil
+--    end
+--
+--    local sides = {
+--        coalition.side.BLUE,
+--        coalition.side.RED,
+--    }
+--
+--    for _, side in ipairs(sides) do
+--        local players = nil
+--
+--        pcall(function()
+--            players = coalition.getPlayers(side)
+--        end)
+--
+--        if players then
+--            for _, unit in ipairs(players) do
+--                local unitName = nil
+--                local playerName = nil
+--
+--                pcall(function()
+--                    unitName = unit:getName()
+--                end)
+--
+--                pcall(function()
+--                    playerName = unit:getPlayerName()
+--                end)
+--
+--                if self:DoesTextStartWithPrefix(unitName, clientNamePrefix)
+--                        or self:DoesTextStartWithPrefix(playerName, clientNamePrefix) then
+--                    local client = nil
+--
+--                    if unitName then
+--                        pcall(function()
+--                            client = CLIENT:FindByName(unitName)
+--                        end)
+--                    end
+--
+--                    if client then
+--                        return client
+--                    end
+--                end
+--            end
+--        end
+--    end
+--
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:FindClientForSpeechEvent(rawClientName)
+--    local clientName = self:NormalizeClientName(rawClientName)
+--
+--    if not clientName or clientName == "" then
+--        return nil, clientName, "missing"
+--    end
+--
+--    local client = nil
+--
+--    local ok = pcall(function()
+--        client = CLIENT:FindByName(clientName)
+--    end)
+--
+--    if ok and client then
+--        return client, clientName, "exact"
+--    end
+--
+--    client = self:FindClientByMooseSetPrefix(clientName)
+--
+--    if client then
+--        return client, clientName, "moose_prefix"
+--    end
+--
+--    client = self:FindClientByDCSPlayerPrefix(clientName)
+--
+--    if client then
+--        return client, clientName, "dcs_player_prefix"
+--    end
+--
+--    return nil, clientName, "not_found"
+--end
+--
+--function NASG_GROUND_CONTROL:DumpActivePlayersForDebug()
+--    local sides = {
+--        coalition.side.BLUE,
+--        coalition.side.RED,
+--    }
+--
+--    for _, side in ipairs(sides) do
+--        local players = nil
+--
+--        pcall(function()
+--            players = coalition.getPlayers(side)
+--        end)
+--
+--        if players then
+--            for _, unit in ipairs(players) do
+--                local unitName = nil
+--                local playerName = nil
+--
+--                pcall(function()
+--                    unitName = unit:getName()
+--                end)
+--
+--                pcall(function()
+--                    playerName = unit:getPlayerName()
+--                end)
+--
+--                self:Log(
+--                        string.format(
+--                                "Active DCS player side=%s unit=%s player=%s",
+--                                tostring(side),
+--                                tostring(unitName),
+--                                tostring(playerName)
+--                        )
+--                )
+--            end
+--        end
+--    end
+--end
+--
+--function NASG_GROUND_CONTROL:NormalizeReadbackText(text)
+--    local value = tostring(text or "")
+--
+--    value = string.lower(value)
+--    value = value:gsub("[,%./%-]", " ")
+--    value = value:gsub("%s+", " ")
+--    value = value:gsub("^%s+", "")
+--    value = value:gsub("%s+$", "")
+--
+--    return value
+--end
+--
+--function NASG_GROUND_CONTROL:ExpectedRunwayReadbackText(runway)
+--    return self:NormalizeReadbackText(self:NormalizeRunway(runway))
+--end
+--
+--function NASG_GROUND_CONTROL:IsRouteReadBackCorrect(rawText, route)
+--    if not route or #route == 0 then
+--        return true
+--    end
+--
+--    local text = self:NormalizeReadbackText(rawText)
+--
+--    for _, taxiway in ipairs(route) do
+--        local taxiwayText = self:NormalizeReadbackText(taxiway)
+--
+--        if not string.find(text, taxiwayText, 1, true) then
+--            return false, taxiway
+--        end
+--    end
+--
+--    return true, nil
+--end
+--
+--function NASG_GROUND_CONTROL:IsRunwayReadBackCorrect(rawText, runway)
+--    local text = self:NormalizeReadbackText(rawText)
+--    local runwayText = self:ExpectedRunwayReadbackText(runway)
+--
+--    if runwayText == "" or runwayText == "active" then
+--        return true
+--    end
+--
+--    return string.find(text, runwayText, 1, true) ~= nil
+--end
+--
+--function NASG_GROUND_CONTROL:IsFrequencyReadBackCorrect(rawText, frequency)
+--    if not frequency then
+--        return true
+--    end
+--
+--    local text = self:NormalizeReadbackText(rawText)
+--    local frequencyText = self:NormalizeReadbackText(self:FormatFrequency(frequency))
+--
+--    return string.find(text, frequencyText, 1, true) ~= nil
+--end
+--
+-----------------------------------------------------------------------------
+---- Airport area / parking.
+-----------------------------------------------------------------------------
+--function NASG_GROUND_CONTROL:GetParkingAreaByName(airport, parkingAreaName)
+--    if not airport or not airport.ParkingAreas or not parkingAreaName then
+--        return nil
+--    end
+--
+--    for _, parkingArea in ipairs(airport.ParkingAreas) do
+--        if parkingArea.Name == parkingAreaName then
+--            return parkingArea
+--        end
+--    end
+--
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:IsClientInAirportArea(client, airport)
+--    if not client or not airport then
+--        return false
+--    end
+--
+--    local coordinate = nil
+--
+--    pcall(function()
+--        coordinate = client:GetCoordinate()
+--    end)
+--
+--    if not coordinate then
+--        return false
+--    end
+--
+--    if airport.DetectionZone then
+--        local zone = ZONE:FindByName(airport.DetectionZone)
+--
+--        if zone and zone:IsCoordinateInZone(coordinate) then
+--            return true
+--        end
+--    end
+--
+--    if airport.ParkingAreas then
+--        for _, parkingArea in ipairs(airport.ParkingAreas) do
+--            if parkingArea.Zone then
+--                local zone = ZONE:FindByName(parkingArea.Zone)
+--
+--                if zone and zone:IsCoordinateInZone(coordinate) then
+--                    return true
+--                end
+--            end
+--        end
+--    end
+--
+--    return false
+--end
+--
+--function NASG_GROUND_CONTROL:GetParkingAreaForClient(client, airport)
+--    if not client or not airport or not airport.ParkingAreas then
+--        return nil
+--    end
+--
+--    local coordinate = nil
+--
+--    pcall(function()
+--        coordinate = client:GetCoordinate()
+--    end)
+--
+--    if not coordinate then
+--        return nil
+--    end
+--
+--    for _, parkingArea in ipairs(airport.ParkingAreas) do
+--        if parkingArea.Zone then
+--            local zone = ZONE:FindByName(parkingArea.Zone)
+--
+--            if zone and zone:IsCoordinateInZone(coordinate) then
+--                return parkingArea
+--            end
+--        end
+--    end
+--
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:IsClientHot(client)
+--    if not client then
+--        return false
+--    end
+--
+--    local velocityMps = 0
+--
+--    pcall(function()
+--        local velocity = client:GetVelocityMPS()
+--
+--        if velocity then
+--            velocityMps = velocity
+--        end
+--    end)
+--
+--    local knots = velocityMps * 1.94384
+--
+--    return knots > self.Defaults.EngineHotSpeedThresholdKnots
+--end
+--
+--function NASG_GROUND_CONTROL:GetClientSpawnData(client, airport)
+--    if not client or not airport then
+--        return nil
+--    end
+--
+--    local coordinate = nil
+--    local vec2 = nil
+--    local vec3 = nil
+--    local parkingArea = nil
+--
+--    pcall(function()
+--        coordinate = client:GetCoordinate()
+--    end)
+--
+--    if coordinate then
+--        pcall(function()
+--            vec2 = coordinate:GetVec2()
+--        end)
+--
+--        pcall(function()
+--            vec3 = coordinate:GetVec3()
+--        end)
+--    end
+--
+--    parkingArea = self:GetParkingAreaForClient(client, airport)
+--
+--    return {
+--        Coordinate = coordinate,
+--        Vec2 = vec2,
+--        Vec3 = vec3,
+--        ParkingAreaName = parkingArea and parkingArea.Name or nil,
+--        CapturedAt = timer.getTime(),
+--    }
+--end
+--
+--function NASG_GROUND_CONTROL:FindAirportForClient(client)
+--    if not client then
+--        return nil
+--    end
+--
+--    for _, airport in pairs(self.Airports or {}) do
+--        if self:IsClientInAirportArea(client, airport) then
+--            return airport
+--        end
+--    end
+--
+--    return nil
+--end
+--
+-----------------------------------------------------------------------------
+---- Session management.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:GetOrCreateSession(client, airport)
+--    local clientKey = self:GetClientKey(client)
+--
+--    if not clientKey then
+--        return nil
+--    end
+--
+--    local session = self.ClientSessions[clientKey]
+--
+--    if not session then
+--        local parkingArea = self:GetParkingAreaForClient(client, airport)
+--        local isHot = self:IsClientHot(client)
+--
+--        session = {
+--            ClientKey = clientKey,
+--            AirportId = airport.Id,
+--            State = isHot and self.States.WAITING_FOR_TAXI_REQUEST or self.States.WAITING_FOR_STARTUP_REQUEST,
+--            ParkingAreaName = parkingArea and parkingArea.Name or nil,
+--            StartupApproved = false,
+--            ATISVerified = false,
+--            TaxiClearanceIssued = false,
+--            CreatedAt = timer.getTime(),
+--            UpdatedAt = timer.getTime(),
+--        }
+--
+--        self.ClientSessions[clientKey] = session
+--
+--        self:Log(
+--                string.format(
+--                        "Created ground session client=%s airport=%s state=%s parking=%s",
+--                        tostring(clientKey),
+--                        tostring(airport.Id),
+--                        tostring(session.State),
+--                        tostring(session.ParkingAreaName)
+--                )
+--        )
+--    end
+--
+--    session.UpdatedAt = timer.getTime()
+--    return session
+--end
+--
+-----------------------------------------------------------------------------
+---- TTS.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:SendGroundTTS(airport, messageText)
+--    self:SendFacilityTTS(airport, self.Facilities.GROUND, messageText)
+--end
+--
+--function NASG_GROUND_CONTROL:SendTowerTTS(airport, messageText)
+--    self:SendFacilityTTS(airport, self.Facilities.TOWER, messageText)
+--end
+--
+--function NASG_GROUND_CONTROL:SendCenterTTS(airport, messageText)
+--    self:SendFacilityTTS(airport, self.Facilities.CENTER, messageText)
+--end
+--
+--function NASG_GROUND_CONTROL:SendAWACSTTS(airport, messageText)
+--    self:SendFacilityTTS(airport, self.Facilities.AWACS, messageText)
+--end
+--
+-----------------------------------------------------------------------------
+---- Message builders.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:BuildStartupApprovedMessage(airport, callsign)
+--    local groundCallsign = airport.Ground.Callsign or "Ground"
+--    local currentInformationRaw = self:GetCurrentATISLetter(airport)
+--    local currentInformation = self:GetATISLetterForSpeech(currentInformationRaw)
+--
+--    if currentInformationRaw then
+--        return string.format(
+--                "%s, %s, Information %s current, startup approved. Advise ready to taxi.",
+--                callsign,
+--                groundCallsign,
+--                currentInformation
+--        )
+--    end
+--
+--    return string.format(
+--            "%s, %s, startup approved. Advise ready to taxi.",
+--            callsign,
+--            groundCallsign
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:BuildWrongATISMessage(airport, callsign)
+--    local groundCallsign = airport.Ground.Callsign or "Ground"
+--    local currentInformationRaw = self:GetCurrentATISLetter(airport)
+--    local currentInformation = self:GetATISLetterForSpeech(currentInformationRaw)
+--
+--    if currentInformationRaw then
+--        return string.format(
+--                "%s, %s, Information %s is current. Advise when ready with %s.",
+--                callsign,
+--                groundCallsign,
+--                currentInformation,
+--                currentInformation
+--        )
+--    end
+--
+--    return string.format(
+--            "%s, %s, verify you have current airport information.",
+--            callsign,
+--            groundCallsign
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:GetTaxiRoute(airport, parkingArea, runway)
+--    if not parkingArea then
+--        self:Log("Taxi route lookup failed: parkingArea is nil")
+--        return nil
+--    end
+--
+--    if not parkingArea.TaxiRoutes then
+--        self:Log("Taxi route lookup failed: parkingArea has no TaxiRoutes: " .. tostring(parkingArea.Name))
+--        return nil
+--    end
+--
+--    local runwayKey = tostring(runway or self:GetActiveRunway(airport, true) or airport.ActiveRunway or "")
+--    local runwayWithoutLR = runwayKey:gsub("[LRC]$", "")
+--
+--    local route = parkingArea.TaxiRoutes[runwayKey]
+--
+--    if route then
+--        self:Log(
+--                string.format(
+--                        "Taxi route found parking=%s runway=%s route=%s",
+--                        tostring(parkingArea.Name),
+--                        tostring(runwayKey),
+--                        tostring(self:JoinTaxiRoute(route))
+--                )
+--        )
+--        return route
+--    end
+--
+--    route = parkingArea.TaxiRoutes[runwayWithoutLR]
+--
+--    if route then
+--        self:Log(
+--                string.format(
+--                        "Taxi route found parking=%s runway=%s normalizedRunway=%s route=%s",
+--                        tostring(parkingArea.Name),
+--                        tostring(runwayKey),
+--                        tostring(runwayWithoutLR),
+--                        tostring(self:JoinTaxiRoute(route))
+--                )
+--        )
+--        return route
+--    end
+--
+--    self:Log(
+--            string.format(
+--                    "Taxi route not found parking=%s runway=%s normalizedRunway=%s",
+--                    tostring(parkingArea.Name),
+--                    tostring(runwayKey),
+--                    tostring(runwayWithoutLR)
+--            )
+--    )
+--
+--    return nil
+--end
+--
+--function NASG_GROUND_CONTROL:HandleReadback(client, airport, session, event)
+--    if not session or not session.PendingReadback then
+--        self:Debug("Readback ignored. No pending readback for client=" .. tostring(session and session.ClientKey))
+--        return true
+--    end
+--
+--    local pending = session.PendingReadback
+--
+--    if pending.ExpiresAt and timer.getTime() > pending.ExpiresAt then
+--        session.PendingReadback = nil
+--        self:Debug("Readback ignored. Pending readback expired for client=" .. tostring(session.ClientKey))
+--        return true
+--    end
+--
+--    local rawText = event and event.raw_text or ""
+--
+--    if pending.Type == "taxi" then
+--        local runwayOk = self:IsRunwayReadBackCorrect(rawText, pending.Runway)
+--        local routeOk, missingTaxiway = self:IsRouteReadBackCorrect(rawText, pending.Route)
+--        local frequencyOk = self:IsFrequencyReadBackCorrect(rawText, pending.TowerFrequency)
+--
+--        if runwayOk and routeOk and frequencyOk then
+--            self:Log("Taxi readback correct for client=" .. tostring(session.ClientKey))
+--            session.PendingReadback = nil
+--            return true
+--        end
+--
+--        local callsign = self:GetClientCallsign(client, event)
+--
+--        self:Log(
+--                string.format(
+--                        "Taxi readback incorrect client=%s runwayOk=%s routeOk=%s frequencyOk=%s missingTaxiway=%s text=%s",
+--                        tostring(session.ClientKey),
+--                        tostring(runwayOk),
+--                        tostring(routeOk),
+--                        tostring(frequencyOk),
+--                        tostring(missingTaxiway),
+--                        tostring(rawText)
+--                )
+--        )
+--
+--        self:SendGroundTTS(
+--                airport,
+--                string.format("%s, negative. %s", callsign, pending.InstructionText)
+--        )
+--
+--        return true
+--    end
+--
+--    return true
+--end
+--
+--function NASG_GROUND_CONTROL:BuildTaxiClearanceMessage(airport, session, callsign)
+--    local runway = tostring(self:GetActiveRunway(airport, true) or airport.ActiveRunway or "active")
+--    local runwaySpeech = self:NormalizeRunway(runway)
+--    local towerFrequency = airport.Tower and airport.Tower.Frequency or nil
+--    local parkingArea = nil
+--
+--    if airport.ParkingAreas and session.ParkingAreaName then
+--        for _, candidate in ipairs(airport.ParkingAreas) do
+--            if candidate.Name == session.ParkingAreaName then
+--                parkingArea = candidate
+--                break
+--            end
+--        end
+--    end
+--
+--    if parkingArea then
+--        self:Log(
+--                string.format(
+--                        "Taxi clearance parking resolved client=%s parking=%s runway=%s",
+--                        tostring(session.ClientKey),
+--                        tostring(parkingArea.Name),
+--                        tostring(runway)
+--                )
+--        )
+--    else
+--        self:Log(
+--                string.format(
+--                        "Taxi clearance parking unresolved client=%s sessionParking=%s runway=%s",
+--                        tostring(session.ClientKey),
+--                        tostring(session.ParkingAreaName),
+--                        tostring(runway)
+--                )
+--        )
+--    end
+--
+--    local route = self:GetTaxiRoute(airport, parkingArea, runway)
+--    local routeText = self:JoinTaxiRoute(route)
+--
+--
+--
+--    if routeText and towerFrequency then
+--        return string.format(
+--                "%s, taxi to Runway %s via %s. Hold short Runway %s. Contact Tower %s.",
+--                callsign,
+--                runwaySpeech,
+--                routeText,
+--                runwaySpeech,
+--                self:FormatFrequency(towerFrequency)
+--        )
+--    end
+--
+--    if routeText then
+--        return string.format(
+--                "%s, taxi to Runway %s via %s. Hold short Runway %s.",
+--                callsign,
+--                runwaySpeech,
+--                routeText,
+--                runwaySpeech
+--        )
+--    end
+--
+--    if towerFrequency then
+--        return string.format(
+--                "%s, taxi to Runway %s. Hold short Runway %s. Contact Tower %s.",
+--                callsign,
+--                runwaySpeech,
+--                runwaySpeech,
+--                self:FormatFrequency(towerFrequency)
+--        )
+--    end
+--
+--    return string.format(
+--            "%s, taxi to Runway %s. Hold short Runway %s.",
+--            callsign,
+--            runwaySpeech,
+--            runwaySpeech
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:BuildPushbackApprovedMessage(airport, callsign, event)
+--    local direction = event and (event.pushback_direction or event.direction) or nil
+--
+--    if direction and direction ~= "" then
+--        return string.format("%s, pushback approved, %s. Advise ready to taxi.", callsign, tostring(direction))
+--    end
+--
+--    return string.format("%s, pushback approved. Advise ready to taxi.", callsign)
+--end
+--
+--function NASG_GROUND_CONTROL:BuildProgressiveTaxiMessage(airport, session, callsign)
+--    local runway = tostring(self:GetActiveRunway(airport, true) or airport.ActiveRunway or "active")
+--    local parkingArea = self:GetParkingAreaByName(airport, session.ParkingAreaName)
+--    local route = self:GetTaxiRoute(airport, parkingArea, runway)
+--
+--    if route and #route > 0 then
+--        session.ProgressiveTaxiIndex = session.ProgressiveTaxiIndex or 1
+--
+--        local taxiway = route[session.ProgressiveTaxiIndex]
+--
+--        if taxiway then
+--            session.ProgressiveTaxiIndex = session.ProgressiveTaxiIndex + 1
+--            return string.format("%s, progressive taxi approved. Proceed via %s.", callsign, tostring(taxiway))
+--        end
+--    end
+--
+--    return string.format("%s, continue taxi to Runway %s. Hold short Runway %s.", callsign, self:NormalizeRunway(runway), self:NormalizeRunway(runway))
+--end
+--
+--function NASG_GROUND_CONTROL:BuildTowerDepartureCheckInMessage(airport, callsign)
+--    local runway = tostring(self:GetActiveRunway(airport, true) or airport.ActiveRunway or "active")
+--
+--    return string.format("%s, %s, line up and wait Runway %s.", callsign, self:GetFacilityCallsign(airport, self.Facilities.TOWER), self:NormalizeRunway(runway))
+--end
+--
+--function NASG_GROUND_CONTROL:BuildTakeoffClearanceMessage(airport, callsign)
+--    local runway = tostring(self:GetActiveRunway(airport, true) or airport.ActiveRunway or "active")
+--    local windText = airport.WindText or nil
+--    local departureFrequency = self:GetFacilityFrequency(airport, airport.UseAWACSForDeparture and self.Facilities.AWACS or self.Facilities.CENTER)
+--
+--    if windText and departureFrequency then
+--        return string.format(
+--                "%s, Runway %s, cleared for takeoff. Wind %s. Contact %s %s airborne.",
+--                callsign,
+--                self:NormalizeRunway(runway),
+--                windText,
+--                self:GetFacilityCallsign(airport, airport.UseAWACSForDeparture and self.Facilities.AWACS or self.Facilities.CENTER),
+--                self:FormatFrequency(departureFrequency)
+--        )
+--    end
+--
+--    if departureFrequency then
+--        return string.format(
+--                "%s, Runway %s, cleared for takeoff. Contact %s %s airborne.",
+--                callsign,
+--                self:NormalizeRunway(runway),
+--                self:GetFacilityCallsign(airport, airport.UseAWACSForDeparture and self.Facilities.AWACS or self.Facilities.CENTER),
+--                self:FormatFrequency(departureFrequency)
+--        )
+--    end
+--
+--    return string.format("%s, Runway %s, cleared for takeoff.", callsign, self:NormalizeRunway(runway))
+--end
+--
+--function NASG_GROUND_CONTROL:BuildInboundPatternMessage(airport, callsign, event)
+--    local runway = tostring(event and event.runway or self:GetActiveRunway(airport, false) or airport.ActiveRunway or "active")
+--    local arrivalType = event and event.arrival_type or nil
+--
+--    if arrivalType == "overhead" then
+--        return string.format("%s, enter initial Runway %s. Report initial.", callsign, self:NormalizeRunway(runway))
+--    end
+--
+--    if arrivalType == "straight_in" then
+--        return string.format("%s, make straight-in Runway %s. Report five miles final.", callsign, self:NormalizeRunway(runway))
+--    end
+--
+--    return string.format("%s, enter left downwind Runway %s. Report midfield.", callsign, self:NormalizeRunway(runway))
+--end
+--
+--function NASG_GROUND_CONTROL:BuildLandingClearanceMessage(airport, callsign, event)
+--    local runway = tostring(event and event.runway or self:GetActiveRunway(airport, false) or airport.ActiveRunway or "active")
+--    local windText = airport.WindText or nil
+--
+--    if windText then
+--        return string.format("%s, Runway %s, cleared to land. Wind %s.", callsign, self:NormalizeRunway(runway), windText)
+--    end
+--
+--    return string.format("%s, Runway %s, cleared to land.", callsign, self:NormalizeRunway(runway))
+--end
+--
+-----------------------------------------------------------------------------
+---- Intent handlers.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:HandleStartupRequest(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local requireCorrectATIS = airport.RequireCorrectATIS
+--
+--    if requireCorrectATIS == nil then
+--        requireCorrectATIS = self.Defaults.RequireCorrectATIS
+--    end
+--
+--    if requireCorrectATIS and not self:IsATISCorrect(airport, event and event.atis_letter) then
+--        self:SendGroundTTS(airport, self:BuildWrongATISMessage(airport, callsign))
+--        return
+--    end
+--
+--    session.StartupApproved = true
+--    session.ATISVerified = true
+--    session.State = self.States.WAITING_FOR_TAXI_REQUEST
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendGroundTTS(airport, self:BuildStartupApprovedMessage(airport, callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandlePushbackRequest(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.PUSHBACK_APPROVED
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendGroundTTS(airport, self:BuildPushbackApprovedMessage(airport, callsign, event))
+--end
+--
+--function NASG_GROUND_CONTROL:HandlePushbackComplete(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.WAITING_FOR_TAXI_REQUEST
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendGroundTTS(airport, string.format("%s, roger. Advise ready to taxi.", callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleTaxiRequest(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local requireCorrectATIS = airport.RequireCorrectATIS
+--
+--    if requireCorrectATIS == nil then
+--        requireCorrectATIS = self.Defaults.RequireCorrectATIS
+--    end
+--
+--    if requireCorrectATIS and not session.ATISVerified then
+--        if not self:IsATISCorrect(airport, event and event.atis_letter) then
+--            self:SendGroundTTS(airport, self:BuildWrongATISMessage(airport, callsign))
+--            return
+--        end
+--
+--        session.ATISVerified = true
+--    end
+--
+--    if not session.ParkingAreaName then
+--        local parkingArea = self:GetParkingAreaForClient(client, airport)
+--
+--        if parkingArea then
+--            session.ParkingAreaName = parkingArea.Name
+--        end
+--    end
+--
+--    session.TaxiClearanceIssued = true
+--    session.State = self.States.TAXI_CLEARANCE_ISSUED
+--    session.UpdatedAt = timer.getTime()
+--
+--    local messageText = self:BuildTaxiClearanceMessage(airport, session, callsign)
+--
+--    local runway = tostring(self:GetActiveRunway(airport, true) or airport.ActiveRunway or "active")
+--    local towerFrequency = airport.Tower and airport.Tower.Frequency or nil
+--    local parkingArea = self:GetParkingAreaByName(airport, session.ParkingAreaName)
+--    local route = self:GetTaxiRoute(airport, parkingArea, runway)
+--
+--    self:SetPendingReadback(session, {
+--        Type = "taxi",
+--        InstructionText = messageText,
+--        Runway = runway,
+--        Route = route,
+--        TowerFrequency = towerFrequency,
+--    })
+--
+--    self:SendGroundTTS(airport, messageText)
+--end
+--
+--function NASG_GROUND_CONTROL:HandleProgressiveTaxiRequest(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.TAXIING
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendGroundTTS(airport, self:BuildProgressiveTaxiMessage(airport, session, callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleRunwayCrossingRequest(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local runway = tostring(event and event.runway or self:GetActiveRunway(airport, true) or airport.ActiveRunway or "active")
+--    local crossingPoint = event and (event.crossing_point or event.taxiway) or nil
+--
+--    session.UpdatedAt = timer.getTime()
+--
+--    if crossingPoint then
+--        self:SendGroundTTS(
+--                airport,
+--                string.format("%s, cross Runway %s at %s.", callsign, self:NormalizeRunway(runway), tostring(crossingPoint))
+--        )
+--        return
+--    end
+--
+--    self:SendGroundTTS(
+--            airport,
+--            string.format("%s, cross Runway %s.", callsign, self:NormalizeRunway(runway))
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:HandleHoldingShortReady(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local towerFrequency = self:GetFacilityFrequency(airport, self.Facilities.TOWER)
+--
+--    session.State = self.States.TRANSFERRED_TO_TOWER
+--    session.UpdatedAt = timer.getTime()
+--
+--    if towerFrequency then
+--        self:SendGroundTTS(
+--                airport,
+--                string.format("%s, contact Tower %s.", callsign, self:FormatFrequency(towerFrequency))
+--        )
+--        return
+--    end
+--
+--    self:SendGroundTTS(airport, string.format("%s, contact Tower.", callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleTaxiBackRequest(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local parkingAreaName = event and event.parking_area or session.ParkingAreaName or "parking"
+--
+--    session.State = self.States.TAXIING
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendGroundTTS(
+--            airport,
+--            string.format("%s, taxi to %s. Remain this frequency.", callsign, tostring(parkingAreaName))
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:HandleRearmRefuelRequest(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local rampName = airport.MaintenanceRamp or "maintenance ramp"
+--
+--    session.State = self.States.TAXIING
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendGroundTTS(
+--            airport,
+--            string.format("%s, taxi to %s. Remain this frequency.", callsign, rampName)
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:HandleGroundEmergency(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.GROUND_EMERGENCY
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendGroundTTS(
+--            airport,
+--            string.format("%s, roger emergency. Hold position if able. Emergency services notified.", callsign)
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:HandleRadioCheck(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local facility = event and event.facility or self.Facilities.GROUND
+--    local facilityCallsign = self:GetFacilityCallsign(airport, facility)
+--
+--    self:SendFacilityTTS(
+--            airport,
+--            facility,
+--            string.format("%s, %s, loud and clear.", callsign, facilityCallsign)
+--    )
+--end
+--
+-----------------------------------------------------------------------------
+---- Tower intent handlers.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:HandleTowerDepartureCheckIn(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.LINEUP_AND_WAIT
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendTowerTTS(airport, self:BuildTowerDepartureCheckInMessage(airport, callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleTakeoffRequest(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.TAKEOFF_CLEARED
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendTowerTTS(airport, self:BuildTakeoffClearanceMessage(airport, callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleAbortTakeoff(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local groundFrequency = self:GetFacilityFrequency(airport, self.Facilities.GROUND)
+--
+--    session.State = self.States.HOLDING_POSITION
+--    session.UpdatedAt = timer.getTime()
+--
+--    if groundFrequency then
+--        self:SendTowerTTS(
+--                airport,
+--                string.format("%s, roger abort. Exit runway when able. Contact Ground %s.", callsign, self:FormatFrequency(groundFrequency))
+--        )
+--        return
+--    end
+--
+--    self:SendTowerTTS(airport, string.format("%s, roger abort. Exit runway when able. Contact Ground.", callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleInbound(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.INBOUND
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendTowerTTS(airport, self:BuildInboundPatternMessage(airport, callsign, event))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleReportInitial(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.INITIAL
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendTowerTTS(airport, string.format("%s, break approved. Report downwind.", callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleReportDownwind(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.DOWNWIND
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendTowerTTS(airport, self:BuildLandingClearanceMessage(airport, callsign, event))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleReportFinal(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.LANDING_CLEARED
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendTowerTTS(airport, self:BuildLandingClearanceMessage(airport, callsign, event))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleGoingAround(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.GO_AROUND
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendTowerTTS(airport, string.format("%s, roger go around. Fly runway heading. Report upwind.", callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleClearOfRunway(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local groundFrequency = self:GetFacilityFrequency(airport, self.Facilities.GROUND)
+--
+--    session.State = self.States.TRANSFERRED_TO_GROUND
+--    session.UpdatedAt = timer.getTime()
+--
+--    if groundFrequency then
+--        self:SendTowerTTS(
+--                airport,
+--                string.format("%s, contact Ground %s.", callsign, self:FormatFrequency(groundFrequency))
+--        )
+--        return
+--    end
+--
+--    self:SendTowerTTS(airport, string.format("%s, contact Ground.", callsign))
+--end
+--
+-----------------------------------------------------------------------------
+---- Center intent handlers.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:HandleCenterCheckIn(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local altitude = event and event.altitude or "altitude unknown"
+--
+--    session.State = self.States.CENTER_CONTROL
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendCenterTTS(
+--            airport,
+--            string.format("%s, %s, radar contact, %s.", callsign, self:GetFacilityCallsign(airport, self.Facilities.CENTER), tostring(altitude))
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:HandleCenterDirect(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local fix = event and (event.fix or event.destination or event.waypoint) or "requested point"
+--
+--    session.State = self.States.CENTER_CONTROL
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendCenterTTS(airport, string.format("%s, proceed direct %s.", callsign, tostring(fix)))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleCenterRecovery(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local towerFrequency = self:GetFacilityFrequency(airport, self.Facilities.TOWER)
+--
+--    session.State = self.States.INBOUND
+--    session.UpdatedAt = timer.getTime()
+--
+--    if towerFrequency then
+--        self:SendCenterTTS(
+--                airport,
+--                string.format("%s, contact %s %s for recovery.", callsign, self:GetFacilityCallsign(airport, self.Facilities.TOWER), self:FormatFrequency(towerFrequency))
+--        )
+--        return
+--    end
+--
+--    self:SendCenterTTS(airport, string.format("%s, contact %s for recovery.", callsign, self:GetFacilityCallsign(airport, self.Facilities.TOWER)))
+--end
+--
+-----------------------------------------------------------------------------
+---- AWACS intent handlers.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:HandleAWACSCheckIn(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local packageName = event and event.package or "package"
+--
+--    session.State = self.States.AWACS_CONTROL
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendAWACSTTS(
+--            airport,
+--            string.format("%s, %s, radar contact. Check in complete for %s.", callsign, self:GetFacilityCallsign(airport, self.Facilities.AWACS), tostring(packageName))
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:HandleAWACSPicture(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.AWACS_CONTROL
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendAWACSTTS(
+--            airport,
+--            string.format("%s, picture clean. No factor traffic reported.", callsign)
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:HandleAWACSBogeyDope(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--
+--    session.State = self.States.AWACS_CONTROL
+--    session.UpdatedAt = timer.getTime()
+--
+--    self:SendAWACSTTS(
+--            airport,
+--            string.format("%s, nearest group unavailable. Continue mission.json, report established.", callsign)
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:HandleAWACSVectorToTarget(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local heading = event and event.heading or nil
+--    local range = event and event.range or nil
+--
+--    session.State = self.States.AWACS_CONTROL
+--    session.UpdatedAt = timer.getTime()
+--
+--    if heading and range then
+--        self:SendAWACSTTS(
+--                airport,
+--                string.format("%s, vector target heading %s, range %s.", callsign, tostring(heading), tostring(range))
+--        )
+--        return
+--    end
+--
+--    self:SendAWACSTTS(airport, string.format("%s, unable target vector. Continue present mission.json.", callsign))
+--end
+--
+--function NASG_GROUND_CONTROL:HandleAWACSCombatRecovery(client, airport, session, event)
+--    local callsign = self:GetClientCallsign(client, event)
+--    local towerFrequency = self:GetFacilityFrequency(airport, self.Facilities.TOWER)
+--
+--    session.State = self.States.INBOUND
+--    session.UpdatedAt = timer.getTime()
+--
+--    if towerFrequency then
+--        self:SendAWACSTTS(
+--                airport,
+--                string.format("%s, proceed home plate. Contact %s %s for recovery.", callsign, self:GetFacilityCallsign(airport, self.Facilities.TOWER), self:FormatFrequency(towerFrequency))
+--        )
+--        return
+--    end
+--
+--    self:SendAWACSTTS(
+--            airport,
+--            string.format("%s, proceed home plate. Contact %s for recovery.", callsign, self:GetFacilityCallsign(airport, self.Facilities.TOWER))
+--    )
+--end
+-----------------------------------------------------------------------------
+---- Speech event entry point.
+-----------------------------------------------------------------------------
+--
+--
+--function NASG_GROUND_CONTROL:HandleSpeechEvent(event)
+--    if not event then
+--        return false
+--    end
+--
+--    local airportId = event.airport_id or event.airport or "al_minhad"
+--    local airport = self:GetAirport(airportId)
+--
+--    if not airport then
+--        self:Log("Speech event ignored. Unknown airport: " .. tostring(airportId))
+--        return false
+--    end
+--
+--    local rawClientName = event.client_name or event.client or event.unit_name
+--    local client, clientName, matchType = self:FindClientForSpeechEvent(rawClientName)
+--
+--
+--    if not client then
+--        self:Log(
+--                string.format(
+--                        "Speech event ignored. Client not found: raw=%s normalized=%s match=%s",
+--                        tostring(rawClientName),
+--                        tostring(clientName),
+--                        tostring(matchType)
+--                )
+--        )
+--
+--        self:DumpActivePlayersForDebug()
+--        return false
+--    end
+--
+--    self:Log(
+--            string.format(
+--                    "Speech event client matched: raw=%s normalized=%s match=%s client=%s player=%s",
+--                    tostring(rawClientName),
+--                    tostring(clientName),
+--                    tostring(matchType),
+--                    tostring(self:GetClientNameSafe(client)),
+--                    tostring(self:GetClientPlayerNameSafe(client))
+--            )
+--    )
+--
+--    if not self:IsClientInAirportArea(client, airport) then
+--        self:Debug("Speech event ignored. Client not in airport area: " .. tostring(clientName))
+--        return false
+--    end
+--
+--    local session = self:GetOrCreateSession(client, airport)
+--
+--    if not session then
+--        self:Log("Speech event ignored. Could not create session for: " .. tostring(clientName))
+--        return false
+--    end
+--
+--    local intent = event.intent
+--
+--    if intent == self.Intents.READBACK then
+--        self:HandleReadback(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.RADIO_CHECK then
+--        self:HandleRadioCheck(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_STARTUP then
+--        self:HandleStartupRequest(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_PUSHBACK then
+--        self:HandlePushbackRequest(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.PUSHBACK_COMPLETE then
+--        self:HandlePushbackComplete(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_TAXI then
+--        self:HandleTaxiRequest(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_PROGRESSIVE_TAXI then
+--        self:HandleProgressiveTaxiRequest(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_RUNWAY_CROSSING then
+--        self:HandleRunwayCrossingRequest(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.HOLDING_SHORT_READY then
+--        self:HandleHoldingShortReady(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_TAXI_BACK or intent == self.Intents.REQUEST_PARKING or intent == self.Intents.ABORT_TAXI then
+--        self:HandleTaxiBackRequest(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_REARM_REFUEL then
+--        self:HandleRearmRefuelRequest(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.EMERGENCY_GROUND then
+--        self:HandleGroundEmergency(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.TOWER_CHECK_IN_DEPARTURE then
+--        self:HandleTowerDepartureCheckIn(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_TAKEOFF then
+--        self:HandleTakeoffRequest(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.ABORT_TAKEOFF then
+--        self:HandleAbortTakeoff(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.INBOUND_FULL_STOP
+--            or intent == self.Intents.INBOUND_TOUCH_AND_GO
+--            or intent == self.Intents.INBOUND_OVERHEAD then
+--        self:HandleInbound(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REPORT_INITIAL then
+--        self:HandleReportInitial(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REPORT_DOWNWIND or intent == self.Intents.REPORT_BASE then
+--        self:HandleReportDownwind(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REPORT_FINAL then
+--        self:HandleReportFinal(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.GOING_AROUND then
+--        self:HandleGoingAround(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REPORT_CLEAR_OF_RUNWAY then
+--        self:HandleClearOfRunway(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.CENTER_CHECK_IN or intent == self.Intents.REQUEST_FLIGHT_FOLLOWING then
+--        self:HandleCenterCheckIn(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_DIRECT then
+--        self:HandleCenterDirect(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_RECOVERY or intent == self.Intents.REQUEST_FREQUENCY_CHANGE then
+--        self:HandleCenterRecovery(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.AWACS_CHECK_IN then
+--        self:HandleAWACSCheckIn(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_PICTURE then
+--        self:HandleAWACSPicture(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_BOGEY_DOPE then
+--        self:HandleAWACSBogeyDope(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_VECTOR_TO_TARGET then
+--        self:HandleAWACSVectorToTarget(client, airport, session, event)
+--        return true
+--    end
+--
+--    if intent == self.Intents.REQUEST_VECTOR_TO_HOME_PLATE or intent == self.Intents.REQUEST_COMBAT_RECOVERY then
+--        self:HandleAWACSCombatRecovery(client, airport, session, event)
+--        return true
+--    end
+--
+--    local facility = event.facility or self.Facilities.GROUND
+--
+--    self:SendFacilityTTS(
+--            airport,
+--            facility,
+--            string.format(
+--                    "%s, %s, say again your request.",
+--                    self:GetClientCallsign(client, event),
+--                    self:GetFacilityCallsign(airport, facility)
+--            )
+--    )
+--
+--    return false
+--end
+-----------------------------------------------------------------------------
+---- Birth / scan handling.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:HandleClientBirth(client, eventData)
+--    if not client then
+--        return
+--    end
+--
+--    local airport = self:FindAirportForClient(client)
+--
+--    if not airport then
+--        return
+--    end
+--
+--    local session = self:GetOrCreateSession(client, airport)
+--
+--    if not session then
+--        return
+--    end
+--
+--    local spawnData = self:GetClientSpawnData(client, airport)
+--
+--    if spawnData then
+--        session.SpawnData = spawnData
+--
+--        if spawnData.ParkingAreaName then
+--            session.ParkingAreaName = spawnData.ParkingAreaName
+--        end
+--    end
+--
+--    self:Log(
+--            string.format(
+--                    "Client birth detected client=%s airport=%s parking=%s",
+--                    tostring(session.ClientKey),
+--                    tostring(airport.Id),
+--                    tostring(session.ParkingAreaName)
+--            )
+--    )
+--end
+--
+--function NASG_GROUND_CONTROL:HandleClientEngineStart(client, eventData)
+--    if not client then
+--        return
+--    end
+--
+--    local airport = self:FindAirportForClient(client)
+--
+--    if not airport then
+--        return
+--    end
+--
+--    local session = self:GetOrCreateSession(client, airport)
+--
+--    if not session then
+--        return
+--    end
+--
+--    if session.State == self.States.WAITING_FOR_STARTUP_REQUEST then
+--        session.StartupApproved = true
+--        session.State = self.States.WAITING_FOR_TAXI_REQUEST
+--        session.UpdatedAt = timer.getTime()
+--
+--        self:Log(
+--                string.format(
+--                        "Client engine start detected; advanced to taxi wait client=%s airport=%s parking=%s",
+--                        tostring(session.ClientKey),
+--                        tostring(airport.Id),
+--                        tostring(session.ParkingAreaName)
+--                )
+--        )
+--    end
+--end
+--
+--function NASG_GROUND_CONTROL:StartEventHandler()
+--    if self.EventHandler then
+--        return
+--    end
+--
+--    self.EventHandler = EVENTHANDLER:New()
+--    self.EventHandler:HandleEvent(EVENTS.Birth)
+--    self.EventHandler:HandleEvent(EVENTS.EngineStartup)
+--
+--    function self.EventHandler:OnEventBirth(eventData)
+--        if not eventData then
+--            return
+--        end
+--
+--        local unitName = nil
+--
+--        if eventData.IniUnitName then
+--            unitName = eventData.IniUnitName
+--        elseif eventData.IniUnit then
+--            pcall(function()
+--                unitName = eventData.IniUnit:GetName()
+--            end)
+--        end
+--
+--        if not unitName or unitName == "" then
+--            return
+--        end
+--
+--        local playerName = nil
+--
+--        if eventData.IniUnit then
+--            pcall(function()
+--                playerName = eventData.IniUnit:getPlayerName()
+--            end)
+--        end
+--
+--        if not playerName or playerName == "" then
+--            NASG_GROUND_CONTROL:Debug("Birth ignored; no player name: " .. tostring(unitName))
+--            return
+--        end
+--
+--        local client = nil
+--
+--        local ok = pcall(function()
+--            client = CLIENT:FindByName(unitName)
+--        end)
+--
+--        if not ok or not client then
+--            NASG_GROUND_CONTROL:Debug("Birth ignored; not a CLIENT: " .. tostring(unitName))
+--            return
+--        end
+--
+--        NASG_GROUND_CONTROL:HandleClientBirth(client, eventData)
+--    end
+--
+--    function self.EventHandler:OnEventEngineStartup(eventData)
+--        if not eventData then
+--            return
+--        end
+--
+--        local unitName = nil
+--
+--        if eventData.IniUnitName then
+--            unitName = eventData.IniUnitName
+--        elseif eventData.IniUnit then
+--            pcall(function()
+--                unitName = eventData.IniUnit:GetName()
+--            end)
+--        end
+--
+--        if not unitName or unitName == "" then
+--            return
+--        end
+--
+--        local playerName = nil
+--
+--        if eventData.IniUnit then
+--            pcall(function()
+--                playerName = eventData.IniUnit:getPlayerName()
+--            end)
+--        end
+--
+--        if not playerName or playerName == "" then
+--            NASG_GROUND_CONTROL:Debug("Engine start ignored; no player name: " .. tostring(unitName))
+--            return
+--        end
+--
+--        local client = nil
+--
+--        local ok = pcall(function()
+--            client = CLIENT:FindByName(unitName)
+--        end)
+--
+--        if not ok or not client then
+--            NASG_GROUND_CONTROL:Debug("Engine start ignored; not a CLIENT: " .. tostring(unitName))
+--            return
+--        end
+--
+--        NASG_GROUND_CONTROL:HandleClientEngineStart(client, eventData)
+--    end
+--
+--    self:Log("Started ground control event handler")
+--end
+--
+--function NASG_GROUND_CONTROL:StopEventHandler()
+--    if not self.EventHandler then
+--        return
+--    end
+--
+--    pcall(function()
+--        self.EventHandler:UnHandleEvent(EVENTS.Birth)
+--        self.EventHandler:UnHandleEvent(EVENTS.EngineStartup)
+--    end)
+--
+--    self.EventHandler = nil
+--    self:Log("Stopped ground control event handler")
+--end
+--
+--function NASG_GROUND_CONTROL:ScanClientsForAirport(airport)
+--    if not airport then
+--        return
+--    end
+--
+--    local clientSet = SET_CLIENT:New()
+--                                :FilterCoalitions("blue")
+--                                :FilterActive()
+--                                :FilterStart()
+--
+--    clientSet:ForEachClient(function(client)
+--        if client and client:IsAlive() and self:IsClientInAirportArea(client, airport) then
+--            self:GetOrCreateSession(client, airport)
+--        end
+--    end)
+--end
+--
+-----------------------------------------------------------------------------
+---- Lifecycle.
+-----------------------------------------------------------------------------
+--
+--function NASG_GROUND_CONTROL:Start()
+--    self:Log("Starting NASG Ground Control version " .. tostring(self.Version))
+--
+--    if self.Scanner then
+--        pcall(function()
+--            self.Scanner:Stop()
+--        end)
+--
+--        self.Scanner = nil
+--    end
+--
+--    self:StartEventHandler()
+--
+--    self.Scanner = SCHEDULER:New(nil, function()
+--        for _, airport in pairs(NASG_GROUND_CONTROL.Airports or {}) do
+--            NASG_GROUND_CONTROL:ScanClientsForAirport(airport)
+--        end
+--    end, {}, 5, self.Defaults.ClientScanIntervalSeconds)
+--end
+--
+--function NASG_GROUND_CONTROL:Stop()
+--    if self.Scanner then
+--        pcall(function()
+--            self.Scanner:Stop()
+--        end)
+--
+--        self.Scanner = nil
+--    end
+--
+--    self:StopEventHandler()
+--
+--    self:Log("Stopped")
+--end
+--
+-----------------------------------------------------------------------------
+---- Airport config.
+-----------------------------------------------------------------------------
+--
+--NASG_GROUND_CONTROL:RegisterAirport({
+--    Id = "al_minhad",
+--    Name = "Al Minhad",
+--    AirbaseName = AIRBASE.PersianGulf.Al_Minhad_AFB,
+--
+--    RequireCorrectATIS = true,
+--    ActiveRunway = "27",
+--    WindText = "two six zero at eight",
+--    MaintenanceRamp = "maintenance ramp",
+--    UseAWACSForDeparture = false,
+--    TTSEndpoint = "http://127.0.0.1:8765/tts",
+--    Coalition = coalition.side.BLUE,
+--
+--    Ground = {
+--        Callsign = "Al Minhad Ground",
+--        Frequency = 250.100,
+--        Modulation = radio.modulation.AM,
+--        Voice = "Nathan",
+--        Speed = 200,
+--        Volume = 1.0,
+--    },
+--
+--    Tower = {
+--        Callsign = "Al Minhad Tower",
+--        Frequency = 310.500,
+--        Modulation = radio.modulation.AM,
+--        Voice = "Nathan",
+--        Speed = 200,
+--        Volume = 1.0,
+--    },
+--
+--    Center = {
+--        Callsign = "Emirates Center",
+--        Frequency = 251.000,
+--        Modulation = radio.modulation.AM,
+--        Voice = "Nathan",
+--        Speed = 200,
+--        Volume = 1.0,
+--    },
+--
+--    AWACS = {
+--        Callsign = "Overlord",
+--        Frequency = 251.500,
+--        Modulation = radio.modulation.AM,
+--        Voice = "Nathan",
+--        Speed = 200,
+--        Volume = 1.0,
+--    },
+--
+--    ATIS = {
+--        --AutoCreate = true,
+--        Callsign = "Al Minhad Information",
+--        Frequency = 131.700,
+--        Modulation = radio.modulation.AM,
+--        CurrentInformation = "Echo",
+--    },
+--
+--    DetectionZone = "AL_MINHAD_AIRPORT_ZONE",
+--
+--    ParkingAreas = {
+--        {
+--            Name = "West Ramp",
+--            Zone = "AL_MINHAD_WEST_RAMP",
+--            TaxiRoutes = {
+--                ["27"] = { "Hotel", "Golf" },
+--                ["09"] = { "Hotel", "Alpha" },
+--            },
+--        },
+--        {
+--            Name = "East Ramp",
+--            Zone = "AL_MINHAD_EAST_RAMP",
+--            TaxiRoutes = {
+--                ["27"] = { "Hotel", "Golf" },
+--                ["09"] = { "Hotel", "Alpha" },
+--            },
+--        },
+--    },
+--})
+--
+--NASG_GROUND_CONTROL:Start()

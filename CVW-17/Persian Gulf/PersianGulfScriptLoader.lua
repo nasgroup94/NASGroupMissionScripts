@@ -3,7 +3,7 @@ dofile(lfs.writedir() .. 'Scripts/net/DCSServerBot/DCSServerBotConfig.lua')
 DCSServerBotConfig = require('DCSServerBotConfig')
 SERVER_SETTINGS = cfg -- cfg table is from the current DCS servers config/serverSettings.lua  
 
-package.path = [[C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\?.lua;]] .. package.path
+--package.path = [[C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\?.lua;]] .. package.path
 
 local mission_scripts_path =  "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf/"
 local common_scripts_path = "C:/NASGroup/NASGroupMissionScripts/Common/"
@@ -18,6 +18,16 @@ SERVER_LOCATION = user_folder .. "Saved Games/" .. DCSServerBotConfig.INSTANCE_N
 SRS_PATH = "C:/DCS-SimpleRadioStandalone/ExternalAudio"
 SRS_PORT = DCSServerBotConfig.SRS_PORT
 TTS_SERVICE_PORT = 8765
+
+-- NASG ATC flight plan inputs.
+-- Flight plans are loaded from:
+--   NASG_ATC_FLIGHT_PLAN_ROOT_FOLDER / current date / callsign folder / *.json or *.dtc
+-- Example:
+--   E:/DCS Stuff/FlightPlans/2026-06-05/HOBO11/cftest.json
+NASG_ATC_FLIGHT_PLAN_FILE = common_scripts_path .. "ATC/tmp/nasg_atc_flight_plans.json"
+NASG_ATC_FLIGHT_PLAN_ROOT_FOLDER = "C:/Users/naval/Saved Games/DCS.Test/FlightPlans"
+NASG_ATC_FLIGHT_PLAN_DAY_FORMAT = "%Y-%m-%d"
+NASG_ATC_DTC_FLIGHT_PLAN_ENABLED = true
 
 
 COMMONSOUNDSFOLDER = common_scripts_path .. "sound/"
@@ -47,9 +57,10 @@ NASG_PYWS_DEBUG = false
 -- Moose/mist (really need to getrid of MIST one of these days!)
 assert(loadfile(moose_folder .. "Moose.lua"))()
 --assert(loadfile(common_scripts_path .. "Test/NASG_ReloadScriptsMenu.lua"))()
-assert(loadfile(common_scripts_path .. "TTS Test\\SRS_PythonWebSocket.lua"))() -- the order of these two matter this one first
+assert(loadfile(common_scripts_path .. "ATC\\lua\\SRS_PythonWebSocket.lua"))() -- the order of these two matter this one first
 MSRS.LoadConfigFile(nil, mission_scripts_path, "Persian_Gulf_msrs_config.lua") -- Note the "." here
-assert(loadfile(common_scripts_path .. "TTS Test\\tts_init.lua"))() -- the order of these two matter this one second
+assert(loadfile(common_scripts_path .. "ATC\\lua\\tts_init.lua"))() -- the order of these two matter this one second
+assert(loadfile(common_scripts_path .. "ATC\\lua\\NASG_ATC_Core.lua"))()
 assert(loadfile(common_scripts_path .. "mist.lua"))()
 
 -- Common for all missions
@@ -67,16 +78,15 @@ assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Al_Minad_AFB.lua"))(
 assert(loadfile(mission_scripts_path .. "NATO\\Persian_Gulf_Chief_Blue.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\Blue_IADS.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
-assert(loadfile(mission_scripts_path .. "NATO\\BlueATC.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\SEADRangeIADS.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\AAPVERange_MOOSE.lua"))()
 
+-- NASG ATC.
+assert(loadfile(common_scripts_path .. "ATC\\scripts\\ATCScriptLoader.lua"))()
 
 
-
-
-
+assert(loadfile(common_scripts_path .. "NASG_LuaConsole.lua"))()
 
 --Dev
 -- AIRBASE:FindByName("Andersen AFB"):MarkParkingSpots() -- For development, marks parkiong spots on F10 map with IDs used for scripting

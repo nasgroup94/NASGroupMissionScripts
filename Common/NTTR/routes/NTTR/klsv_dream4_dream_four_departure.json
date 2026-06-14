@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "id": "klsv_dream4_dream_four_departure",
+  "name": "DREAM FOUR DEPARTURE",
+  "short_name": "DREAM4",
+  "procedure_code": "DREAM4.DREAM",
+  "procedure_type": "stereo_departure",
+  "theater": "Nevada",
+  "area": "NTTR",
+  "associated_airports": ["KLSV"],
+  "default_controller": "departure",
+  "route_direction": "outbound",
+  "nav_database": "navpoints_nevada_dcs.json",
+  "not_for_civil_use": true,
+  "fix_refs": [
+    "KLSV.03L",
+    "KLSV.03R",
+    "KLSV.21L",
+    "KLSV.21R",
+    "DREAM",
+    "MINTT",
+    "JUNNO",
+    "ATALF",
+    "HEREM",
+    "LAS",
+    "LSV",
+    "BLD"
+  ],
+  "frequencies": {
+    "atis": ["270.1"],
+    "ground_control": ["327.1", "38.8"],
+    "departure_control": ["135.1", "385.4"]
+  },
+  "runway_transitions": [
+    {
+      "runways": ["03L"],
+      "name": "Runway 03L transition",
+      "legs": [
+        {
+          "sequence": 1,
+          "type": "heading_or_intercept",
+          "from": "KLSV.03L",
+          "to": "LSV_R027_INTERCEPT",
+          "instruction": "Fly runway heading to intercept LSV TACAN R-027.",
+          "navaid": "LSV",
+          "radial": 27,
+          "required": true
+        },
+        {
+          "sequence": 2,
+          "type": "direct",
+          "from": "LSV_R027_INTERCEPT",
+          "to": "ATALF",
+          "instruction": "Then direct ATALF.",
+          "required": true
+        },
+        {
+          "sequence": 3,
+          "type": "intercept_radial",
+          "from": "ATALF",
+          "to": "JUNNO",
+          "instruction": "Intercept the BLD VORTAC R-346 then direct JUNNO.",
+          "navaid": "BLD",
+          "radial": 346,
+          "required": true
+        },
+        {
+          "sequence": 4,
+          "type": "crossing_restriction",
+          "fix": "JUNNO",
+          "instruction": "Cross JUNNO at or above 17000 feet MSL.",
+          "altitude_min_ft": 17000,
+          "required": true
+        }
+      ]
+    },
+    {
+      "runways": ["03R"],
+      "name": "Runway 03R transition",
+      "legs": [
+        {
+          "sequence": 1,
+          "type": "heading_or_intercept",
+          "from": "KLSV.03R",
+          "to": "LSV_R030_INTERCEPT",
+          "instruction": "Fly runway heading to intercept LSV TACAN R-030.",
+          "navaid": "LSV",
+          "radial": 30,
+          "required": true
+        },
+        {
+          "sequence": 2,
+          "type": "direct",
+          "from": "LSV_R030_INTERCEPT",
+          "to": "HEREM",
+          "instruction": "Then direct HEREM.",
+          "required": true
+        },
+        {
+          "sequence": 3,
+          "type": "intercept_radial",
+          "from": "HEREM",
+          "to": "JUNNO",
+          "instruction": "Intercept the BLD VORTAC R-346 then direct JUNNO.",
+          "navaid": "BLD",
+          "radial": 346,
+          "required": true
+        },
+        {
+          "sequence": 4,
+          "type": "crossing_restriction",
+          "fix": "JUNNO",
+          "instruction": "Cross JUNNO at or above 17000 feet MSL.",
+          "altitude_min_ft": 17000,
+          "required": true
+        }
+      ]
+    },
+    {
+      "runways": ["21L", "21R"],
+      "name": "Runway 21L/R transition",
+      "legs": [
+        {
+          "sequence": 1,
+          "type": "right_turn_intercept_radial",
+          "from": "KLSV.21L",
+          "alternate_from": "KLSV.21R",
+          "to": "LAS_R350",
+          "instruction": "Turn right to intercept LAS VORTAC R-350 outbound.",
+          "navaid": "LAS",
+          "radial": 350,
+          "required": true
+        },
+        {
+          "sequence": 2,
+          "type": "constraint",
+          "instruction": "Remain north of LAS 7.5 DME turning northbound.",
+          "navaid": "LAS",
+          "dme_nm": 7.5,
+          "side": "north",
+          "required": true
+        },
+        {
+          "sequence": 3,
+          "type": "intercept_radial",
+          "from": "LAS_R350",
+          "to": "MINTT",
+          "instruction": "Intercept LAS R-350 between 5000 and 6000 feet. Do not proceed west of LAS R-350.",
+          "navaid": "LAS",
+          "radial": 350,
+          "altitude_min_ft": 5000,
+          "altitude_max_ft": 6000,
+          "side": "east",
+          "required": true
+        },
+        {
+          "sequence": 4,
+          "type": "crossing_restriction",
+          "fix": "MINTT",
+          "instruction": "Cross MINTT at or above 17000 feet MSL.",
+          "altitude_min_ft": 17000,
+          "required": true
+        }
+      ]
+    }
+  ],
+  "climb_gradients": [
+    {
+      "runways": ["03L"],
+      "gradient_ft_per_nm": 269,
+      "required_fpm_by_groundspeed": {
+        "60": 269,
+        "120": 538,
+        "180": 807,
+        "240": 1076,
+        "300": 1345,
+        "360": 1614
+      }
+    },
+    {
+      "runways": ["03R"],
+      "gradient_ft_per_nm": 245,
+      "required_fpm_by_groundspeed": {
+        "60": 245,
+        "120": 490,
+        "180": 735,
+        "240": 980,
+        "300": 1225,
+        "360": 1470
+      }
+    },
+    {
+      "runways": ["03L"],
+      "restriction_marker": "C",
+      "gradient_ft_per_nm": 498,
+      "required_fpm_by_groundspeed": {
+        "60": 498,
+        "120": 996,
+        "180": 1494,
+        "240": 1992,
+        "300": 2490,
+        "360": 2988
+      }
+    },
+    {
+      "runways": ["03R"],
+      "restriction_marker": "C",
+      "gradient_ft_per_nm": 496,
+      "required_fpm_by_groundspeed": {
+        "60": 496,
+        "120": 992,
+        "180": 1488,
+        "240": 1984,
+        "300": 2480,
+        "360": 2976
+      }
+    },
+    {
+      "runways": ["21L"],
+      "gradient_ft_per_nm": 389,
+      "required_fpm_by_groundspeed": {
+        "60": 778,
+        "120": 1167,
+        "180": 1556,
+        "240": 1945,
+        "300": 2334
+      }
+    },
+    {
+      "runways": ["21R"],
+      "gradient_ft_per_nm": 395,
+      "required_fpm_by_groundspeed": {
+        "60": 395,
+        "120": 790,
+        "180": 1185,
+        "240": 1580,
+        "300": 1975,
+        "360": 2370
+      }
+    }
+  ],
+  "clearance": {
+    "phrase": "cleared DREAM Four Departure",
+    "readback_required": true
+  },
+  "monitoring": {
+    "enabled": true,
+    "default_lateral_tolerance_nm": 3.0,
+    "default_vertical_tolerance_ft": 1000,
+    "deviation_grace_seconds": 20,
+    "correction_cooldown_seconds": 45
+  },
+  "notes": [
+    "If unable to comply with restrictions, advise ATC prior to departure.",
+    "Fly IAW Nellis Noise Abatement instructions."
+  ],
+  "source": {
+    "type": "chart_image",
+    "image_file": "Misc/FLIPS/NTTR/routes/klsv_dream4_dream_four_departure.png",
+    "chart_date": "2019-01-19",
+    "not_for_real_navigation": true
+  }
+}

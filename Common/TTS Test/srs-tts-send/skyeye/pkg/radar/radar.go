@@ -23,13 +23,13 @@ import (
 
 // Radar consumes updates from the simulation, keeps track of each aircraft as a trackfile, and provides functions to collect the aircraft into groups.
 type Radar struct {
-	// starts receives an event whenever a mission (re)starts.
+	// starts receives an event whenever a mission.json (re)starts.
 	starts <-chan sim.Started
 	// updates receives frames updating the position of aircraft.
 	updates <-chan sim.Updated
 	// fades receives events when aircraft are marked as removed.
 	fades <-chan sim.Faded
-	// missionTime should be continually updated to the current mission time.
+	// missionTime should be continually updated to the current mission.json time.
 	missionTime time.Time
 	// missionTimeLock protects missionTime.
 	missionTimeLock sync.RWMutex
@@ -106,7 +106,7 @@ func New(coalition coalitions.Coalition, starts <-chan sim.Started, updates <-ch
 	}
 }
 
-// SetMissionTime updates the mission time. The mission time is used for computing magnetic declination.
+// SetMissionTime updates the mission.json time. The mission.json time is used for computing magnetic declination.
 func (r *Radar) SetMissionTime(t time.Time) {
 	r.missionTimeLock.Lock()
 	defer r.missionTimeLock.Unlock()

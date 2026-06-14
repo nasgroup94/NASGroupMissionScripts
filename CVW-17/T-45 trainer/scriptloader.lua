@@ -4,7 +4,7 @@
 -- Default tanker altitudes
 -- Comment this out if using the generated weather missions in line above.  These are tanker altitude variables that are set in the old generated
 -- weather missions, so if not using the generated weather missions we used like in the BlackSea missions, we have to set it globally.
--- Any reference to these values really needs to be removed from any of the mission scripts going forward, DCSServerBot takes care of setting
+-- Any reference to these values really needs to be removed from any of the mission.json scripts going forward, DCSServerBot takes care of setting
 -- the weather now.
 MISSION_TANKER_ALTS = {}
 MISSION_TANKER_ALTS.Boom = 26000

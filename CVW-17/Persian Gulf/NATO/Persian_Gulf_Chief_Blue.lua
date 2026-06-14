@@ -22,6 +22,8 @@ Blue_Chief:Start()
 Blue_Chief:AddMission(southAAR)
 Blue_Chief:AddMission(northAAR)
 
+NASG_ATC:AddAssets(Blue_Chief)
+
 --if northAWACS then
 --    Blue_Chief:AddMission(northAWACS)
 --end

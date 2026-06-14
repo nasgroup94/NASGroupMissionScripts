@@ -15,7 +15,7 @@ BASE:T("markerops_tanker | Loading...")
 
 -- Hacked AUFTRAG:NewTANKER -- doesn't actually work
 
---- **[AIR]** Create a TANKER mission.
+--- **[AIR]** Create a TANKER mission.json.
 -- @param #AUFTRAG self
 -- @param Core.Point#COORDINATE Coordinate Where to orbit.
 -- @param #number Altitude Orbit altitude in feet. Default is y component of `Coordinate`.
@@ -37,7 +37,7 @@ function AUFTRAG:NewTANKER_MOD(Coordinate, Altitude, Speed, Heading, Leg, Refuel
   mission.refuelSystem=RefuelSystem
 
   -- Mission options:
---   mission.missionTask=ENUMS.MissionTask.REFUELING
+--   mission.json.missionTask=ENUMS.MissionTask.REFUELING
     mission.optionROE=ENUMS.ROE.WeaponHold
   mission.optionROT=ENUMS.ROT.PassiveDefense
 
@@ -531,7 +531,7 @@ function TacticalTankerMaker:OnAfterMarkChanged(From,Event,To,Text,Keywords,Coor
         local _capAssigned = false
         
         -- For the number of tankers requested, build an AUFTRAG for each.  Offest altitues, frequencies, TACAN channels
-        -- and TACAN idents for each mission.
+        -- and TACAN idents for each mission.json.
         for i = 1, tankerParams.req.value do
             local _start, _alt, _freq, _chan, _ident, _tankerType, _requestedBase, _cap
 

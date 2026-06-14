@@ -141,7 +141,7 @@ end
 --   local targetawname = "" -- #string
 --   local clustersize = self:ClusterCountUnits(Cluster) or 1
 --   local wingsize = math.abs(1 * (clustersize+1))
---   if (not Cluster.mission) and (wingsize > 0) then
+--   if (not Cluster.mission.json) and (wingsize > 0) then
 --    MESSAGE:New(string.format("**** Blue Interceptors need wingsize %d", wingsize),15,"CAPGCI"):ToAll():ToLog()
 --     for _,_data in pairs (BlueCapZoneSet) do
 --       local airwing = _data[1] -- Ops.AirWing#AIRWING
@@ -161,7 +161,7 @@ end
 --     -- Do we have a matching airwing?
 --     if targetairwing then
 --       local AssetCount = targetairwing:GetAssetsOnMission({AUFTRAG.Type.INTERCEPT})
---       -- Enough airframes on mission already?
+--       -- Enough airframes on mission.json already?
 --       if #AssetCount <= 3 then
 --         local repeats = math.random(1,2)
 --         local InterceptAuftrag = AUFTRAG:NewINTERCEPT(contact.group)
@@ -172,7 +172,7 @@ end
 --           :SetMissionSpeed(UTILS.KnotsToAltKIAS(450,25000))
 --           :SetMissionAltitude(25000)
 --         targetairwing:AddMission(InterceptAuftrag)
---         Cluster.mission = InterceptAuftrag
+--         Cluster.mission.json = InterceptAuftrag
 --       end
 --     else
 --       MESSAGE:New("**** Not enough airframes available!",15,"CAPGCI"):ToAll():ToLog()

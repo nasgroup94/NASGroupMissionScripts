@@ -5,7 +5,7 @@
 -- AIRBOSS --
 -------------------------
 
--- Set mission menu.
+-- Set mission.json menu.
 AIRBOSS.MenuF10Root=MENU_MISSION:New("Airboss").MenuPath
 
 -- No MOOSE settings menu.

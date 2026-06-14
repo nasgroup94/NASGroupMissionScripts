@@ -43,12 +43,12 @@ stopGap.myGroups = {} -- for fast look-up of mx orig data
 -- in DCS, a group with one or more players only allocates when 
 -- the first player in the group enters the game. 
 --
-cfxMX = {} -- local copy of cfxMX mission data cross reference tool 
+cfxMX = {} -- local copy of cfxMX mission.json data cross reference tool
 cfxMX.playerGroupByName = {} -- returns data only if a player is in group 
 cfxMX.countryByName ={} -- county of group named 
 
 function cfxMX.createCrossReferences()
-	-- tip o' hat to Mist for scanning mission struct. 
+	-- tip o' hat to Mist for scanning mission.json struct.
 	for coa_name_miz, coa_data in pairs(env.mission.coalition) do -- iterate all coalitions
 		local coa_name = coa_name_miz
 		if string.lower(coa_name_miz) == 'neutrals' then -- remove 's' at neutralS
@@ -97,7 +97,7 @@ function cfxMX.createCrossReferences()
 				end --for all countries in coalition
 			end --if coalition has country table 
 		end -- if there is coalition data  
-	end --for all coalitions in mission 
+	end --for all coalitions in mission.json
 end
 
 function stopGap.staticMXFromUnitMX(theGroup, theUnit)
@@ -359,7 +359,7 @@ function stopGap.start()
 	local sgDetect = trigger.misc.getUserFlag("stopGapGUI")
 	stopGap.isMP = sgDetect > 0 
 	
-	-- run a cross reference on all mission data for palyer info
+	-- run a cross reference on all mission.json data for palyer info
 	cfxMX.createCrossReferences()
 	-- fill player slots with static objects 
 	stopGap.initGaps()

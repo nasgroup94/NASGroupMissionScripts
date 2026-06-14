@@ -82,7 +82,7 @@ CheckAlive,AliveID = SCHEDULER:New(nil,
 ,{},5,5)
 CheckAlive:Stop(AliveID)
 
---when the client selects the cap mission in the f10 menu route them to the cap zone 
+--when the client selects the cap mission.json in the f10 menu route them to the cap zone
 function CAPTasking()
     MESSAGE:New("Establish CAP at "..BlueCapBulls,30,Info):ToCoalition(coalition.side.BLUE)
     MESSAGE:New("Check in with Magic on 255.000MHz",30,Info):ToCoalition(coalition.side.BLUE)
@@ -109,7 +109,7 @@ CheckZone,ID = SCHEDULER:New(nil,
 CheckZone:Stop(ID)
 
 
---Start mission spawn in up to 3 red units depending on how many clients in cap list
+--Start mission.json spawn in up to 3 red units depending on how many clients in cap list
 function StartMission()
     local list = SET_CLIENT:New()
     ClientList:ForEachClientInZone(BlueCapZone,(

@@ -2,7 +2,7 @@
 -- vv For use with DCSServerBot VNAO and Funkman Plugins vv --
 --------------------------------------------------------------
 -- Must have DCSServerBot and scripts loaded on server.
--- Must have flightlog.lua loaded in the mission.
+-- Must have flightlog.lua loaded in the mission.json.
 -- Do not use SetFunkmanOn() in the airboss set up, a delay
 -- is needed before the LSO grade is sent. This gives the 
 -- flightlog entry time to be closed..
@@ -103,7 +103,7 @@ Refueling_Monitor = REFUELING_MONITOR:New({ "Refueling", "Tanker", "Shell", "Tex
 -- AIRBOSS --
 -------------------------
 
--- Set mission menu.
+-- Set mission.json menu.
 AIRBOSS.MenuF10Root = MENU_MISSION:New("Airboss").MenuPath
 
 -- No MOOSE settings menu.

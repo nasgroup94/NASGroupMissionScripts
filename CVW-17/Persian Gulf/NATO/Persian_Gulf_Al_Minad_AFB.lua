@@ -34,6 +34,7 @@ Tank = SQUADRON:New("CVN71_ARCO2",4,"Al Minad Tanker Squadron")
 AMAW:AddSquadron(Tank)
 AMAW:NewPayload(GROUP:FindByName("CVN71_ARCO2"),4,{AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
 
+
 -- add tasks to airWing
 
  southAAR = AUFTRAG:NewORBIT(aarSouth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarSouth.speed,aarSouth.hdg,aarSouth.leg)
@@ -114,3 +115,5 @@ southAWACS = AUFTRAG:NewAWACS(
                     :SetMissionRange(500)
                     :SetName("South AWACS")
                     :AssignSquadrons({ AWACS })
+
+NASG_ATC:AddAssets(AMAW)

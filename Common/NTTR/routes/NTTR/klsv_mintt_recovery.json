@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "klsv_mintt_recovery",
+  "name": "MINTT Recovery",
+  "procedure_type": "stereo_recovery",
+  "theater": "Nevada",
+  "area": "NTTR",
+  "associated_airports": ["KLSV"],
+  "default_controller": "approach",
+  "route_direction": "inbound",
+  "nav_database": "navpoints_nevada_dcs.json",
+  "applicable_runways": ["03L", "03R"],
+  "day_vmc_only": true,
+  "pilot_responsible_for_terrain_obstacle_clearance": true,
+  "if_unable_vmc": "Request IFR NATCF service",
+  "fix_refs": ["MINTT", "GASS PK", "SIMNS", "CRAIG", "LAS", "LSV", "KLSV.03L", "KLSV.03R"],
+  "legs": [
+    {
+      "sequence": 1,
+      "type": "direct",
+      "from": "MINTT",
+      "to": "GASS PK",
+      "heading_deg_magnetic": 175,
+      "instruction": "Cross MINTT at or above 15000 feet MSL heading 175 direct GASS PEAK.",
+      "altitude_min_ft": 15000,
+      "lateral_tolerance_nm": 3.0,
+      "vertical_tolerance_ft": 1000,
+      "turn_anticipation_nm": 2.0,
+      "required": true
+    },
+    {
+      "sequence": 2,
+      "type": "crossing_restriction",
+      "fix": "GASS PK",
+      "instruction": "Cross GASS PEAK at or above 9000 feet MSL.",
+      "altitude_min_ft": 9000,
+      "required": true
+    },
+    {
+      "sequence": 3,
+      "type": "direct",
+      "from": "GASS PK",
+      "to": "SIMNS",
+      "heading_deg_magnetic": 165,
+      "instruction": "Cross SIMNS at 5500 feet MSL.",
+      "altitude_ft": 5500,
+      "lateral_tolerance_nm": 3.0,
+      "vertical_tolerance_ft": 500,
+      "turn_anticipation_nm": 1.5,
+      "required": true
+    },
+    {
+      "sequence": 4,
+      "type": "direct",
+      "from": "SIMNS",
+      "to": "CRAIG",
+      "instruction": "Cross CRAIG at 5000 feet MSL. Report CRAIG to Nellis Tower.",
+      "altitude_ft": 5000,
+      "mandatory_report": true,
+      "report_text": "CRAIG",
+      "report_facility": "tower",
+      "lateral_tolerance_nm": 3.0,
+      "vertical_tolerance_ft": 500,
+      "required": true
+    },
+    {
+      "sequence": 5,
+      "type": "visual_reference_segment",
+      "from": "CRAIG",
+      "to": "LAS",
+      "heading_deg_magnetic": 120,
+      "instruction": "Cross Las Vegas Boulevard at or above 4000 feet MSL then to 3500 feet MSL for initial.",
+      "altitude_min_ft": 4000,
+      "next_altitude_ft": 3500,
+      "lateral_tolerance_nm": 3.0,
+      "vertical_tolerance_ft": 500,
+      "required": true
+    },
+    {
+      "sequence": 6,
+      "type": "initial_segment",
+      "from": "LAS",
+      "to": "KLSV.03L",
+      "alternate_to": "KLSV.03R",
+      "instruction": "Remain within 4 DME of LSV on turn to initial.",
+      "dme_reference": "LSV",
+      "dme_max_nm": 4,
+      "altitude_ft": 3500,
+      "lateral_tolerance_nm": 3.0,
+      "vertical_tolerance_ft": 500,
+      "required": true
+    }
+  ],
+  "straight_in": {
+    "runways": ["03L", "03R"],
+    "instructions": [
+      {
+        "sequence": 1,
+        "type": "visual_departure",
+        "instruction": "Depart CRAIG and descend to be at 3000 feet MSL by Las Vegas Boulevard.",
+        "from": "CRAIG",
+        "to": "LAS",
+        "altitude_ft": 3000
+      },
+      {
+        "sequence": 2,
+        "type": "final_segment",
+        "instruction": "Do not descend below 3000 feet MSL until within 5 DME of LSV or 4 NM of the runway. Remain within 4 DME of LSV on turn to final.",
+        "dme_reference": "LSV",
+        "dme_descent_nm": 5,
+        "runway_distance_descent_nm": 4,
+        "dme_max_nm": 4,
+        "altitude_min_ft": 3000
+      }
+    ]
+  },
+  "monitoring": {
+    "enabled": true,
+    "default_lateral_tolerance_nm": 3.0,
+    "default_vertical_tolerance_ft": 1000,
+    "deviation_grace_seconds": 20,
+    "correction_cooldown_seconds": 45
+  },
+  "clearance": {
+    "phrase": "cleared MINTT Recovery",
+    "readback_required": true
+  },
+  "source": {
+    "type": "chart_image",
+    "image_file": "Misc/FLIPS/NTTR/routes/klsv_mintt_recovery.png",
+    "publication": "NELLISAFBI11-250",
+    "figure": "4.11",
+    "chart_date": "2022-06-17",
+    "not_for_real_navigation": true
+  }
+}

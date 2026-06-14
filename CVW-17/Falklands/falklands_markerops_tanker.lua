@@ -18,7 +18,7 @@
     
     -- -- Hacked AUFTRAG:NewTANKER -- doesn't actually work
     
-    -- --- **[AIR]** Create a TANKER mission.
+    -- --- **[AIR]** Create a TANKER mission.json.
     -- -- @param #AUFTRAG self
     -- -- @param Core.Point#COORDINATE Coordinate Where to orbit.
     -- -- @param #number Altitude Orbit altitude in feet. Default is y component of `Coordinate`.
@@ -30,25 +30,25 @@
     -- function AUFTRAG:NewTANKER_MOD(Coordinate, Altitude, Speed, Heading, Leg, RefuelSystem)
     
     --   -- Create ORBIT first.
-    --   local mission=AUFTRAG:NewORBIT_RACETRACK(Coordinate, Altitude, Speed, Heading, Leg)
+    --   local mission.json=AUFTRAG:NewORBIT_RACETRACK(Coordinate, Altitude, Speed, Heading, Leg)
     
     --   -- Mission type TANKER.
-    --   mission.type=AUFTRAG.Type.ORBIT
+    --   mission.json.type=AUFTRAG.Type.ORBIT
     
-    --   mission:_SetLogID()
+    --   mission.json:_SetLogID()
     
-    --   mission.refuelSystem=RefuelSystem
+    --   mission.json.refuelSystem=RefuelSystem
     
     --   -- Mission options:
-    -- --   mission.missionTask=ENUMS.MissionTask.REFUELING
-    --     mission.optionROE=ENUMS.ROE.WeaponHold
-    --   mission.optionROT=ENUMS.ROT.PassiveDefense
+    -- --   mission.json.missionTask=ENUMS.MissionTask.REFUELING
+    --     mission.json.optionROE=ENUMS.ROE.WeaponHold
+    --   mission.json.optionROT=ENUMS.ROT.PassiveDefense
     
-    --   mission.categories={AUFTRAG.Category.AIRCRAFT}
+    --   mission.json.categories={AUFTRAG.Category.AIRCRAFT}
     
-    --   mission.DCStask=mission:GetDCSMissionTask()
+    --   mission.json.DCStask=mission.json:GetDCSMissionTask()
     
-    --   return mission
+    --   return mission.json
     -- end
     
     local function round(n)
@@ -534,7 +534,7 @@
             local _capAssigned = false
             
             -- For the number of tankers requested, build an AUFTRAG for each.  Offest altitues, frequencies, TACAN channels
-            -- and TACAN idents for each mission.
+            -- and TACAN idents for each mission.json.
             for i = 1, tankerParams.req.value do
                 local _start, _alt, _freq, _chan, _ident, _tankerType, _requestedBase, _cap
     

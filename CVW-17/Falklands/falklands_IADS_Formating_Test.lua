@@ -96,7 +96,7 @@ end
 
 
 
---DEBUG (Comment out prior to final mission or there will be an overlay) (Coment out all of the 'addRadioMenu' as they allow for the F-10 to turn on debug regardless of the IADSDebug varible.)
+--DEBUG (Comment out prior to final mission.json or there will be an overlay) (Coment out all of the 'addRadioMenu' as they allow for the F-10 to turn on debug regardless of the IADSDebug varible.)
  if IADSDebug == true then  
     local islandIADSDebug = islandIADS:getDebugSettings()
     islandIADSDebug.IADSStatus = true

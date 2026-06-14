@@ -62,8 +62,8 @@ for master_mission in mission_files[0]:
     master_zip.extractall(master_build_folder)
     log.debug(f"Unzipped {master_file} to {master_build_folder}.")
 
-    # Read mission file into python dict
-    mission_master_temp = Path(master_build_folder, "mission")
+    # Read mission.json file into python dict
+    mission_master_temp = Path(master_build_folder, "mission.json")
     log.debug(f"Reading data from {master_file.name}.")
     master_data = luadata.read(mission_master_temp, encoding="utf-8", multival=False)
     log.debug(f"Read data from {master_file.name}.")
@@ -99,13 +99,13 @@ for master_mission in mission_files[0]:
                                     ] = upd_freq
                                     # break
 
-    # Write a new mission file with the updated data
+    # Write a new mission.json file with the updated data
     luadata.write(
         mission_master_temp,  # wx_mission_temp,
         master_data,
         encoding="utf-8",
         indent="    ",
-        prefix="mission = ",
+        prefix="mission.json = ",
     )
 
     new_filename = f"{master_file.stem}_updated.miz"
