@@ -21,7 +21,14 @@ NASG_ATC.Scanner = NASG_ATC.Scanner or nil
 NASG_ATC.Defaults = {
     RequireCorrectATIS = true,
     EngineHotSpeedThresholdKnots = 1,
-    ClientScanIntervalSeconds = 10,
+    -- One-shot scan after Start() to pick up clients that were already alive
+    -- before the Birth/EngineStartup event handlers existed. Everything after
+    -- startup is event- or speech-driven, so there is no recurring client poll.
+    StartupClientScanDelaySeconds = 5,
+    -- Assets (tanker/AWACS positions) are refreshed lazily on query rather than
+    -- on a standing timer; a query re-reads the sources at most once per this
+    -- many seconds so a burst of lookups doesn't re-walk the airwing repeatedly.
+    AssetRefreshMaxAgeSeconds = 10,
     TTSRate = 200,
     TTSVolume = 1.0,
     TTSVoice = "Nathan",
@@ -163,6 +170,20 @@ function NASG_ATC:RefreshWatchedAssets()
     for _, watchedSource in ipairs(self.WatchedAssetSources or {}) do
         self:RefreshAssetSource(watchedSource)
     end
+end
+
+-- The asset refresh runs on demand (see EnsureAssetsFresh), but the result
+-- rarely changes between queries. Emit a log line only when the signature for a
+-- given source+key differs from the last one we logged, so the log records
+-- actual changes instead of an identical entry every time.
+function NASG_ATC:LogRefreshIfChanged(name, key, signature, message)
+    self._refreshLogState = self._refreshLogState or {}
+    local stateKey = tostring(name) .. "|" .. tostring(key)
+    if self._refreshLogState[stateKey] == signature then
+        return
+    end
+    self._refreshLogState[stateKey] = signature
+    self:Log(message)
 end
 
 function NASG_ATC:GetMooseObjectName(source)
@@ -1417,7 +1438,10 @@ function NASG_ATC:RefreshAirwingAssets(watchedSource)
     local tankerCount = self:RefreshAirwingOpsGroupsForRole(watchedSource, "tanker")
     local awacsCount = self:RefreshAirwingOpsGroupsForRole(watchedSource, "awacs")
 
-    self:Log(
+    self:LogRefreshIfChanged(
+            watchedSource.Name or "unknown",
+            "assets",
+            string.format("%d|%d", tonumber(tankerCount) or 0, tonumber(awacsCount) or 0),
             string.format(
                     "Refreshed AIRWING assets source=%s tankerGroups=%d awacsGroups=%d",
                     tostring(watchedSource.Name or "unknown"),
@@ -1505,7 +1529,25 @@ function NASG_ATC:OnChiefMissionAdded(chief, mission)
     end
 end
 
+-- Lazily refresh the asset registry from the watched sources, but at most once
+-- per AssetRefreshMaxAgeSeconds. This replaces the old standing poll: work only
+-- happens when something actually reads the registry (see GetAssets), and a
+-- burst of reads in the same window reuses the snapshot instead of re-walking.
+function NASG_ATC:EnsureAssetsFresh()
+    local now    = (timer and timer.getTime and timer.getTime()) or 0
+    local maxAge = self.Defaults.AssetRefreshMaxAgeSeconds or 10
+
+    if self._lastAssetRefreshTime and (now - self._lastAssetRefreshTime) < maxAge then
+        return
+    end
+
+    self._lastAssetRefreshTime = now
+    self:RefreshWatchedAssets()
+end
+
 function NASG_ATC:GetAssets(filter)
+    self:EnsureAssetsFresh()
+
     local results = {}
 
     for _, asset in pairs(self.AssetRegistry or {}) do
@@ -2318,7 +2360,13 @@ function NASG_ATC:RefreshAirwingOpsGroupsForRole(watchedSource, role)
         return count
     end
 
-    self:Log(
+    self:LogRefreshIfChanged(
+            watchedSource.Name or "unknown",
+            "units_" .. tostring(role),
+            string.format("%d|%d|%d",
+                    tonumber(count) or 0,
+                    tonumber(skippedGroups) or 0,
+                    tonumber(skippedUnits) or 0),
             string.format(
                     "Refreshed AIRWING units source=%s role=%s units=%d skippedGroups=%d skippedUnits=%d",
                     tostring(watchedSource.Name or "unknown"),
@@ -2457,15 +2505,19 @@ function NASG_ATC:Start()
 
     self:StartEventHandler()
 
+    -- The ATC is fully event / on-demand driven, so no standing poll is needed:
+    --   * Assets refresh lazily on query (see EnsureAssetsFresh / GetAssets).
+    --   * Client sessions are created by the Birth / EngineStartup events, and
+    --     as a catch-all the moment a pilot speaks (HandleSpeechEvent).
+    -- The one thing events can't see is a client that was already alive at the
+    -- instant Start() ran (it spawned before the handler existed). A single
+    -- deferred scan a few seconds after start picks those up; note there is no
+    -- repeat interval, so this runs exactly once (still cancellable via Stop).
     self.Scanner = SCHEDULER:New(nil, function()
-        if NASG_ATC.RefreshWatchedAssets then
-            NASG_ATC:RefreshWatchedAssets()
-        end
-
         for _, airport in pairs(NASG_ATC.Airports or {}) do
             NASG_ATC:ScanClientsForAirport(airport)
         end
-    end, {}, 5, self.Defaults.ClientScanIntervalSeconds)
+    end, {}, self.Defaults.StartupClientScanDelaySeconds or 5)
 end
 
 function NASG_ATC:Stop()

@@ -62,3 +62,4 @@ set "NASG_STT_BRIDGE_EXIT_CODE=%ERRORLEVEL%"
 echo [%date% %time%] start_stt_bridge.bat exiting with code %NASG_STT_BRIDGE_EXIT_CODE% >> "%NASG_ATC_TMP%\nasg_stt_bridge_process.log"
 
 exit /b %NASG_STT_BRIDGE_EXIT_CODE%
+

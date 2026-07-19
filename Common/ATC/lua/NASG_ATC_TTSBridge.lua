@@ -9,9 +9,10 @@ NASG_ATC.TTSServiceBatchFile = NASG_ATC.TTSServiceBatchFile
 NASG_ATC.TTSServiceStopFile = NASG_ATC.TTSServiceStopFile
         or "C:/NASGroup/NASGroupMissionScripts/Common/ATC/tmp/nasg_tts_service.stop"
 
+-- Service launch is handled by NASG_ATC_Hook.lua (DCS hook); keep auto-start disabled.
 NASG_ATC.TTSServiceAutoStart = NASG_ATC.TTSServiceAutoStart
 if NASG_ATC.TTSServiceAutoStart == nil then
-    NASG_ATC.TTSServiceAutoStart = true
+    NASG_ATC.TTSServiceAutoStart = false
 end
 
 NASG_ATC.TTSServiceStartRequested = false
@@ -199,16 +200,13 @@ NASG_ATC.OriginalStartForTTSBridge = NASG_ATC.OriginalStartForTTSBridge or NASG_
 function NASG_ATC:Start()
     self:OriginalStartForTTSBridge()
     self:WriteTTSConfig()
-    self:StartTTSServiceMissionEndHandler()
-    self:StartTTSServiceProcess()
+    -- Service start/stop managed by NASG_ATC_Hook.lua; do not launch here.
 end
 
 NASG_ATC.OriginalStopForTTSBridge = NASG_ATC.OriginalStopForTTSBridge or NASG_ATC.Stop
 
 function NASG_ATC:Stop()
-    self:StopTTSServiceMissionEndHandler()
-    self:StopTTSServiceProcess()
-
+    -- Service stop managed by NASG_ATC_Hook.lua; do not write stop file here.
     if self.OriginalStopForTTSBridge then
         self:OriginalStopForTTSBridge()
     end

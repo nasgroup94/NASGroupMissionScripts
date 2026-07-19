@@ -80,10 +80,11 @@ assert(loadfile(mission_scripts_path .. "NATO\\Blue_IADS.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\SEADRangeIADS.lua"))()
-assert(loadfile(mission_scripts_path .. "Training\\AAPVERange_MOOSE.lua"))()
+
 
 -- NASG ATC.
 assert(loadfile(common_scripts_path .. "ATC\\scripts\\ATCScriptLoader.lua"))()
+assert(loadfile(mission_scripts_path .. "Training\\AAPVERange_MOOSE.lua"))()
 
 
 assert(loadfile(common_scripts_path .. "NASG_LuaConsole.lua"))()

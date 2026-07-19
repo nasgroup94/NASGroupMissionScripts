@@ -33,7 +33,7 @@ set "TTS_SERVICE_SCRIPT=%NASG_ATC_PYTHON%\tts_service.py"
 set "TTS_INBOX_DIR=C:\Users\naval\Saved Games\DCS.Test\Logs\tts_inbox\main"
 set "TTS_SERVICE_LOG=%NASG_ATC_TMP%\nasg_tts_service_process.log"
 set "TTS_SERVICE_STOP_FILE=%NASG_ATC_TMP%\nasg_tts_service.stop"
-set "TTS_UPSTREAM_URI=ws://96.32.24.78:8080"
+set "TTS_UPSTREAM_URI=ws://135.84.201.19:8080"
 
 if not exist "%NASG_ATC_TMP%" mkdir "%NASG_ATC_TMP%"
 

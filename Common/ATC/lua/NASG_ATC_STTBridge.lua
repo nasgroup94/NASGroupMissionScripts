@@ -17,9 +17,10 @@ NASG_ATC.STTBridgeLockStaleSeconds = NASG_ATC.STTBridgeLockStaleSeconds or 30
 NASG_ATC.STTBridgeBatchFile = NASG_ATC.STTBridgeBatchFile
         or "C:/NASGroup/NASGroupMissionScripts/Common/ATC/scripts/start_stt_bridge.bat"
 
+-- Service launch is handled by NASG_ATC_Hook.lua (DCS hook); keep auto-start disabled.
 NASG_ATC.STTBridgeAutoStart = NASG_ATC.STTBridgeAutoStart
 if NASG_ATC.STTBridgeAutoStart == nil then
-    NASG_ATC.STTBridgeAutoStart = true
+    NASG_ATC.STTBridgeAutoStart = false
 end
 
 NASG_ATC.STTBridgeStartRequested = false
@@ -543,11 +544,7 @@ if not NASG_ATC.STTBridgeStartWrapperInstalled then
         self:Log("NASG_ATC_STTBridge starting speech poller")
         self:StartSpeechEventPoller()
 
-        self:Log("NASG_ATC_STTBridge starting mission.json-end handler")
-        self:StartSTTBridgeMissionEndHandler()
-
-        self:Log("NASG_ATC_STTBridge starting STT bridge process")
-        self:StartSTTBridgeProcess()
+        -- Service start/stop managed by NASG_ATC_Hook.lua; do not launch here.
     end
 end
 
@@ -558,8 +555,7 @@ if not NASG_ATC.STTBridgeStopWrapperInstalled then
 
     function NASG_ATC:Stop()
         self:StopSpeechEventPoller()
-        self:StopSTTBridgeMissionEndHandler()
-        self:StopSTTBridgeProcess()
+        -- Service stop managed by NASG_ATC_Hook.lua; do not write stop file here.
 
         if self.OriginalStopForSTTBridge then
             self:OriginalStopForSTTBridge()

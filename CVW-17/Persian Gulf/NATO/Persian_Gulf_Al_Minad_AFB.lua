@@ -1,5 +1,9 @@
+--local range = require("../../../../DCSServerBot/plugins/funkman/samples/range")
 -- Create AirWing at Al Minad AFB
 AMAW = AIRWING:New("Warehouse Al Minad AFB", "Al Minad Air Wing")
+         :SetAirbase(AIRBASE:FindByName(AIRBASE.PersianGulf.Al_Minhad_AFB))
+         :SetRespawnAfterDestroyed(900)
+AMAW:__Start(2)
 
 
 --Al Minad AFB Parking
@@ -37,7 +41,7 @@ AMAW:NewPayload(GROUP:FindByName("CVN71_ARCO2"),4,{AUFTRAG.Type.TANKER,AUFTRAG.T
 
 -- add tasks to airWing
 
- southAAR = AUFTRAG:NewORBIT(aarSouth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarSouth.speed,aarSouth.hdg,aarSouth.leg)
+ southAAR = AUFTRAG:NewTANKER(aarSouth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarSouth.speed,aarSouth.hdg,aarSouth.leg,1)
     :SetTime(1)
     :SetRepeat(10)
     :SetMissionRange(500)
@@ -48,7 +52,7 @@ AMAW:NewPayload(GROUP:FindByName("CVN71_ARCO2"),4,{AUFTRAG.Type.TANKER,AUFTRAG.T
 
 southAAR:AssignSquadrons({Tank})
 
- northAAR = AUFTRAG:NewORBIT(aarNorth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarNorth.speed,aarNorth.hdg,aarNorth.leg)
+ northAAR = AUFTRAG:NewTANKER(aarNorth.zone:GetCoordinate(),MISSION_TANKER_ALTS.Probe, aarNorth.speed,aarNorth.hdg,aarNorth.leg,1)
     :SetTime(1)
     :SetRepeat(10)
     :SetMissionRange(500)
@@ -79,16 +83,21 @@ awacsZones = {
     },
 }
 
-AWACS = SQUADRON:New("AWACS", 4, "Al Minad AWACS")
-                :AddMissionCapability({ AUFTRAG.Type.AWACS })
+
+
+
+-- NOTE: do NOT name this variable "AWACS" — that is the MOOSE Ops.AWACS class,
+-- and shadowing it turns AWACS:New(...) below into SQUADRON:New(...).
+AWACSsquad = SQUADRON:New("AWACS", 4, "Al Minad AWACS")
+                :AddMissionCapability({ AUFTRAG.Type.ORBIT })
                 :SetCallsign(CALLSIGN.Aircraft.Magic, 5)
                 :SetFuelLowThreshold(0.3)
                 :SetRadio(305, radio.modulation.AM)
 
-AWACS:SetParkingIDs(AlMinadSquadronParkingIDs.AWACS)
+AWACSsquad:SetParkingIDs(AlMinadSquadronParkingIDs.AWACS)
 
-AMAW:AddSquadron(AWACS)
-AMAW:NewPayload(GROUP:FindByName("AWACS"), 4, { AUFTRAG.Type.AWACS })
+AMAW:AddSquadron(AWACSsquad)
+AMAW:NewPayload(GROUP:FindByName("AWACS"), 4, { AUFTRAG.Type.ORBIT })
 
 northAWACS = AUFTRAG:NewAWACS(
         awacsZones.North.zone:GetCoordinate(),
@@ -101,7 +110,7 @@ northAWACS = AUFTRAG:NewAWACS(
                     :SetRepeat(10)
                     :SetMissionRange(500)
                     :SetName("North AWACS")
-                    :AssignSquadrons({ AWACS })
+                    :AssignSquadrons({ AWACSsquad })
 
 southAWACS = AUFTRAG:NewAWACS(
         awacsZones.South.zone:GetCoordinate(),
@@ -114,6 +123,17 @@ southAWACS = AUFTRAG:NewAWACS(
                     :SetRepeat(10)
                     :SetMissionRange(500)
                     :SetName("South AWACS")
-                    :AssignSquadrons({ AWACS })
+                    :AssignSquadrons({ AWACSsquad })
+
 
 NASG_ATC:AddAssets(AMAW)
+
+local rangeAwacs = AWACS:New("South AWACS", AMAW,"blue",AIRBASE.PersianGulf.Al_Minhad_AFB,"AAR South",ZONE:FindByName("Dart"),"Cap Zone",251.5, radio.modulation.AM)
+rangeAwacs:SetAwacsDetails(CALLSIGN.AWACS.Focus,1,30,300,88,25)
+
+
+-- use Windows voices via the NASG TTS bridge
+rangeAwacs:SetSRS(SRS_PATH, "male", "en-US", SRS_PORT, "Nathan", 0.9)
+NASG_TTS:Use(rangeAwacs.AwacsSRS, "Focus", "Nathan", 200, 0.9)
+
+rangeAwacs:__Start(5)
