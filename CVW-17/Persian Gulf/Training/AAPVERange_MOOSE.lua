@@ -823,6 +823,7 @@ function AAPVE_MOOSE:InitScoreCard(pkg)
         max_score           = 100,
         grade               = "",
         kill_confirmed      = 0,
+        pilot_killed        = 0,   -- 1 = the Blue pilot was shot down / died
     }
 end
 
@@ -951,6 +952,18 @@ function AAPVE_MOOSE:RecordScoreEvent(pkg, eventType, data)
             end
             sc.timeline_score = math.max(0, sc.timeline_score - skipped * 5)
         end
+
+    elseif eventType == "pilot_dead" then
+        -- Blue pilot was shot down or died. Record the loss once — Dead,
+        -- Crash and PilotDead can all fire for a single death.
+        if sc.pilot_killed == 1 then return end
+        sc.pilot_killed = 1
+        -- A shootdown is a training failure: forfeit any geometry earned and
+        -- apply a threat-awareness penalty for losing situational awareness.
+        sc.geo_score    = 0
+        sc.threat_score = math.max(0, sc.threat_score - 10)
+        self:Log(string.format("Package %d: Blue pilot %s down — scored as loss.",
+            pkg.Id, tostring(data.unit_name or sc.unit_name)))
     end
 end
 
@@ -3010,6 +3023,28 @@ function AAPVE_MOOSE:OnGroupDeath(evt)
     if not evt or not evt.IniUnit then return end
     local deadGroup = evt.IniUnit:GetGroup()
     if not deadGroup then return end
+
+    -- A Blue package member was killed or died → record the loss on their
+    -- scorecard. Covers both being shot down and self-inflicted crashes.
+    local unitName = evt.IniUnitName or evt.IniUnit:GetName()
+    local bluePkg  = unitName and self:GetPackageByMemberUnit(unitName)
+    if bluePkg then
+        self:RecordScoreEvent(bluePkg, "pilot_dead", { unit_name = unitName })
+        -- If the flight lead is down, the graded session is over. Close the
+        -- package so its scorecard is finalized and debriefed immediately
+        -- (via OnAfterClose → FinalizeScoreCard) instead of waiting for the
+        -- package to time out empty. Delay lets alive-status settle and
+        -- de-dupes the Dead/Crash/PilotDead burst for a single death.
+        if unitName == bluePkg.LeadUnitName and not bluePkg.FSM:Is("Closed") then
+            SCHEDULER:New(nil, function()
+                if not bluePkg.FSM:Is("Closed") then
+                    self:Log(string.format("Package %d lead down — closing session.", bluePkg.Id))
+                    bluePkg.FSM:Close("Flight lead down. Session ended.")
+                end
+            end, {}, 2)
+        end
+    end
+
     local pkg = self:GetPackageByHostileGroup(deadGroup:GetName())
     if not pkg then return end
 

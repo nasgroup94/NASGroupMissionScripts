@@ -87,7 +87,7 @@ assert(loadfile(common_scripts_path .. "ATC\\scripts\\ATCScriptLoader.lua"))()
 assert(loadfile(mission_scripts_path .. "Training\\AAPVERange_MOOSE.lua"))()
 
 
-assert(loadfile(common_scripts_path .. "NASG_LuaConsole.lua"))()
+--assert(loadfile(common_scripts_path .. "NASG_LuaConsole.lua"))()
 
 --Dev
 -- AIRBASE:FindByName("Andersen AFB"):MarkParkingSpots() -- For development, marks parkiong spots on F10 map with IDs used for scripting
