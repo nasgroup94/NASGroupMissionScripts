@@ -1,0 +1,416 @@
+{
+  "intent_patterns": {
+    "center": {
+      "request_range": [
+        "request range",
+        "vector to range",
+        "direct range",
+        "range work"
+      ],
+      "request_flight_following": [
+        "request flight following",
+        "flight following",
+        "request advisories"
+      ],
+      "radio_check": [
+        "radio check",
+        "comm check",
+        "comms check"
+      ],
+      "request_frequency_change": [
+        "frequency change",
+        "request frequency change",
+        "request switch"
+      ],
+      "request_marsa": [
+        "request marsa",
+        "marsa",
+        "request military assumes responsibility",
+        "military assumes responsibility",
+        "request own separation",
+        "own separation",
+        "we have separation",
+        "flight assumes separation"
+      ],
+      "cancel_marsa": [
+        "cancel marsa",
+        "terminate marsa",
+        "cancel own separation",
+        "resume atc separation",
+        "request atc separation"
+      ],
+      "request_recovery": [
+        "request recovery",
+        "request approach",
+        "vectors home",
+        "vectors for recovery",
+        "request vectors home"
+      ],
+      "say_again": [
+        "say again",
+        "repeat"
+      ],
+      "request_vfr_on_top": [
+        "request vfr on top",
+        "vfr on top",
+        "request vfr-on-top"
+      ],
+      "request_divert": [
+        "request divert",
+        "divert",
+        "request alternate",
+        "request alternate field"
+      ],
+      "request_vector_to_waypoint": [
+        "request vector",
+        "vector to",
+        "vectors to",
+        "request vectors"
+      ],
+      "request_course_check": [
+        "course check",
+        "off course check",
+        "am i on course",
+        "on course"
+      ],
+      "center_check_in": [
+        "checking in",
+        "check in",
+        "with you",
+        "passing",
+        "level"
+      ],
+      "request_tanker": [
+        "request tanker",
+        "request aar",
+        "request air refueling",
+        "vector to tanker",
+        "direct tanker"
+      ],
+      "readback": [
+        "radar contact",
+        "proceed direct",
+        "maintain",
+        "climb",
+        "descend",
+        "contact tower",
+        "contact awacs",
+        "marsa approved",
+        "block"
+      ],
+      "request_block_altitude": [
+        "request block altitude",
+        "block altitude",
+        "request block",
+        "request altitude block"
+      ],
+      "request_direct": [
+        "request direct",
+        "direct",
+        "proceed direct"
+      ]
+    },
+    "awacs": {
+      "radio_check": [
+        "radio check",
+        "comm check",
+        "comms check"
+      ],
+      "request_combat_recovery": [
+        "combat recovery",
+        "request recovery",
+        "returning to base",
+        "rtb",
+        "request rtb"
+      ],
+      "readback": [
+        "picture",
+        "bogey dope",
+        "vector",
+        "home plate",
+        "proceed",
+        "contact tower"
+      ],
+      "awacs_check_in": [
+        "checking in",
+        "check in",
+        "package check in",
+        "on station"
+      ],
+      "request_vector_to_target": [
+        "vector to target",
+        "vectors to target",
+        "target vector",
+        "commit vector"
+      ],
+      "say_again": [
+        "say again",
+        "repeat"
+      ],
+      "request_bogey_dope": [
+        "bogey dope",
+        "bogey-dope",
+        "request bogey dope",
+        "nearest threat"
+      ],
+      "request_picture": [
+        "picture",
+        "request picture",
+        "tactical picture"
+      ],
+      "request_vector_to_home_plate": [
+        "vector home",
+        "vectors home",
+        "home plate",
+        "vector to home plate"
+      ]
+    },
+    "ground": {
+      "request_taxi_eor": [
+        "request taxi to eor",
+        "taxi to eor",
+        "request eor",
+        "request taxi eor",
+        "taxi eor",
+        "ready to taxi to eor",
+        "ready for eor",
+        "end of runway",
+        "taxi to end of runway"
+      ],
+      "holding_short_ready": [
+        "holding short",
+        "ready for departure",
+        "ready at the hold short",
+        "holding short ready"
+      ],
+      "pushback_complete": [
+        "pushback complete",
+        "push back complete",
+        "pushback completed",
+        "push back completed"
+      ],
+      "emergency_ground": [
+        "emergency",
+        "brake failure",
+        "engine fire",
+        "ground emergency"
+      ],
+      "radio_check": [
+        "radio check",
+        "comm check",
+        "comms check"
+      ],
+      "abort_taxi": [
+        "abort taxi",
+        "aborting taxi",
+        "return to ramp"
+      ],
+      "request_rearm_refuel": [
+        "rearm",
+        "refuel",
+        "rearm and refuel",
+        "taxi to rearm",
+        "taxi to refuel"
+      ],
+      "request_progressive_taxi": [
+        "progressive taxi",
+        "request progressive",
+        "request progressive taxi"
+      ],
+      "request_startup": [
+        "request startup",
+        "request start up",
+        "startup",
+        "start up",
+        "request engine start"
+      ],
+      "readback": [
+        "taxi runway",
+        "taxi to runway",
+        "taxi to eor",
+        "taxi eor",
+        "via",
+        "hold short",
+        "contact tower"
+      ],
+      "request_taxi_back": [
+        "taxi back",
+        "return to ramp",
+        "return to parking",
+        "taxi to parking"
+      ],
+      "eor_complete": [
+        "eor complete",
+        "eor checks complete",
+        "end of runway complete",
+        "arming complete",
+        "checks complete",
+        "ready at eor",
+        "ready from eor"
+      ],
+      "say_again": [
+        "say again",
+        "repeat"
+      ],
+      "request_parking": [
+        "request parking",
+        "taxi to parking",
+        "parking"
+      ],
+      "request_taxi": [
+        "request taxi",
+        "ready to taxi",
+        "taxi request",
+        "ready for taxi"
+      ],
+      "request_pushback": [
+        "request pushback",
+        "request push back",
+        "pushback request",
+        "push back request"
+      ]
+    },
+    "tower": {
+      "inbound_touch_and_go": [
+        "touch and go",
+        "touch-and-go",
+        "inbound touch and go"
+      ],
+      "abort_takeoff": [
+        "abort takeoff",
+        "abort take off",
+        "aborting takeoff",
+        "aborting take off"
+      ],
+      "report_clear_of_runway": [
+        "clear of runway",
+        "clear runway",
+        "runway vacated",
+        "off the runway"
+      ],
+      "report_final": [
+        "final",
+        "on final",
+        "report final",
+        "five mile final"
+      ],
+      "radio_check": [
+        "radio check",
+        "comm check",
+        "comms check"
+      ],
+      "request_takeoff": [
+        "request takeoff",
+        "request take off",
+        "ready for takeoff",
+        "ready for take off",
+        "ready to depart",
+        "ready for departure",
+        "ready"
+      ],
+      "report_downwind": [
+        "downwind",
+        "report downwind",
+        "midfield downwind"
+      ],
+      "request_closed_traffic": [
+        "closed traffic",
+        "request closed traffic",
+        "stay in the pattern"
+      ],
+      "readback": [
+        "line up and wait",
+        "lineup and wait",
+        "lined up",
+        "lining up",
+        "line up",
+        "cleared for takeoff",
+        "cleared for take off",
+        "cleared to land",
+        "go around"
+      ],
+      "report_base": [
+        "base",
+        "report base",
+        "turning base"
+      ],
+      "inbound_full_stop": [
+        "inbound full stop",
+        "inbound landing",
+        "request landing",
+        "full stop landing"
+      ],
+      "inbound_overhead": [
+        "inbound overhead",
+        "request overhead",
+        "overhead recovery",
+        "initial for overhead"
+      ],
+      "say_again": [
+        "say again",
+        "repeat"
+      ],
+      "report_initial": [
+        "initial",
+        "report initial",
+        "at initial"
+      ],
+      "going_around": [
+        "going around",
+        "go around",
+        "missed approach"
+      ],
+      "tower_check_in_departure": [
+        "holding short",
+        "holding short runway",
+        "ready for departure",
+        "holding short ready for departure"
+      ]
+    }
+  },
+  "version": 3,
+  "event_file": "C:/NASGroup/NASGroupMissionScripts/Common/TTS Test/tmp/nasg_atc_events.jsonl",
+  "srs_address": "127.0.0.1:5002",
+  "channels": [
+    {
+      "coalition": 2,
+      "facility": "ground",
+      "modulation": "AM",
+      "frequency": 250.1,
+      "id": "al_minhad_ground",
+      "service": "ground",
+      "airport_id": "al_minhad",
+      "client_name": "NASGroup Al Minhad Ground Listener - Al Minhad"
+    },
+    {
+      "coalition": 2,
+      "facility": "tower",
+      "modulation": "AM",
+      "frequency": 310.5,
+      "id": "al_minhad_tower",
+      "service": "tower",
+      "airport_id": "al_minhad",
+      "client_name": "NASGroup Al Minhad Tower Listener - Al Minhad"
+    },
+    {
+      "coalition": 2,
+      "facility": "center",
+      "modulation": "AM",
+      "frequency": 251,
+      "id": "al_minhad_center",
+      "service": "center",
+      "airport_id": "al_minhad",
+      "client_name": "NASGroup Emirates Center Listener - Al Minhad"
+    },
+    {
+      "coalition": 2,
+      "facility": "awacs",
+      "modulation": "AM",
+      "frequency": 251.5,
+      "id": "al_minhad_awacs",
+      "service": "awacs",
+      "airport_id": "al_minhad",
+      "client_name": "NASGroup Overlord Listener - Al Minhad"
+    }
+  ]
+}

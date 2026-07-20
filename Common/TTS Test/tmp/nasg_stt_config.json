@@ -1,0 +1,1 @@
+//{"version":1,"srs_address":"127.0.0.1:5002","event_file":"C:/NASGroup/NASGroupMissionScripts/Common/TTS Test/tmp/nasg_ground_control_events.jsonl","channels":[{"id":"al_minhad_ground","airport_id":"al_minhad","service":"ground","client_name":"NASGroup Ground Listener - Al Minhad","frequency":250.100,"modulation":"AM","coalition":2}]}
