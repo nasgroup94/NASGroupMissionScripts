@@ -1,0 +1,50 @@
+{
+  "AWACS|freqs=251.5|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\AWACS_freqs_251.5_modulations_AM_coalition_2.mp3",
+    "initiator": "AWACS|freqs=251.5|modulations=AM|coalition=2",
+    "text_hash": "7891345b7a6547dfa3fd52eca3b44e4f37dc153a6321fb068b7e31886e409f98",
+    "updated_at": 1784505016.8465185
+  },
+  "Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Abu_Dhabi_ATIS_freqs_125.1_modulations_AM_coalition_2.mp3",
+    "initiator": "Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2",
+    "text_hash": "6b0786a3a0387ee0acda49288ff7c7d70e1a2dba5faa6dd87ef7cd279cfab45d",
+    "updated_at": 1784496473.9338238
+  },
+  "Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Al_Minhad_ATIS_freqs_131.7_modulations_AM_coalition_2.mp3",
+    "initiator": "Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2",
+    "text_hash": "a0c93b5e949b67d8ea1d2045070b299847fe1e308387e9bb1728fb3f35c7107d",
+    "updated_at": 1784496469.2825344
+  },
+  "Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Al_Minhad_Ground_freqs_250.1_modulations_AM_coalition_2.mp3",
+    "initiator": "Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2",
+    "text_hash": "138041bcdcfcb9ef5d649845f37ad9c4a5ffa353d5457aa509cd2c824575fc20",
+    "updated_at": 1784418704.4381843
+  },
+  "Al Minhad Tower|freqs=310.5|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Al_Minhad_Tower_freqs_310.5_modulations_AM_coalition_2.mp3",
+    "initiator": "Al Minhad Tower|freqs=310.5|modulations=AM|coalition=2",
+    "text_hash": "4e41324f92137e5c9d00359c26bc3969977d5e6f2b41f953f24e5db210e3f575",
+    "updated_at": 1780753367.140505
+  },
+  "Emirates Center|freqs=251|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Emirates_Center_freqs_251_modulations_AM_coalition_2.mp3",
+    "initiator": "Emirates Center|freqs=251|modulations=AM|coalition=2",
+    "text_hash": "80e3bb6f073b1ce8e93698efe55c1a2744de5bf9b4edbe1a42cde18ca2e32e67",
+    "updated_at": 1780753397.9179726
+  },
+  "Magic|freqs=262|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Magic_freqs_262_modulations_AM_coalition_2.mp3",
+    "initiator": "Magic|freqs=262|modulations=AM|coalition=2",
+    "text_hash": "e5346aeb33742242444ac46c746dd8eb977bc1aa3c508a571cc43106f4ffd19a",
+    "updated_at": 1784420542.6598616
+  },
+  "Overlord|freqs=251.5|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Overlord_freqs_251.5_modulations_AM_coalition_2.mp3",
+    "initiator": "Overlord|freqs=251.5|modulations=AM|coalition=2",
+    "text_hash": "029d07c59fd3d6fd858c4753bacbb9037af45b6f5dd0bef2ac423ba159749a35",
+    "updated_at": 1784505071.1225667
+  }
+}

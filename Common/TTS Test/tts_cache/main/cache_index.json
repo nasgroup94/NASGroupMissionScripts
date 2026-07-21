@@ -1,0 +1,50 @@
+{
+  "Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\main\\Abu_Dhabi_ATIS_freqs_125.1_modulations_AM_coalition_2.mp3",
+    "initiator": "Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2",
+    "text_hash": "180bf3488251b913b7a1e9ae5120a4b970db412df5212be688afd48c4094f337",
+    "updated_at": 1779750661.4119298
+  },
+  "Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\main\\Al_Minhad_ATIS_freqs_131.7_modulations_AM_coalition_2.mp3",
+    "initiator": "Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2",
+    "text_hash": "3906f85444998ccb01f82132cfbffbfb9a46e7d667cb10bc026076169212345e",
+    "updated_at": 1779750656.735873
+  },
+  "Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\main\\Al_Minhad_Ground_freqs_250.1_modulations_AM_coalition_2.mp3",
+    "initiator": "Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2",
+    "text_hash": "b833ae7e15607680c4926231b6cfc544b64f8befd3a517e94b7cf9de9b7de233",
+    "updated_at": 1779747081.0310998
+  },
+  "Al Minhad Tower|freqs=310.5|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\main\\Al_Minhad_Tower_freqs_310.5_modulations_AM_coalition_2.mp3",
+    "initiator": "Al Minhad Tower|freqs=310.5|modulations=AM|coalition=2",
+    "text_hash": "3d41a1ea49765e5626b266a272b7f025025758e3734416acd95e9a6e9431b524",
+    "updated_at": 1779747150.9898536
+  },
+  "Emirates Center|freqs=251|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\main\\Emirates_Center_freqs_251_modulations_AM_coalition_2.mp3",
+    "initiator": "Emirates Center|freqs=251|modulations=AM|coalition=2",
+    "text_hash": "1d2eca566370a7a5cca259abe457fa34e484b7303203c954f286bc5e8de6f720",
+    "updated_at": 1779747409.0493846
+  },
+  "Manual TTS Test|freqs=251.0|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\main\\Manual_TTS_Test_freqs_251.0_modulations_AM_coalition_2.mp3",
+    "initiator": "Manual TTS Test|freqs=251.0|modulations=AM|coalition=2",
+    "text_hash": "e9a9ecad981b08858dc845a03580f2b1333fcf02afbc904ec256055564ac6f28",
+    "updated_at": 1779645326.8225079
+  },
+  "SRS STT Bridge 250.100 AM|freqs=250.1|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\main\\SRS_STT_Bridge_250.100_AM_freqs_250.1_modulations_AM_coalition_2.mp3",
+    "initiator": "SRS STT Bridge 250.100 AM|freqs=250.1|modulations=AM|coalition=2",
+    "text_hash": "87e6af125577c5d955fb153e51cf666559073b06bcf232f3d0f7e9650c6acfb2",
+    "updated_at": 1779656005.1883826
+  },
+  "SRS STT Bridge 251.000 AM|freqs=251|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\TTS Test\\tts_cache\\main\\SRS_STT_Bridge_251.000_AM_freqs_251_modulations_AM_coalition_2.mp3",
+    "initiator": "SRS STT Bridge 251.000 AM|freqs=251|modulations=AM|coalition=2",
+    "text_hash": "87e6af125577c5d955fb153e51cf666559073b06bcf232f3d0f7e9650c6acfb2",
+    "updated_at": 1779649711.7649608
+  }
+}

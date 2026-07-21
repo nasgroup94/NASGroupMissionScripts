@@ -1,0 +1,31 @@
+[Tue 07/21/2026 15:05:17.25] start_tts_service.bat launched 
+Working directory: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts 
+ATC root: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\.. 
+TTS affinity mask: C000 
+TTS service script: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\python\tts_service.py 
+TTS stop file: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\tmp\nasg_tts_service.stop 
+SRS GO sender: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\bin\srs-tts-send.exe 
+TTS inbox dir: C:\Users\naval\Saved Games\DCS.Test\Logs\tts_inbox\main 
+TTS backend: go_native 
+TTS debug logs: 0 
+OMP_NUM_THREADS: 1 
+OPENBLAS_NUM_THREADS: 1 
+MKL_NUM_THREADS: 1 
+NUMEXPR_NUM_THREADS: 1 
+Starting TTS service worker... 
+Command: py -u "C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\python\tts_service.py" --upstream-uri "ws://135.84.201.19:8080" --host "127.0.0.1" --port 8765 --instance "main" --srs-backend "go_native" --srs-host "127.0.0.1" --srs-go-sender "C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\bin\srs-tts-send.exe" --external-awacs-password "blue" --inbox-dir "C:\Users\naval\Saved Games\DCS.Test\Logs\tts_inbox\main" --stop-file "C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\tmp\nasg_tts_service.stop"  
+TTS inbox:   C:\Users\naval\Saved Games\DCS.Test\Logs\tts_inbox\main
+TTS service instance: main
+TTS service running at http://127.0.0.1:8765
+POST job:   http://127.0.0.1:8765/tts
+GET status: http://127.0.0.1:8765/tts/<job_id>
+TTS output: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\tts_output\tmp\main
+TTS cache:  C:\NASGroup\NASGroupMissionScripts\Common\ATC\tts_cache
+TTS inbox:  C:\Users\naval\Saved Games\DCS.Test\Logs\tts_inbox\main
+TTS stop file: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\nasg_tts_service.stop
+SRS backend: go_native
+SRS host:    127.0.0.1
+SRS sender:  C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\bin\srs-tts-send.exe
+Verbose:     False
+TTS service stop file detected: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\nasg_tts_service.stop
+[Tue 07/21/2026 15:07:07.32] start_tts_service.bat exiting with code 0 

@@ -1,0 +1,223 @@
+[Mon 05/25/2026 18:10:28.48] start_stt_bridge.bat launched 
+Working directory: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test 
+Loaded STT runtime config from: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\nasg_atc_stt_config.json
+DCS event file: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\nasg_atc_events.jsonl
+Stop file: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\nasg_stt_bridge.stop
+Lock file: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\nasg_stt_bridge.lock
+Configured channels: 4
+Loaded STT runtime config from: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\nasg_atc_stt_config.json
+DCS event file: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\nasg_atc_events.jsonl
+Stop file: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\nasg_stt_bridge.stop
+Lock file: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\nasg_stt_bridge.lock
+Configured channels: 4
+Intent patterns loaded: service=center, intents=17, phrases=74
+Intent patterns loaded: service=awacs, intents=9, phrases=35
+Intent patterns loaded: service=ground, intents=16, phrases=71
+Intent patterns loaded: service=tower, intents=16, phrases=63
+Starting SRS listener for channel=al_minhad_ground:
+C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\srs-stt-listen.exe --srs-address=127.0.0.1:5002 --client-name=NASGroup Al Minhad Ground Listener - Al Minhad --coalition=2 --frequency=250.1 --modulation=AM --external-awacs-password=blue --output-dir=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_ground
+Starting SRS listener for channel=al_minhad_tower:
+C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\srs-stt-listen.exe --srs-address=127.0.0.1:5002 --client-name=NASGroup Al Minhad Tower Listener - Al Minhad --coalition=2 --frequency=310.5 --modulation=AM --external-awacs-password=blue --output-dir=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_tower
+Starting SRS listener for channel=al_minhad_center:
+C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\srs-stt-listen.exe --srs-address=127.0.0.1:5002 --client-name=NASGroup Emirates Center Listener - Al Minhad --coalition=2 --frequency=251.0 --modulation=AM --external-awacs-password=blue --output-dir=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_center
+Starting SRS listener for channel=al_minhad_awacs:
+C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\srs-stt-listen.exe --srs-address=127.0.0.1:5002 --client-name=NASGroup Overlord Listener - Al Minhad --coalition=2 --frequency=251.5 --modulation=AM --external-awacs-password=blue --output-dir=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_awacs
+SRS STT bridge manager running.
+[srs-listener] {"level":"info","address":"127.0.0.1:5002","time":"2026-05-25T18:10:28-04:00","message":"connecting to SRS server TCP socket"}
+[srs-listener] {"level":"info","address":"127.0.0.1:5002","time":"2026-05-25T18:10:28-04:00","message":"connecting to SRS server UDP socket"}
+[srs-listener] SRS listener started
+[srs-listener] SRS address: 127.0.0.1:5002
+[srs-listener] Client name: NASGroup Al Minhad Ground Listener - Al Minhad
+[srs-listener] Coalition: 2
+[srs-listener] {"level":"info","address":"127.0.0.1:5002","time":"2026-05-25T18:10:28-04:00","message":"connecting to SRS server TCP socket"}
+[srs-listener] Frequency MHz: 250.100000
+[srs-listener] {"level":"info","address":"127.0.0.1:5002","time":"2026-05-25T18:10:28-04:00","message":"connecting to SRS server UDP socket"}
+[srs-listener] Modulation: AM
+[srs-listener] SRS listener started
+[srs-listener] Output dir: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_ground
+[srs-listener] SRS address: 127.0.0.1:5002
+[srs-listener] External AWACS password: set
+[srs-listener] Client name: NASGroup Al Minhad Tower Listener - Al Minhad
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:28-04:00","message":"SRS client starting"}
+[srs-listener] Coalition: 2
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:28-04:00","message":"syncing with SRS server"}
+[srs-listener] Frequency MHz: 310.500000
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:28-04:00","message":"reconnecting to external AWACS mode"}
+[srs-listener] Modulation: AM
+[srs-listener] {"level":"info","interval":"15s","time":"2026-05-25T18:10:28-04:00","message":"starting pings"}
+[srs-listener] Output dir: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_tower
+[srs-listener] {"level":"info","count":2,"time":"2026-05-25T18:10:28-04:00","message":"syncronizing clients"}
+[srs-listener] External AWACS password: set
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:28-04:00","message":"SRS client starting"}
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:28-04:00","message":"syncing with SRS server"}
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:28-04:00","message":"reconnecting to external AWACS mode"}
+[srs-listener] {"level":"info","address":"127.0.0.1:5002","time":"2026-05-25T18:10:28-04:00","message":"connecting to SRS server TCP socket"}
+[srs-listener] {"level":"info","address":"127.0.0.1:5002","time":"2026-05-25T18:10:28-04:00","message":"connecting to SRS server UDP socket"}
+[srs-listener] {"level":"info","interval":"15s","time":"2026-05-25T18:10:28-04:00","message":"starting pings"}
+[srs-listener] SRS listener started
+[srs-listener] {"level":"info","count":3,"time":"2026-05-25T18:10:28-04:00","message":"syncronizing clients"}
+[srs-listener] SRS address: 127.0.0.1:5002
+[srs-listener] Client name: NASGroup Emirates Center Listener - Al Minhad
+[srs-listener] Coalition: 2
+[srs-listener] Frequency MHz: 251.000000
+[srs-listener] Modulation: AM
+[srs-listener] Output dir: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_center
+[srs-listener] External AWACS password: set
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:28-04:00","message":"SRS client starting"}
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:28-04:00","message":"syncing with SRS server"}
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:28-04:00","message":"reconnecting to external AWACS mode"}
+[srs-listener] {"level":"info","count":4,"time":"2026-05-25T18:10:28-04:00","message":"syncronizing clients"}
+[srs-listener] {"level":"info","interval":"15s","time":"2026-05-25T18:10:28-04:00","message":"starting pings"}
+[srs-listener] {"level":"info","address":"127.0.0.1:5002","time":"2026-05-25T18:10:29-04:00","message":"connecting to SRS server TCP socket"}
+[srs-listener] {"level":"info","address":"127.0.0.1:5002","time":"2026-05-25T18:10:29-04:00","message":"connecting to SRS server UDP socket"}
+[srs-listener] SRS listener started
+[srs-listener] SRS address: 127.0.0.1:5002
+[srs-listener] Client name: NASGroup Overlord Listener - Al Minhad
+[srs-listener] Coalition: 2
+[srs-listener] Frequency MHz: 251.500000
+[srs-listener] Modulation: AM
+[srs-listener] Output dir: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_awacs
+[srs-listener] External AWACS password: set
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:29-04:00","message":"SRS client starting"}
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:29-04:00","message":"syncing with SRS server"}
+[srs-listener] {"level":"info","time":"2026-05-25T18:10:29-04:00","message":"reconnecting to external AWACS mode"}
+[srs-listener] {"level":"info","interval":"15s","time":"2026-05-25T18:10:29-04:00","message":"starting pings"}
+[srs-listener] {"level":"info","count":5,"time":"2026-05-25T18:10:29-04:00","message":"syncronizing clients"}
+Loading faster-whisper model=small.en, device=cpu, compute_type=int8Loading faster-whisper model=small.en, device=cpu, compute_type=int8
+Loading faster-whisper model=small.en, device=cpu, compute_type=int8Loading faster-whisper model=small.en, device=cpu, compute_type=int8
+
+
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:11:06-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"3.68s","time":"2026-05-25T18:11:10-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":58880,"time":"2026-05-25T18:11:10-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_ground] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=3.68s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_ground\20260525_221110_LW3NGhANgvWEpSThKS6xuH_HOBO11___CIRCUIT.pcm
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:11:11-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"2.28s","time":"2026-05-25T18:11:13-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":36480,"time":"2026-05-25T18:11:13-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_ground] STT: 'Open out of ground, hobo one one, armor one one.'
+[al_minhad_ground] No ATC intent matched for service='ground'. Event not forwarded to DCS.
+[al_minhad_ground] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=2.28s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_ground\20260525_221113_5NYCuJfHrueCConFfHwdSo_HOBO11___CIRCUIT.pcm
+[al_minhad_ground] STT: 'Request taxi with information echo.'
+[al_minhad_ground] Forwarded speech event to DCS: {'source': 'srs_stt_bridge', 'channel_id': 'al_minhad_ground', 'airport_id': 'al_minhad', 'service': 'ground', 'facility': 'ground', 'intent': 'request_taxi', 'client_name': 'HOBO11', 'srs_client_name': 'HOBO11 | CIRCUIT', 'callsign': 'HOBO11', 'atis_letter': 'E', 'raw_text': 'Request taxi with information echo.', 'frequency_mhz': 250.1, 'modulation': 'AM', 'coalition': 2, 'created_at': 1779747079.8078554}
+[srs-listener] {"level":"info","origin":"tAciBuk7fRDvEvEdBM6pfR","time":"2026-05-25T18:11:23-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"1.72s","time":"2026-05-25T18:11:25-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":27520,"time":"2026-05-25T18:11:25-04:00","message":"publishing received audio to receiving channel"}
+[srs-listener] {"level":"info","origin":"tAciBuk7fRDvEvEdBM6pfR","time":"2026-05-25T18:11:25-04:00","message":"receiving transmission"}
+[al_minhad_ground] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","duration":"7.4s","time":"2026-05-25T18:11:33-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":118400,"time":"2026-05-25T18:11:33-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_ground] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:12:00-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"4.48s","time":"2026-05-25T18:12:04-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":71680,"time":"2026-05-25T18:12:04-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_tower] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=4.48s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_tower\20260525_221204_hPEdqM6X4CLYfzkVuBKpW7_HOBO11___CIRCUIT.pcm
+[al_minhad_tower] STT: 'Tower, hobo one one, holding short runway two seven.'
+[al_minhad_tower] Forwarded speech event to DCS: {'source': 'srs_stt_bridge', 'channel_id': 'al_minhad_tower', 'airport_id': 'al_minhad', 'service': 'tower', 'facility': 'tower', 'intent': 'tower_check_in_departure', 'client_name': 'HOBO11', 'srs_client_name': 'HOBO11 | CIRCUIT', 'callsign': 'HOBO11', 'atis_letter': None, 'raw_text': 'Tower, hobo one one, holding short runway two seven.', 'frequency_mhz': 310.5, 'modulation': 'AM', 'coalition': 2, 'created_at': 1779747128.8924117, 'runway': '27'}
+[srs-listener] {"level":"info","origin":"YkKvAZVHVKNBQWYXzJsHYD","time":"2026-05-25T18:12:12-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"3s","time":"2026-05-25T18:12:15-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":48000,"time":"2026-05-25T18:12:15-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_tower] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:12:20-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"2.76s","time":"2026-05-25T18:12:23-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":44160,"time":"2026-05-25T18:12:23-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_tower] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=2.76s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_tower\20260525_221223_HV9ZjZjQYuKmPvae8bUf8W_HOBO11___CIRCUIT.pcm
+[al_minhad_tower] STT: 'Tower hobo 1-1, ready for takeoff.'
+[al_minhad_tower] Forwarded speech event to DCS: {'source': 'srs_stt_bridge', 'channel_id': 'al_minhad_tower', 'airport_id': 'al_minhad', 'service': 'tower', 'facility': 'tower', 'intent': 'request_takeoff', 'client_name': 'HOBO11', 'srs_client_name': 'HOBO11 | CIRCUIT', 'callsign': 'HOBO11', 'atis_letter': None, 'raw_text': 'Tower hobo 1-1, ready for takeoff.', 'frequency_mhz': 310.5, 'modulation': 'AM', 'coalition': 2, 'created_at': 1779747149.6844928}
+[srs-listener] {"level":"info","origin":"SJzsDrvLvZ4yvYcPPjNTB9","time":"2026-05-25T18:12:33-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"6.88s","time":"2026-05-25T18:12:40-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":110080,"time":"2026-05-25T18:12:40-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_tower] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","origin":"SJzsDrvLvZ4yvYcPPjNTB9","time":"2026-05-25T18:12:40-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"200ms","time":"2026-05-25T18:12:41-04:00","message":"discarding transmission below minimum size"}
+[srs-listener] {"level":"info","origin":"SJzsDrvLvZ4yvYcPPjNTB9","time":"2026-05-25T18:12:41-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"80ms","time":"2026-05-25T18:12:41-04:00","message":"discarding transmission below minimum size"}
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:13:00-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"3.36s","time":"2026-05-25T18:13:04-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":53760,"time":"2026-05-25T18:13:04-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=3.36s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_center\20260525_221304_vRVm29tdyWqKaQwUwzk9bb_HOBO11___CIRCUIT.pcm
+[al_minhad_center] STT: 'Center, hobo one one, checking in.'
+[al_minhad_center] Forwarded speech event to DCS: {'source': 'srs_stt_bridge', 'channel_id': 'al_minhad_center', 'airport_id': 'al_minhad', 'service': 'center', 'facility': 'center', 'intent': 'center_check_in', 'client_name': 'HOBO11', 'srs_client_name': 'HOBO11 | CIRCUIT', 'callsign': 'HOBO11', 'atis_letter': None, 'raw_text': 'Center, hobo one one, checking in.', 'frequency_mhz': 251.0, 'modulation': 'AM', 'coalition': 2, 'created_at': 1779747187.9864378}
+[srs-listener] {"level":"info","origin":"VyBT4kAhWt7im8szFmehgk","time":"2026-05-25T18:13:11-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"7.12s","time":"2026-05-25T18:13:19-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":113920,"time":"2026-05-25T18:13:19-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:14:36-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"3.48s","time":"2026-05-25T18:14:40-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":55680,"time":"2026-05-25T18:14:40-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=3.48s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_center\20260525_221440_Yt5QzVxzBo3PvKBP4dCzTT_HOBO11___CIRCUIT.pcm
+[al_minhad_center] STT: 'Center, hobo 11, request tanker.'
+[al_minhad_center] Forwarded speech event to DCS: {'source': 'srs_stt_bridge', 'channel_id': 'al_minhad_center', 'airport_id': 'al_minhad', 'service': 'center', 'facility': 'center', 'intent': 'request_tanker', 'client_name': 'HOBO11', 'srs_client_name': 'HOBO11 | CIRCUIT', 'callsign': 'HOBO11', 'atis_letter': None, 'raw_text': 'Center, hobo 11, request tanker.', 'frequency_mhz': 251.0, 'modulation': 'AM', 'coalition': 2, 'created_at': 1779747284.7048445}
+[srs-listener] {"level":"info","origin":"Kb64S5ipsHB2NAVFsmentc","time":"2026-05-25T18:14:48-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"1.92s","time":"2026-05-25T18:14:51-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":30720,"time":"2026-05-25T18:14:51-04:00","message":"publishing received audio to receiving channel"}
+[srs-listener] {"level":"info","origin":"Kb64S5ipsHB2NAVFsmentc","time":"2026-05-25T18:14:51-04:00","message":"receiving transmission"}
+[al_minhad_center] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","duration":"3.12s","time":"2026-05-25T18:14:54-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":49920,"time":"2026-05-25T18:14:54-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:15:24-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"3.08s","time":"2026-05-25T18:15:28-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":49280,"time":"2026-05-25T18:15:28-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=3.08s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_center\20260525_221528_Tmf8YjMxdb7axuD7av4CcC_HOBO11___CIRCUIT.pcm
+[al_minhad_center] STT: 'Center hobo one one, MARSA.'
+[al_minhad_center] Forwarded speech event to DCS: {'source': 'srs_stt_bridge', 'channel_id': 'al_minhad_center', 'airport_id': 'al_minhad', 'service': 'center', 'facility': 'center', 'intent': 'request_marsa', 'client_name': 'HOBO11', 'srs_client_name': 'HOBO11 | CIRCUIT', 'callsign': 'HOBO11', 'atis_letter': None, 'raw_text': 'Center hobo one one, MARSA.', 'frequency_mhz': 251.0, 'modulation': 'AM', 'coalition': 2, 'created_at': 1779747331.9208193}
+[srs-listener] {"level":"info","origin":"JB5b3NiRGJyYnDDiBz4psm","time":"2026-05-25T18:15:35-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"8s","time":"2026-05-25T18:15:43-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":128000,"time":"2026-05-25T18:15:43-04:00","message":"publishing received audio to receiving channel"}
+[srs-listener] {"level":"info","origin":"JB5b3NiRGJyYnDDiBz4psm","time":"2026-05-25T18:15:44-04:00","message":"receiving transmission"}
+[al_minhad_center] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","duration":"2s","time":"2026-05-25T18:15:46-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":32000,"time":"2026-05-25T18:15:46-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:15:53-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"3.76s","time":"2026-05-25T18:15:57-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":60160,"time":"2026-05-25T18:15:57-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=3.76s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_center\20260525_221557_brVYiH967kpeSWfxUyxVN7_HOBO11___CIRCUIT.pcm
+[al_minhad_center] STT: 'Center hobo one one, cancel MARSA.'
+[al_minhad_center] Forwarded speech event to DCS: {'source': 'srs_stt_bridge', 'channel_id': 'al_minhad_center', 'airport_id': 'al_minhad', 'service': 'center', 'facility': 'center', 'intent': 'cancel_marsa', 'client_name': 'HOBO11', 'srs_client_name': 'HOBO11 | CIRCUIT', 'callsign': 'HOBO11', 'atis_letter': None, 'raw_text': 'Center hobo one one, cancel MARSA.', 'frequency_mhz': 251.0, 'modulation': 'AM', 'coalition': 2, 'created_at': 1779747362.936717}
+[srs-listener] {"level":"info","origin":"7cWzupE7qGujQL5YJHbGYj","time":"2026-05-25T18:16:06-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"4.24s","time":"2026-05-25T18:16:10-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":67840,"time":"2026-05-25T18:16:10-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:16:12-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"760ms","time":"2026-05-25T18:16:13-04:00","message":"discarding transmission below minimum size"}
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:16:14-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"4.2s","time":"2026-05-25T18:16:18-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":67200,"time":"2026-05-25T18:16:18-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=4.20s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_center\20260525_221618_JVmXLyCGn2DsyYGxkRzjaB_HOBO11___CIRCUIT.pcm
+[al_minhad_center] STT: 'Job 11, request direct AAPVE.'
+[al_minhad_center] Forwarded speech event to DCS: {'source': 'srs_stt_bridge', 'channel_id': 'al_minhad_center', 'airport_id': 'al_minhad', 'service': 'center', 'facility': 'center', 'intent': 'request_direct', 'client_name': 'HOBO11', 'srs_client_name': 'HOBO11 | CIRCUIT', 'callsign': 'HOBO11', 'atis_letter': None, 'raw_text': 'Job 11, request direct AAPVE.', 'frequency_mhz': 251.0, 'modulation': 'AM', 'coalition': 2, 'created_at': 1779747381.9838414, 'fix': 'AAPVE'}
+[srs-listener] {"level":"info","origin":"it5WAm9SmWmX3ShQmrG9MQ","time":"2026-05-25T18:16:25-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"3s","time":"2026-05-25T18:16:28-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":48000,"time":"2026-05-25T18:16:28-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+[srs-listener] {"level":"info","origin":"hVgh-LOxPUirIBU3Rj0YCg","time":"2026-05-25T18:16:39-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"3.04s","time":"2026-05-25T18:16:43-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"HOBO11 | CIRCUIT","len":48640,"time":"2026-05-25T18:16:43-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Received SRS transmission: client='HOBO11 | CIRCUIT', duration=3.04s, file=C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx\al_minhad_center\20260525_221643_c97StCtdDFFLYqubg5CUsK_HOBO11___CIRCUIT.pcm
+[al_minhad_center] STT: 'Center hobo one one, course check.'
+[al_minhad_center] Forwarded speech event to DCS: {'source': 'srs_stt_bridge', 'channel_id': 'al_minhad_center', 'airport_id': 'al_minhad', 'service': 'center', 'facility': 'center', 'intent': 'request_course_check', 'client_name': 'HOBO11', 'srs_client_name': 'HOBO11 | CIRCUIT', 'callsign': 'HOBO11', 'atis_letter': None, 'raw_text': 'Center hobo one one, course check.', 'frequency_mhz': 251.0, 'modulation': 'AM', 'coalition': 2, 'created_at': 1779747407.9191823}
+[srs-listener] {"level":"info","origin":"sBF4TSip3NW5BhMjYkd8pB","time":"2026-05-25T18:16:51-04:00","message":"receiving transmission"}
+[srs-listener] {"level":"info","duration":"4.56s","time":"2026-05-25T18:16:56-04:00","message":"received transmission"}
+[srs-listener] {"level":"info","clientName":"NASGroup TTS","len":72960,"time":"2026-05-25T18:16:56-04:00","message":"publishing received audio to receiving channel"}
+[al_minhad_center] Ignoring SRS transmission from ignored client: 'NASGroup TTS'
+Cleaned up 10 old STT audio files from C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx
+Cleaned up 7 old STT audio files from C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx
+Cleaned up 2 old STT audio files from C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx
+Cleaned up 9 old STT audio files from C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx
+Cleaned up 5 old STT audio files from C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\srs_stt_rx
+[srs-listener] {"level":"error","error":"EOF","time":"2026-05-25T19:35:22-04:00","message":"error reading from SRS server TCP socket"}
+[srs-listener] {"level":"error","error":"EOF","time":"2026-05-25T19:35:22-04:00","message":"error reading from SRS server TCP socket"}
+[srs-listener] {"level":"error","error":"EOF","time":"2026-05-25T19:35:22-04:00","message":"error reading from SRS server TCP socket"}
+[srs-listener] {"level":"error","error":"EOF","time":"2026-05-25T19:35:22-04:00","message":"error reading from SRS server TCP socket"}
+[srs-listener] {"level":"error","error":"read tcp 127.0.0.1:49570->127.0.0.1:5002: wsarecv: An established connection was aborted by the software in your host machine.","time":"2026-05-25T19:35:37-04:00","message":"error reading from SRS server TCP socket"}
+[srs-listener] {"level":"error","error":"read tcp 127.0.0.1:49568->127.0.0.1:5002: wsarecv: An established connection was aborted by the software in your host machine.","time":"2026-05-25T19:35:37-04:00","message":"error reading from SRS server TCP socket"}
+[srs-listener] {"level":"error","error":"read tcp 127.0.0.1:49571->127.0.0.1:5002: wsarecv: An established connection was aborted by the software in your host machine.","time":"2026-05-25T19:35:37-04:00","message":"error reading from SRS server TCP socket"}[srs-listener] {"level":"error","error":"read tcp 127.0.0.1:49569->127.0.0.1:5002: wsarecv: An established connection was aborted by the software in your host machine.","time":"2026-05-25T19:35:37-04:00","message":"error reading from SRS server TCP socket"}
+
+Stop file detected: C:\NASGroup\NASGroupMissionScripts\Common\TTS Test\tmp\nasg_stt_bridge.stop
+[al_minhad_ground] Terminating SRS listener
+[al_minhad_tower] Terminating SRS listener
+[al_minhad_center] Terminating SRS listener
+[al_minhad_awacs] Terminating SRS listener
+SRS STT bridge manager stopped.
+[Mon 05/25/2026 19:35:38.38] start_stt_bridge.bat exiting with code 0 
