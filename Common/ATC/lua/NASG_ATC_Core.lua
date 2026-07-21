@@ -11,6 +11,9 @@ NASG_ATC.DebugEnabled = NASG_ATC.DebugEnabled or false
 
 NASG_ATC.ClientSessions = NASG_ATC.ClientSessions or {}
 NASG_ATC.Airports = NASG_ATC.Airports or {}
+-- Structural airport definitions (the per-map "database"), keyed by Id.
+-- Populated by DefineAirport; activated (merged with comms) by ActivateAirport.
+NASG_ATC.AirportDefs = NASG_ATC.AirportDefs or {}
 NASG_ATC.Controllers = NASG_ATC.Controllers or {}
 NASG_ATC.IntentPatterns = NASG_ATC.IntentPatterns or {}
 NASG_ATC.WatchedAssetSources = NASG_ATC.WatchedAssetSources or {}
@@ -34,6 +37,13 @@ NASG_ATC.Defaults = {
     TTSVoice = "Nathan",
     Coalition = coalition.side.BLUE,
     TTSEndpoint = "http://127.0.0.1:8765/tts",
+    -- Airport-area detection radius (NM) used when neither a DetectionZone
+    -- nor the MOOSE airbase zone yields a hit. Keeps airport detection
+    -- working with zero mission-editor zones.
+    DetectionRadiusNM = 5,
+    -- Membership radius (meters) around an individual parking spot when a
+    -- parking area is defined by AIRBASE terminal SpotIDs.
+    ParkingSpotRadiusM = 60,
 }
 
 NASG_ATC.Facilities = {
@@ -301,6 +311,246 @@ end
 
 function NASG_ATC:GetAirport(airportId)
     return self.Airports[airportId]
+end
+
+---------------------------------------------------------------------------
+-- Split config model.
+--
+-- DefineAirport stores structural airport data (parking, taxi graph, EOR,
+-- runway/comms defaults) in a per-map database. ActivateAirport merges a
+-- definition with a per-mission comms layer (frequencies, voices, ATIS,
+-- wind, active runway) and registers the result. This lets the volatile
+-- comms data live in a thin breakout file while the structural data stays
+-- in a reusable database, and it keeps RegisterAirport working unchanged.
+---------------------------------------------------------------------------
+
+-- Deep-merge helper: override wins; nested tables merge recursively; arrays
+-- (and any table the override supplies wholesale) replace the base value.
+function NASG_ATC:DeepMerge(base, override)
+    if type(override) ~= "table" then
+        if override ~= nil then
+            return override
+        end
+        return base
+    end
+
+    local result = {}
+
+    if type(base) == "table" then
+        -- Treat sequence tables as atomic: an override array replaces it.
+        if #base > 0 or #override > 0 then
+            return override
+        end
+
+        for k, v in pairs(base) do
+            result[k] = v
+        end
+    end
+
+    for k, v in pairs(override) do
+        if type(v) == "table" and type(result[k]) == "table" then
+            result[k] = self:DeepMerge(result[k], v)
+        else
+            result[k] = v
+        end
+    end
+
+    return result
+end
+
+function NASG_ATC:DefineAirport(def)
+    if not def or not def.Id then
+        error("DefineAirport requires a definition with an Id")
+    end
+
+    self.AirportDefs[def.Id] = def
+    self:Log("Defined airport: " .. tostring(def.Id))
+end
+
+-- Merge a stored structural definition with a per-mission comms layer and
+-- register it. `comms` may also carry non-comms overrides (e.g. ActiveRunway,
+-- WindText, RequireCorrectATIS) which win over the definition's defaults.
+function NASG_ATC:ActivateAirport(id, comms)
+    local def = self.AirportDefs[id]
+
+    if not def then
+        error("ActivateAirport: no airport defined with Id '" .. tostring(id) .. "'")
+    end
+
+    local merged = self:DeepMerge(def, comms or {})
+    merged.Id = id
+
+    self:RegisterAirport(merged)
+    return merged
+end
+
+---------------------------------------------------------------------------
+-- Airbase-derived geometry.
+--
+-- These pull airport position/area from the MOOSE AIRBASE wrapper so that
+-- airport detection and parking resolution work without mission-editor
+-- zones. Zones remain supported as optional overrides.
+---------------------------------------------------------------------------
+
+function NASG_ATC:GetAirbase(airport)
+    if not airport or not airport.AirbaseName then
+        return nil
+    end
+
+    if airport._Airbase then
+        return airport._Airbase
+    end
+
+    local airbase = nil
+
+    pcall(function()
+        airbase = AIRBASE:FindByName(airport.AirbaseName)
+    end)
+
+    if airbase then
+        airport._Airbase = airbase
+    end
+
+    return airbase
+end
+
+function NASG_ATC:GetAirportCoordinate(airport)
+    if airport and airport._AirportCoord then
+        return airport._AirportCoord
+    end
+
+    local airbase = self:GetAirbase(airport)
+
+    if not airbase then
+        return nil
+    end
+
+    local coord = nil
+
+    pcall(function()
+        coord = airbase:GetCoordinate()
+    end)
+
+    if coord then
+        airport._AirportCoord = coord
+    end
+
+    return coord
+end
+
+-- Resolve a representative coordinate for a parking area from (in priority):
+-- SpotIDs (average of AIRBASE parking-spot coordinates), Center/Vec2, or Zone.
+function NASG_ATC:GetParkingAreaCoordinate(airport, parkingArea)
+    if not parkingArea then
+        return nil
+    end
+
+    if parkingArea._Coord then
+        return parkingArea._Coord
+    end
+
+    local coord = nil
+
+    pcall(function()
+        if parkingArea.SpotIDs and #parkingArea.SpotIDs > 0 then
+            local airbase = self:GetAirbase(airport)
+
+            if airbase then
+                local sumX, sumZ, n = 0, 0, 0
+
+                for _, id in ipairs(parkingArea.SpotIDs) do
+                    local spot = airbase:GetParkingSpotData(id)
+                    local spotCoord = spot and spot.Coordinate
+
+                    if spotCoord then
+                        local vec3 = spotCoord:GetVec3()
+                        sumX = sumX + vec3.x
+                        sumZ = sumZ + vec3.z
+                        n = n + 1
+                    end
+                end
+
+                if n > 0 then
+                    coord = COORDINATE:NewFromVec2({ x = sumX / n, y = sumZ / n })
+                end
+            end
+        elseif parkingArea.Center then
+            coord = COORDINATE:NewFromVec2(parkingArea.Center)
+        elseif parkingArea.Vec2 then
+            coord = COORDINATE:NewFromVec2(parkingArea.Vec2)
+        elseif parkingArea.Zone then
+            local zone = ZONE:FindByName(parkingArea.Zone)
+
+            if zone then
+                coord = zone:GetCoordinate()
+            end
+        end
+    end)
+
+    if coord then
+        parkingArea._Coord = coord
+    end
+
+    return coord
+end
+
+-- True when a coordinate is inside a parking area, using whichever definition
+-- method the area provides (Zone, SpotIDs, or Center+RadiusNM).
+function NASG_ATC:IsCoordinateInParkingArea(airport, parkingArea, coordinate)
+    if not parkingArea or not coordinate then
+        return false
+    end
+
+    -- Explicit mission-editor zone (optional override).
+    if parkingArea.Zone then
+        local zone = ZONE:FindByName(parkingArea.Zone)
+
+        if zone and zone:IsCoordinateInZone(coordinate) then
+            return true
+        end
+    end
+
+    -- Terminal-spot membership: within radius of any listed parking spot.
+    if parkingArea.SpotIDs and #parkingArea.SpotIDs > 0 then
+        local airbase = self:GetAirbase(airport)
+
+        if airbase then
+            local radius = parkingArea.SpotRadiusM or self.Defaults.ParkingSpotRadiusM
+
+            for _, id in ipairs(parkingArea.SpotIDs) do
+                local matched = false
+
+                pcall(function()
+                    local spot = airbase:GetParkingSpotData(id)
+                    local spotCoord = spot and spot.Coordinate
+
+                    if spotCoord then
+                        local d = self:GetCoordinateDistanceMeters(coordinate, spotCoord)
+                        matched = d ~= nil and d <= radius
+                    end
+                end)
+
+                if matched then
+                    return true
+                end
+            end
+        end
+    end
+
+    -- Center + radius.
+    if parkingArea.RadiusNM then
+        local center = self:GetParkingAreaCoordinate(airport, parkingArea)
+
+        if center then
+            local d = self:GetCoordinateDistanceMeters(coordinate, center)
+
+            if d ~= nil and d <= parkingArea.RadiusNM * 1852 then
+                return true
+            end
+        end
+    end
+
+    return false
 end
 
 function NASG_ATC:GetFacilityConfig(airport, facility)
@@ -722,6 +972,7 @@ function NASG_ATC:IsClientInAirportArea(client, airport)
         return false
     end
 
+    -- 1. Explicit mission-editor detection zone (optional override).
     if airport.DetectionZone then
         local zone = ZONE:FindByName(airport.DetectionZone)
 
@@ -730,14 +981,42 @@ function NASG_ATC:IsClientInAirportArea(client, airport)
         end
     end
 
+    -- 2. Airbase-derived area: MOOSE airbase zone, then coordinate + radius.
+    --    This removes the need for a mission-editor airport zone.
+    local airbaseZoneHit = false
+
+    pcall(function()
+        local airbase = self:GetAirbase(airport)
+
+        if airbase then
+            local zone = airbase:GetZone()
+
+            if zone and zone:IsCoordinateInZone(coordinate) then
+                airbaseZoneHit = true
+            end
+        end
+    end)
+
+    if airbaseZoneHit then
+        return true
+    end
+
+    local airportCoord = self:GetAirportCoordinate(airport)
+
+    if airportCoord then
+        local radiusM = (airport.DetectionRadiusNM or self.Defaults.DetectionRadiusNM) * 1852
+        local d = self:GetCoordinateDistanceMeters(coordinate, airportCoord)
+
+        if d ~= nil and d <= radiusM then
+            return true
+        end
+    end
+
+    -- 3. Parking areas (any definition method).
     if airport.ParkingAreas then
         for _, parkingArea in ipairs(airport.ParkingAreas) do
-            if parkingArea.Zone then
-                local zone = ZONE:FindByName(parkingArea.Zone)
-
-                if zone and zone:IsCoordinateInZone(coordinate) then
-                    return true
-                end
+            if self:IsCoordinateInParkingArea(airport, parkingArea, coordinate) then
+                return true
             end
         end
     end
@@ -761,12 +1040,8 @@ function NASG_ATC:GetParkingAreaForClient(client, airport)
     end
 
     for _, parkingArea in ipairs(airport.ParkingAreas) do
-        if parkingArea.Zone then
-            local zone = ZONE:FindByName(parkingArea.Zone)
-
-            if zone and zone:IsCoordinateInZone(coordinate) then
-                return parkingArea
-            end
+        if self:IsCoordinateInParkingArea(airport, parkingArea, coordinate) then
+            return parkingArea
         end
     end
 
@@ -1063,11 +1338,26 @@ function NASG_ATC:JoinTaxiRoute(route)
 end
 
 function NASG_ATC:GetTaxiRoute(airport, parkingArea, runway)
-    if not airport or not parkingArea or not parkingArea.TaxiRoutes then
+    if not airport then
         return nil
     end
 
     local runwayKey = tostring(runway or self:GetActiveRunway(airport, true) or airport.ActiveRunway or "")
+
+    -- Prefer dynamic graph routing when the airport defines a taxi graph.
+    if airport.TaxiGraph and NASG_ATC_TAXIGRAPH then
+        local route = NASG_ATC_TAXIGRAPH:RouteParkingToRunway(airport, parkingArea, runwayKey)
+
+        if route and #route > 0 then
+            return route
+        end
+    end
+
+    -- Static fallback: hand-authored per-parking-area taxi routes.
+    if not parkingArea or not parkingArea.TaxiRoutes then
+        return nil
+    end
+
     local runwayWithoutLR = runwayKey:gsub("[LRC]$", "")
 
     return parkingArea.TaxiRoutes[runwayKey] or parkingArea.TaxiRoutes[runwayWithoutLR]

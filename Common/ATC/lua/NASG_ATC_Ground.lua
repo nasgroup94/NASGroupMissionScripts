@@ -33,6 +33,7 @@ NASG_ATC_GROUND.Requests = {
             "say again",
             "repeat",
         },
+        Handler = "HandleSayAgain"
     },
 
     readback = {
@@ -198,6 +199,14 @@ function NASG_ATC_GROUND:RegisterRequestPatterns(atc)
 end
 
 function NASG_ATC_GROUND:Send(atc, airport, message)
+    -- Remember the last instruction transmitted so the pilot can request
+    -- "say again". _activeSession is set for the current speech event in
+    -- HandleSpeechEvent; events are handled one at a time so it always
+    -- points at the session that triggered this transmission.
+    if self._activeSession and message and message ~= "" then
+        self._activeSession.LastGroundInstruction = message
+    end
+
     atc:SendFacilityTTS(airport, atc.Facilities.GROUND, message)
 end
 
@@ -282,6 +291,16 @@ function NASG_ATC_GROUND:GetEORRoute(atc, airport, parkingAreaName, runway)
 
     if not eorConfig then
         return nil
+    end
+
+    -- Prefer dynamic graph routing when the airport defines a taxi graph.
+    if airport.TaxiGraph and NASG_ATC_TAXIGRAPH then
+        local parkingArea = atc:GetParkingAreaByName(airport, parkingAreaName)
+        local route = NASG_ATC_TAXIGRAPH:RouteParkingToEOR(airport, parkingArea, runway)
+
+        if route and #route > 0 then
+            return route
+        end
     end
 
     if eorConfig.TaxiRoutes and parkingAreaName then
@@ -408,6 +427,31 @@ function NASG_ATC_GROUND:BuildEORCompleteTaxiToRunwayMessage(atc, airport, sessi
             runwaySpeech,
             runwaySpeech
     )
+end
+
+function NASG_ATC_GROUND:HandleSayAgain(atc, client, airport, session, event)
+    local callsign = atc:GetClientCallsign(client, event)
+    local last = session and session.LastGroundInstruction
+
+    if not last or last == "" then
+        -- Nothing has been transmitted to this pilot yet. Reply directly
+        -- (bypassing Send) so this notice is not itself recorded as the
+        -- instruction to repeat on the next "say again".
+        atc:SendFacilityTTS(
+                airport,
+                atc.Facilities.GROUND,
+                string.format(
+                        "%s, %s, no previous transmission to repeat.",
+                        callsign,
+                        atc:GetFacilityCallsign(airport, atc.Facilities.GROUND)
+                )
+        )
+        return true
+    end
+
+    -- Repeat the last instruction verbatim.
+    self:Send(atc, airport, last)
+    return true
 end
 
 function NASG_ATC_GROUND:HandleRadioCheck(atc, client, airport, session, event)
@@ -784,7 +828,26 @@ function NASG_ATC_GROUND:HandleTaxiBackRequest(atc, client, airport, session, ev
     session.Facility = atc.Facilities.GROUND
     session.UpdatedAt = timer.getTime()
 
-    self:Send(atc, airport, string.format("%s, taxi to %s. Remain this frequency.", callsign, tostring(parkingAreaName)))
+    -- Dynamic route from the aircraft's current position (typically the
+    -- runway exit ramp it just vacated onto) to its parking area, when the
+    -- airport defines a taxi graph.
+    local routeText = nil
+
+    if airport.TaxiGraph and NASG_ATC_TAXIGRAPH then
+        local parkingArea = atc:GetParkingAreaByName(airport, parkingAreaName)
+
+        if parkingArea then
+            local route = NASG_ATC_TAXIGRAPH:RouteFromClientToParking(airport, client, parkingArea)
+            routeText = route and atc:JoinTaxiRoute(route) or nil
+        end
+    end
+
+    if routeText then
+        self:Send(atc, airport, string.format("%s, taxi to %s via %s. Remain this frequency.", callsign, tostring(parkingAreaName), routeText))
+    else
+        self:Send(atc, airport, string.format("%s, taxi to %s. Remain this frequency.", callsign, tostring(parkingAreaName)))
+    end
+
     return true
 end
 
@@ -1147,6 +1210,10 @@ end
 function NASG_ATC_GROUND:HandleSpeechEvent(atc, client, airport, session, event)
 local intent = event and event.intent or nil
 local request = self.Requests and self.Requests[intent] or nil
+
+-- Track the session for the current transmission so Send() can record the
+-- last instruction issued (used by HandleSayAgain).
+self._activeSession = session
 
 atc:Log(
 string.format(

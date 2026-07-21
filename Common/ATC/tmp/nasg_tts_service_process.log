@@ -1,4 +1,4 @@
-[Tue 07/21/2026 15:05:17.25] start_tts_service.bat launched 
+[Tue 07/21/2026 17:46:52.60] start_tts_service.bat launched 
 Working directory: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts 
 ATC root: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\.. 
 TTS affinity mask: C000 
@@ -27,5 +27,94 @@ SRS backend: go_native
 SRS host:    127.0.0.1
 SRS sender:  C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\bin\srs-tts-send.exe
 Verbose:     False
-TTS service stop file detected: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\nasg_tts_service.stop
-[Tue 07/21/2026 15:07:07.32] start_tts_service.bat exiting with code 0 
+[3253ec94f2b44dd6bc429d6bec55f8f7] Received TTS request: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2', text_length=425
+[3253ec94f2b44dd6bc429d6bec55f8f7] TTS job started: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=131.7, modulations=AM, coalition=2, volume=0.3
+[5a62a99f05da4093a4e4d8c50e504cb3] Received TTS request: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2', text_length=430
+[5a62a99f05da4093a4e4d8c50e504cb3] TTS job started: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=125.1, modulations=AM, coalition=2, volume=0.3
+[3253ec94f2b44dd6bc429d6bec55f8f7] TTS job completed successfully. cache_hit=True
+[66726b2bac5b474b96128c40eaf43598] Received TTS request: initiator='Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2', text_length=128
+[66726b2bac5b474b96128c40eaf43598] TTS job started: initiator='Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=250.1, modulations=AM, coalition=2, volume=1
+[5a62a99f05da4093a4e4d8c50e504cb3] TTS job completed successfully. cache_hit=True
+[66726b2bac5b474b96128c40eaf43598] TTS job completed successfully. cache_hit=False
+[9a45e949377f4fc5b6dc8cefee25f847] Received TTS request: initiator='Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2', text_length=152
+[9a45e949377f4fc5b6dc8cefee25f847] TTS job started: initiator='Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=250.1, modulations=AM, coalition=2, volume=1
+[480d09d90ef543269657b4f0e3a16f41] Received TTS request: initiator='Al Minhad Tower|freqs=310.5|modulations=AM|coalition=2', text_length=134
+[480d09d90ef543269657b4f0e3a16f41] TTS job started: initiator='Al Minhad Tower|freqs=310.5|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=310.5, modulations=AM, coalition=2, volume=1
+[9a45e949377f4fc5b6dc8cefee25f847] TTS job completed successfully. cache_hit=False
+[ebb0cad8dc2e4c1ba0543f7d46db37be] Received TTS request: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2', text_length=425
+[ebb0cad8dc2e4c1ba0543f7d46db37be] TTS job started: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=131.7, modulations=AM, coalition=2, volume=0.3
+[480d09d90ef543269657b4f0e3a16f41] TTS job completed successfully. cache_hit=False
+[90fa41b2ddd54a79b3408b4a04e582ef] Received TTS request: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2', text_length=430
+[90fa41b2ddd54a79b3408b4a04e582ef] TTS job started: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=125.1, modulations=AM, coalition=2, volume=0.3
+[afd044f593274d3189df8f6b4ac00536] Received TTS request: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2', text_length=59
+[afd044f593274d3189df8f6b4ac00536] TTS job started: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=251, modulations=AM, coalition=2, volume=1
+[afd044f593274d3189df8f6b4ac00536] TTS job completed successfully. cache_hit=False
+[ebb0cad8dc2e4c1ba0543f7d46db37be] TTS job completed successfully. cache_hit=True
+[c2c378142f5b448c8f3f5c765bdbbf9d] Received TTS request: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2', text_length=190
+[c2c378142f5b448c8f3f5c765bdbbf9d] TTS job started: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=251, modulations=AM, coalition=2, volume=1
+[90fa41b2ddd54a79b3408b4a04e582ef] TTS job completed successfully. cache_hit=True
+[c2c378142f5b448c8f3f5c765bdbbf9d] TTS job completed successfully. cache_hit=False
+[4b72a71d398c4096aa37d8cab790b537] Received TTS request: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2', text_length=425
+[4b72a71d398c4096aa37d8cab790b537] TTS job started: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=131.7, modulations=AM, coalition=2, volume=0.3
+[50062732404040caba5059e036cbfcdb] Received TTS request: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2', text_length=430
+[50062732404040caba5059e036cbfcdb] TTS job started: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=125.1, modulations=AM, coalition=2, volume=0.3
+[dcc495d923bf4def95ad0b71b9d24c27] Received TTS request: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2', text_length=83
+[dcc495d923bf4def95ad0b71b9d24c27] TTS job started: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=251, modulations=AM, coalition=2, volume=1
+[dcc495d923bf4def95ad0b71b9d24c27] TTS job completed successfully. cache_hit=False
+[4b72a71d398c4096aa37d8cab790b537] TTS job completed successfully. cache_hit=True
+[50062732404040caba5059e036cbfcdb] TTS job completed successfully. cache_hit=True
+[e872bbab66ed41d3acfa98ae92d0551b] Received TTS request: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2', text_length=83
+[e872bbab66ed41d3acfa98ae92d0551b] TTS job started: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=251, modulations=AM, coalition=2, volume=1
+[e872bbab66ed41d3acfa98ae92d0551b] TTS job completed successfully. cache_hit=True
+[e53671ef98eb4483bc7c1ca6e66dbb5c] Received TTS request: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2', text_length=425
+[e53671ef98eb4483bc7c1ca6e66dbb5c] TTS job started: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=131.7, modulations=AM, coalition=2, volume=0.3
+[00d6513b3b7242d9b8ff5cbf5c7c97da] Received TTS request: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2', text_length=430
+[00d6513b3b7242d9b8ff5cbf5c7c97da] TTS job started: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=125.1, modulations=AM, coalition=2, volume=0.3
+[e53671ef98eb4483bc7c1ca6e66dbb5c] TTS job completed successfully. cache_hit=True
+[00d6513b3b7242d9b8ff5cbf5c7c97da] TTS job completed successfully. cache_hit=True
+[a4d50cc1d9454cd58f80704ca7e3b728] Received TTS request: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2', text_length=425
+[a4d50cc1d9454cd58f80704ca7e3b728] TTS job started: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=131.7, modulations=AM, coalition=2, volume=0.3
+[0e7152e4f231413abaf2ae901fc89695] Received TTS request: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2', text_length=430
+[0e7152e4f231413abaf2ae901fc89695] TTS job started: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=125.1, modulations=AM, coalition=2, volume=0.3
+[a4d50cc1d9454cd58f80704ca7e3b728] TTS job completed successfully. cache_hit=True
+[0e7152e4f231413abaf2ae901fc89695] TTS job completed successfully. cache_hit=True
+[6986485529604bd5821563ace277b8d4] Received TTS request: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2', text_length=425
+[6986485529604bd5821563ace277b8d4] TTS job started: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=131.7, modulations=AM, coalition=2, volume=0.3
+[547eca37c1a54093a419f40e857c8413] Received TTS request: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2', text_length=430
+[547eca37c1a54093a419f40e857c8413] TTS job started: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=125.1, modulations=AM, coalition=2, volume=0.3
+[6986485529604bd5821563ace277b8d4] TTS job completed successfully. cache_hit=True
+[547eca37c1a54093a419f40e857c8413] TTS job completed successfully. cache_hit=True
+[96a358e240b44f2ea1723f101ec90654] Received TTS request: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2', text_length=45
+[96a358e240b44f2ea1723f101ec90654] TTS job started: initiator='Emirates Center|freqs=251|modulations=AM|coalition=2'
+[9971ddbd7d0c4b639a1ed19e7e48ae2d] Received TTS request: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2', text_length=425
+[9971ddbd7d0c4b639a1ed19e7e48ae2d] TTS job started: initiator='Al Minhad ATIS|freqs=131.7|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=251, modulations=AM, coalition=2, volume=1
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=131.7, modulations=AM, coalition=2, volume=0.3
+[2244c035342643cda497a6a039f89d4a] Received TTS request: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2', text_length=430
+[2244c035342643cda497a6a039f89d4a] TTS job started: initiator='Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=125.1, modulations=AM, coalition=2, volume=0.3
+[96a358e240b44f2ea1723f101ec90654] TTS job completed successfully. cache_hit=False
+[9971ddbd7d0c4b639a1ed19e7e48ae2d] TTS job completed successfully. cache_hit=True
+[2244c035342643cda497a6a039f89d4a] TTS job completed successfully. cache_hit=True
+[a07a35698e114a2790cc4ca1ec0a4893] Received TTS request: initiator='AWACS|freqs=251.5|modulations=AM|coalition=2', text_length=52
+[a07a35698e114a2790cc4ca1ec0a4893] TTS job started: initiator='AWACS|freqs=251.5|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=251.5, modulations=AM, coalition=2, volume=0.9

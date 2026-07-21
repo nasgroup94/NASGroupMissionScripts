@@ -1,46 +1,22 @@
 NASG_ATC = NASG_ATC or {}
 
-NASG_ATC:RegisterAirport({
-    Id = "al_minhad",
-    Name = "Al Minhad",
-    AirbaseName = AIRBASE.PersianGulf.Al_Minhad_AFB,
+---------------------------------------------------------------------------
+-- Persian Gulf ATC comms / mission layer.
+--
+-- Thin, volatile breakout: selects which airports (from the airport
+-- database in Persian_Gulf_ATC_Airports.lua) are active this mission and
+-- sets their radio frequencies, voices, callsigns, ATIS letter, wind, and
+-- active runway. Structural data (parking, taxi graph, EOR) lives in the
+-- database file and is merged in automatically by ActivateAirport.
+---------------------------------------------------------------------------
 
+NASG_ATC:ActivateAirport("al_minhad", {
     RequireCorrectATIS = true,
     ActiveRunway = "27",
     ArrivalRunway = "27",
     WindText = "two six zero at eight",
-    MaintenanceRamp = "maintenance ramp",
-
-    EOR = {
-        Enabled = false,
-        RequireZone = false,
-        UnavailableFallbackToRunway = true,
-        Runways = {
-            ["27"] = {
-                Name = "EOR Runway 27",
-                --Zone = "AL_MINHAD_EOR_27",
-                TaxiRoutes = {
-                    ["West Ramp"] = { "Hotel", "Golf" },
-                    ["East Ramp"] = { "Hotel", "Golf" },
-                },
-            },
-            ["09"] = {
-                Name = "EOR Runway 09",
-                --Zone = "AL_MINHAD_EOR_09",
-                TaxiRoutes = {
-                    ["West Ramp"] = { "Hotel", "Alpha" },
-                    ["East Ramp"] = { "Hotel", "Alpha" },
-                },
-            },
-        },
-    },
-
-    -- false: Ground -> Tower -> Center -> Tower -> Ground
-    -- true:  Ground -> Tower -> AWACS  -> Tower -> Ground
-    UseAWACSForDeparture = false,
 
     TTSEndpoint = "http://127.0.0.1:8765/tts",
-    Coalition = coalition.side.BLUE,
 
     Ground = {
         Callsign = "Al Minhad Ground",
@@ -91,27 +67,6 @@ NASG_ATC:RegisterAirport({
         Speed = 175,
         Pitch = 0,
         Volume = 1.0,
-    },
-
-    DetectionZone = "AL_MINHAD_AIRPORT_ZONE",
-
-    ParkingAreas = {
-        {
-            Name = "West Ramp",
-            Zone = "AL_MINHAD_WEST_RAMP",
-            TaxiRoutes = {
-                ["27"] = { "Hotel", "Golf" },
-                ["09"] = { "Hotel", "Alpha" },
-            },
-        },
-        {
-            Name = "East Ramp",
-            Zone = "AL_MINHAD_EAST_RAMP",
-            TaxiRoutes = {
-                ["27"] = { "Hotel", "Golf" },
-                ["09"] = { "Hotel", "Alpha" },
-            },
-        },
     },
 })
 

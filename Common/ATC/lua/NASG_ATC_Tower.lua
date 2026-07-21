@@ -3,6 +3,7 @@ NASG_ATC_TOWER = NASG_ATC_TOWER or {}
 
 NASG_ATC_TOWER.States = {
     WAITING_FOR_TOWER_CHECKIN = "WAITING_FOR_TOWER_CHECKIN",
+    HOLDING_SHORT = "HOLDING_SHORT",
     LINEUP_AND_WAIT = "LINEUP_AND_WAIT",
     TAKEOFF_CLEARED = "TAKEOFF_CLEARED",
     AIRBORNE = "AIRBORNE",
@@ -14,6 +15,26 @@ NASG_ATC_TOWER.States = {
     LANDED = "LANDED",
     GO_AROUND = "GO_AROUND",
     TOWER_EMERGENCY = "TOWER_EMERGENCY",
+}
+
+---------------------------------------------------------------------------
+-- Runway / departure clearance thresholds.
+--
+-- When a client calls holding short (or requests takeoff), Tower scans the
+-- runway environment and issues one of three instructions:
+--   * Continue holding short  - an arrival is on final about to land.
+--   * Line up and wait        - traffic is still on the runway departing,
+--                               or just airborne within 0.5 NM.
+--   * Cleared for takeoff      - runway and departure corridor are clear.
+-- Distances are measured from the airbase reference point; tune per field.
+---------------------------------------------------------------------------
+NASG_ATC_TOWER.RunwayCheck = {
+    RunwayProximityNM   = 1.5,   -- on-ground traffic within this of the field = on the runway
+    DepartureClearNM    = 0.5,   -- airborne outbound traffic within this = just departed
+    FinalApproachNM     = 5.0,   -- airborne inbound traffic within this may be landing
+    ApproachCeilingFt   = 2500,  -- AGL ceiling below which inbound traffic counts as landing
+    RollingSpeedKts     = 8,     -- min groundspeed to treat a unit as rolling (not parked)
+    InboundToleranceDeg = 70,    -- heading vs bearing-to-field tolerance to call a unit "inbound"
 }
 
 NASG_ATC_TOWER.Requests = {
@@ -266,7 +287,7 @@ function NASG_ATC_TOWER:BuildTakeoffClearanceMessage(atc, airport, callsign, run
 
     if departureFrequency then
         message = message .. string.format(
-                " Contact %s %s airborne.",
+                " Contact %s, %s, when airborne.",
                 atc:GetFacilityCallsign(airport, departureFacility),
                 atc:FormatFrequency(departureFrequency)
         )
@@ -343,86 +364,214 @@ function NASG_ATC_TOWER:HandleInbound(atc, client, airport, session, event)
     return true
 end
 
-function NASG_ATC_TOWER:HandleDepartureCheckIn(atc, client, airport, session, event)
+function NASG_ATC_TOWER:GetAirbaseCoordinate(airport)
+    if not airport or not airport.AirbaseName then
+        return nil
+    end
+
+    local coordinate = nil
+
+    pcall(function()
+        local airbase = AIRBASE:FindByName(airport.AirbaseName)
+
+        if airbase then
+            coordinate = airbase:GetCoordinate()
+        end
+    end)
+
+    return coordinate
+end
+
+-- Assess the runway environment for a departing client.
+-- Returns a status string plus the most relevant conflicting traffic:
+--   "HOLD"   - an arrival is on final about to land (keep holding short).
+--   "LINEUP" - traffic is rolling on the runway, or airborne within 0.5 NM
+--              of the departure end (line up and wait).
+--   "CLEAR"  - runway and departure corridor are clear (cleared for takeoff).
+-- The requesting client's own aircraft is excluded from the scan.
+function NASG_ATC_TOWER:AssessRunwayForDeparture(atc, client, airport)
+    local fieldCoord = self:GetAirbaseCoordinate(airport)
+
+    if not fieldCoord then
+        -- Cannot locate the field; fail safe to line up and wait.
+        atc:Log("Runway assessment unavailable (no airbase coordinate). Defaulting to line up and wait.")
+        return "LINEUP", nil
+    end
+
+    local cfg = self.RunwayCheck
+
+    local myUnitName = nil
+    pcall(function() myUnitName = client:GetName() end)
+
+    local status = "CLEAR"
+    local info = nil
+
+    local trafficSet = SET_UNIT:New()
+                               :FilterCategories({ "plane", "helicopter" })
+                               :FilterOnce()
+
+    trafficSet:ForEachUnit(function(unit)
+        if not unit then
+            return
+        end
+
+        local alive = false
+        pcall(function() alive = unit:IsAlive() end)
+        if not alive then
+            return
+        end
+
+        local unitName = nil
+        pcall(function() unitName = unit:GetName() end)
+        if unitName and myUnitName and unitName == myUnitName then
+            return  -- skip the requesting aircraft
+        end
+
+        local coord = nil
+        pcall(function() coord = unit:GetCoordinate() end)
+        if not coord then
+            return
+        end
+
+        local distanceMeters = atc:GetCoordinateDistanceMeters(fieldCoord, coord)
+        if not distanceMeters then
+            return
+        end
+
+        local distanceNM = distanceMeters / 1852
+
+        -- Ignore anything well clear of the runway environment.
+        if distanceNM > cfg.FinalApproachNM then
+            return
+        end
+
+        local inAir = true
+        pcall(function() inAir = unit:InAir() end)
+
+        local speedKts = 0
+        pcall(function() speedKts = (unit:GetVelocityKMH() or 0) / 1.852 end)
+
+        local aglFt = 0
+        pcall(function()
+            local vec3 = coord:GetVec3()
+            aglFt = ((vec3 and vec3.y or 0) - coord:GetLandHeight()) / 0.3048
+        end)
+
+        -- Is the unit tracking toward the field (inbound) or away (outbound)?
+        local inbound = false
+        local heading = nil
+        pcall(function() heading = unit:GetHeading() end)
+        local bearingToField = atc:GetCoordinateBearingDegrees(coord, fieldCoord)
+
+        if heading and bearingToField then
+            local diff = math.abs(heading - bearingToField)
+            if diff > 180 then
+                diff = 360 - diff
+            end
+            inbound = diff <= cfg.InboundToleranceDeg
+        end
+
+        local unitStatus = nil
+
+        if inAir and inbound and distanceNM <= cfg.FinalApproachNM and aglFt <= cfg.ApproachCeilingFt then
+            -- Airborne, low, and tracking toward the field: arrival about to land.
+            unitStatus = "HOLD"
+        elseif inAir and (not inbound) and distanceNM <= cfg.DepartureClearNM then
+            -- Airborne, tracking away, still within half a mile: just departed.
+            unitStatus = "LINEUP"
+        elseif (not inAir) and distanceNM <= cfg.RunwayProximityNM and speedKts >= cfg.RollingSpeedKts then
+            -- On the ground and moving within the runway environment: rolling.
+            unitStatus = "LINEUP"
+        end
+
+        if not unitStatus then
+            return
+        end
+
+        local candidate = {
+            Name       = unitName,
+            DistanceNM = distanceNM,
+            AltitudeFt = aglFt,
+            Status     = unitStatus,
+        }
+
+        -- HOLD outranks LINEUP; within a status keep the nearest conflict.
+        if unitStatus == "HOLD" then
+            if status ~= "HOLD" or (info and candidate.DistanceNM < info.DistanceNM) then
+                info = candidate
+            end
+            status = "HOLD"
+        elseif unitStatus == "LINEUP" and status ~= "HOLD" then
+            if status ~= "LINEUP" or (info and candidate.DistanceNM < info.DistanceNM) then
+                info = candidate
+            end
+            status = "LINEUP"
+        end
+    end)
+
+    return status, info
+end
+
+-- Shared departure-clearance logic used by both the holding-short check-in
+-- and the explicit takeoff request. Issues hold short / line up and wait /
+-- cleared for takeoff based on the current runway assessment.
+function NASG_ATC_TOWER:IssueDepartureClearance(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
     local runway = self:GetRunwayForDeparture(atc, airport, session, event)
+    local runwaySpeech = atc:NormalizeRunway(runway)
+    local status, info = self:AssessRunwayForDeparture(atc, client, airport)
 
-    session.State = atc.States.LINEUP_AND_WAIT
     session.Facility = atc.Facilities.TOWER
     session.LineupRunway = runway
     session.UpdatedAt = timer.getTime()
 
-    -- Line up and wait readback is accepted if received, but not required.
-    if session.PendingReadback and session.PendingReadback.Type == "lineup" then
-        session.PendingReadback = nil
-    end
-
-    self:Send(
-            atc,
-            airport,
+    atc:Log(
             string.format(
-                    "%s, line up and wait Runway %s.",
-                    callsign,
-                    atc:NormalizeRunway(runway)
+                    "Tower departure assessment client=%s runway=%s status=%s conflict=%s",
+                    tostring(session.ClientKey),
+                    tostring(runway),
+                    tostring(status),
+                    info and string.format("%s %.1fNM %.0fftAGL", tostring(info.Name), info.DistanceNM, info.AltitudeFt) or "none"
             )
     )
 
-    return true
-end
+    if status == "HOLD" then
+        session.State = atc.States.HOLDING_SHORT
+        session.PendingReadback = nil
 
-function NASG_ATC_TOWER:HandleTakeoffRequest(atc, client, airport, session, event)
-    local callsign = atc:GetClientCallsign(client, event)
-    local runway = self:GetRunwayForDeparture(atc, airport, session, event)
+        local trafficText = "landing traffic"
 
-    if atc.HasPotentialArrivalTraffic then
-        local hasArrivalTraffic, traffic = atc:HasPotentialArrivalTraffic(airport, client)
-
-        if hasArrivalTraffic then
-            session.State = atc.States.LINEUP_AND_WAIT
-            session.Facility = atc.Facilities.TOWER
-            session.LineupRunway = runway
-            session.UpdatedAt = timer.getTime()
-
-            local trafficText = "arrival traffic"
-
-            if traffic and traffic[1] then
-                trafficText = string.format(
-                        "arrival traffic, %.1f miles, altitude %.0f feet",
-                        traffic[1].DistanceNM,
-                        traffic[1].AltitudeFeet
-                )
-            end
-
-            self:Send(
-                    atc,
-                    airport,
-                    string.format(
-                            "%s, continue holding Runway %s. %s.",
-                            callsign,
-                            atc:NormalizeRunway(runway),
-                            trafficText
-                    )
-            )
-
-            atc:Log(
-                    string.format(
-                            "Takeoff held client=%s runway=%s arrivalTrafficCount=%d",
-                            tostring(session.ClientKey),
-                            tostring(runway),
-                            #(traffic or {})
-                    )
-            )
-
-            return true
+        if info and info.DistanceNM then
+            trafficText = string.format("landing traffic, %.1f mile final", info.DistanceNM)
         end
+
+        self:Send(
+                atc,
+                airport,
+                string.format("%s, continue holding short Runway %s, %s.", callsign, runwaySpeech, trafficText)
+        )
+
+        return true
     end
 
+    if status == "LINEUP" then
+        session.State = atc.States.LINEUP_AND_WAIT
+        session.PendingReadback = nil
+
+        self:Send(
+                atc,
+                airport,
+                string.format("%s, line up and wait Runway %s.", callsign, runwaySpeech)
+        )
+
+        return true
+    end
+
+    -- Runway and departure corridor clear: issue takeoff clearance.
     local message, departureFacility, departureFrequency = self:BuildTakeoffClearanceMessage(atc, airport, callsign, runway)
 
     session.State = atc.States.TAKEOFF_CLEARED
-    session.Facility = atc.Facilities.TOWER
     session.NextFacility = departureFacility
-    session.UpdatedAt = timer.getTime()
 
     atc:SetPendingReadback(session, {
         Type = "takeoff",
@@ -434,6 +583,14 @@ function NASG_ATC_TOWER:HandleTakeoffRequest(atc, client, airport, session, even
 
     self:Send(atc, airport, message)
     return true
+end
+
+function NASG_ATC_TOWER:HandleDepartureCheckIn(atc, client, airport, session, event)
+    return self:IssueDepartureClearance(atc, client, airport, session, event)
+end
+
+function NASG_ATC_TOWER:HandleTakeoffRequest(atc, client, airport, session, event)
+    return self:IssueDepartureClearance(atc, client, airport, session, event)
 end
 
 function NASG_ATC_TOWER:HandleAbortTakeoff(atc, client, airport, session, event)
@@ -449,7 +606,7 @@ function NASG_ATC_TOWER:HandleAbortTakeoff(atc, client, airport, session, event)
                 atc,
                 airport,
                 string.format(
-                        "%s, roger abort. Exit runway when able. Contact Ground %s.",
+                        "%s, roger abort. Exit runway when able. Contact Ground, %s.",
                         callsign,
                         atc:FormatFrequency(groundFrequency)
                 )
@@ -540,7 +697,7 @@ function NASG_ATC_TOWER:HandleClearOfRunway(atc, client, airport, session, event
                 atc,
                 airport,
                 string.format(
-                        "%s, contact Ground %s.",
+                        "%s, Contact Ground, %s.",
                         callsign,
                         atc:FormatFrequency(groundFrequency)
                 )

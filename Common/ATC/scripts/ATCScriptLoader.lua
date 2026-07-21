@@ -10,6 +10,11 @@ NASG_ATC_SCRIPT_LOADER.ATCLuaPath = NASG_ATC_SCRIPT_LOADER.ATCPath .. "lua/"
 NASG_ATC_SCRIPT_LOADER.MissionScriptsPath = NASG_ATC_SCRIPT_LOADER.MissionScriptsPath
         or "C:/NASGroup/NASGroupMissionScripts/CVW-17/Persian Gulf/"
 
+-- Structural airport database (all map airports). Loaded before the comms
+-- config so ActivateAirport can find each airport's definition.
+NASG_ATC_SCRIPT_LOADER.MissionATCAirports = NASG_ATC_SCRIPT_LOADER.MissionATCAirports
+        or NASG_ATC_SCRIPT_LOADER.MissionScriptsPath .. "NATO/Persian_Gulf_ATC_Airports.lua"
+
 NASG_ATC_SCRIPT_LOADER.MissionATCConfig = NASG_ATC_SCRIPT_LOADER.MissionATCConfig
         or NASG_ATC_SCRIPT_LOADER.MissionScriptsPath .. "NATO/Persian_Gulf_ATC_Config.lua"
 
@@ -36,6 +41,10 @@ function NASG_ATC_SCRIPT_LOADER:Load()
         self:LoadScript(self.ATCLuaPath .. "NASG_ATC_Core.lua")
     end
 
+    -- Dynamic taxi routing engine (used by Core/Ground when an airport
+    -- defines a TaxiGraph; otherwise inert).
+    self:LoadScript(self.ATCLuaPath .. "NASG_ATC_TaxiGraph.lua")
+
     NASG_ATC.FlightPlanFile = NASG_ATC_FLIGHT_PLAN_FILE or NASG_ATC.FlightPlanFile
     NASG_ATC.FlightPlanRootFolder = NASG_ATC_FLIGHT_PLAN_ROOT_FOLDER or NASG_ATC.FlightPlanRootFolder
     NASG_ATC.FlightPlanDayFormat = NASG_ATC_FLIGHT_PLAN_DAY_FORMAT or NASG_ATC.FlightPlanDayFormat
@@ -52,6 +61,9 @@ function NASG_ATC_SCRIPT_LOADER:Load()
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_AWACS.lua")
 
     -- Mission-specific airport/controller configuration.
+    -- Database (structural defs) first, then the comms/mission layer that
+    -- activates and tunes them.
+    self:LoadScript(self.MissionATCAirports)
     self:LoadScript(self.MissionATCConfig)
 
     -- Bridges after config so they can discover registered airports/frequencies.

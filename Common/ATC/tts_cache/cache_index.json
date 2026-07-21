@@ -2,8 +2,8 @@
   "AWACS|freqs=251.5|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\AWACS_freqs_251.5_modulations_AM_coalition_2.mp3",
     "initiator": "AWACS|freqs=251.5|modulations=AM|coalition=2",
-    "text_hash": "7891345b7a6547dfa3fd52eca3b44e4f37dc153a6321fb068b7e31886e409f98",
-    "updated_at": 1784505016.8465185
+    "text_hash": "ee44e9d72a768b3cdda50cfe0e1040e5161bdf98d683b2d209e868cef0318d44",
+    "updated_at": 1784674715.3527622
   },
   "Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Abu_Dhabi_ATIS_freqs_125.1_modulations_AM_coalition_2.mp3",
@@ -20,20 +20,20 @@
   "Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Al_Minhad_Ground_freqs_250.1_modulations_AM_coalition_2.mp3",
     "initiator": "Al Minhad Ground|freqs=250.1|modulations=AM|coalition=2",
-    "text_hash": "138041bcdcfcb9ef5d649845f37ad9c4a5ffa353d5457aa509cd2c824575fc20",
-    "updated_at": 1784418704.4381843
+    "text_hash": "8aa48588eba65b600b05efc4295751eaf49c91c1c03ca8374527a4b6e73c419f",
+    "updated_at": 1784674110.43777
   },
   "Al Minhad Tower|freqs=310.5|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Al_Minhad_Tower_freqs_310.5_modulations_AM_coalition_2.mp3",
     "initiator": "Al Minhad Tower|freqs=310.5|modulations=AM|coalition=2",
-    "text_hash": "4e41324f92137e5c9d00359c26bc3969977d5e6f2b41f953f24e5db210e3f575",
-    "updated_at": 1780753367.140505
+    "text_hash": "cbae1384f8506d540ab492e0df1d723d72125cd32dddbe7ed58b9a206c5e43a9",
+    "updated_at": 1784674123.4663963
   },
   "Emirates Center|freqs=251|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Emirates_Center_freqs_251_modulations_AM_coalition_2.mp3",
     "initiator": "Emirates Center|freqs=251|modulations=AM|coalition=2",
-    "text_hash": "80e3bb6f073b1ce8e93698efe55c1a2744de5bf9b4edbe1a42cde18ca2e32e67",
-    "updated_at": 1780753397.9179726
+    "text_hash": "f66499999e6055548f0e60bd1d89e4a60feae4eff5b509fac109e8a07a32809e",
+    "updated_at": 1784674634.7189362
   },
   "Magic|freqs=262|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Magic_freqs_262_modulations_AM_coalition_2.mp3",

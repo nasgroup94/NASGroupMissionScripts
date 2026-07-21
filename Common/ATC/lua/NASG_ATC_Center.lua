@@ -298,9 +298,59 @@ function NASG_ATC_CENTER:HandleRadioCheck(atc, client, airport, session, event)
     return true
 end
 
+-- Reads the client's CURRENT altitude, queried live at the moment of the
+-- call (not cached or polled on a timer), and returns a spoken ATC altitude
+-- phrase. Returns nil if the aircraft position is unavailable.
+function NASG_ATC_CENTER:GetClientAltitudeCall(atc, client)
+    if not client then
+        return nil
+    end
+
+    local altitudeFeet = nil
+
+    pcall(function()
+        local coord = client:GetCoordinate()
+
+        if coord then
+            local vec3 = coord:GetVec3()
+
+            if vec3 and vec3.y then
+                altitudeFeet = vec3.y / 0.3048
+            end
+        end
+    end)
+
+    if not altitudeFeet then
+        return nil
+    end
+
+    local speech = atc:GetSpeechFormatter()
+
+    -- Above the transition altitude use flight levels; below, thousands of feet.
+    if altitudeFeet >= 18000 then
+        local flightLevel = math.floor((altitudeFeet / 100) + 0.5)
+
+        if speech and speech.FormatFlightLevel then
+            return speech:FormatFlightLevel(flightLevel)
+        end
+
+        return string.format("flight level %03d", flightLevel)
+    end
+
+    local roundedThousands = math.floor((altitudeFeet / 1000) + 0.5)
+
+    if roundedThousands <= 0 then
+        return "low altitude"
+    end
+
+    return string.format("%d thousand", roundedThousands)
+end
+
 function NASG_ATC_CENTER:HandleCheckIn(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
-    local altitude = event.altitude or "altitude unknown"
+    -- Scan the client's live position on demand rather than relying on the
+    -- speech event carrying an altitude (which STT does not provide).
+    local altitude = self:GetClientAltitudeCall(atc, client) or event.altitude or "altitude unknown"
     local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
 
     session.State = atc.States.CENTER_CONTROL
@@ -468,57 +518,16 @@ function NASG_ATC_CENTER:HandleTankerRequest(atc, client, airport, session, even
     local asset = tankerMatch.Asset
     local tankerName = asset.Name or asset.UnitName or asset.GroupName or asset.Id or "tanker"
     local tankerType = asset.TypeName or asset.Type or asset.Role or "tanker"
-    local bearing = nil
+    -- Bearing and range from the client's CURRENT position to the tanker.
+    local bearing = atc:GetCoordinateBearingDegrees(clientCoord, tankerMatch.Coordinate) or 0
 
-    local bra = asset:ToStringBRA(clientCoord)
+    local distanceNm = tankerMatch.DistanceNM
 
-    --if atc.GetCoordinateBearingDegrees then
-    --    pcall(function()
-    --        bearing = atc:GetCoordinateBearingDegrees(clientCoord, tankerMatch.Coordinate)
-    --    end)
-    --end
-    --
-    --if not bearing then
-    --    local clientVec3 = nil
-    --    local tankerVec3 = nil
-    --
-    --    pcall(function()
-    --        if type(clientCoord.GetVec3) == "function" then
-    --            clientVec3 = clientCoord:GetVec3()
-    --        end
-    --    end)
-    --
-    --    pcall(function()
-    --        if type(tankerMatch.Coordinate.GetVec3) == "function" then
-    --            tankerVec3 = tankerMatch.Coordinate:GetVec3()
-    --        end
-    --    end)
-    --
-    --    if clientVec3 and tankerVec3 and clientVec3.x and clientVec3.z and tankerVec3.x and tankerVec3.z then
-    --        local dx = tankerVec3.x - clientVec3.x
-    --        local dz = tankerVec3.z - clientVec3.z
-    --
-    --        bearing = math.deg(math.atan2(dx, dz))
-    --
-    --        if bearing < 0 then
-    --            bearing = bearing + 360
-    --        end
-    --
-    --        if bearing == 0 then
-    --            bearing = 360
-    --        end
-    --    end
-    --end
-    --
-    --bearing = bearing or 0
-    --
-    --local distanceNm = tankerMatch.DistanceNM
-    --
-    --if not distanceNm and tankerMatch.DistanceMeters then
-    --    distanceNm = tankerMatch.DistanceMeters / 1852
-    --end
-    --
-    --distanceNm = distanceNm or 0
+    if not distanceNm and tankerMatch.DistanceMeters then
+        distanceNm = tankerMatch.DistanceMeters / 1852
+    end
+
+    distanceNm = distanceNm or 0
 
     local tacan = "not set"
     local radioFreq = "not set"
