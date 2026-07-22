@@ -1,0 +1,391 @@
+===============================================================================
+ NASG ATC — VOICE COMMAND REFERENCE
+ Airport: Al Minhad (al_minhad) + AAPVE Training Range
+ Generated: 2026-07-21
+===============================================================================
+
+This lists every ATC/range voice command that currently has a DEVELOPED handler
+behind it (a handler function that is actually defined and produces a response).
+Commands are spoken over SRS on the facility frequency; the STT bridge matches
+your phrasing to an intent and DCS replies via TTS.
+
+HOW IT WORKS
+  - Speak on the facility frequency. Prefix/suffix with your callsign as normal
+    (e.g. "Al Minhad Ground, HOBO11, request taxi with information Echo").
+  - Phrase matching is keyword-based, so any of the listed example phrases work;
+    you don't have to say them verbatim.
+  - "say again" / "repeat" is understood everywhere but uses a generic fallback
+    prompt (no dedicated handler) except on Ground, which repeats its last
+    instruction verbatim.
+
+FACILITIES & FREQUENCIES (Al Minhad)
+  Ground .......... 250.100 AM   "Al Minhad Ground"
+  Tower ........... 310.500 AM   "Al Minhad Tower"
+  Center .......... 251.000 AM   "Emirates Center"
+  AWACS ........... 251.500 AM   "Overlord" / "Magic"
+  ATIS ............ 131.700 AM   "Al Minhad Information"  (listen before taxi)
+  AAPVE Range ..... via AWACS 251.500 AM (voice) and F10 "A/A RANGE SETUP" menu
+
+NOTE ON ATIS: Ground taxi/startup requires the correct ATIS information letter
+(now driven live by the MOOSE ATIS — it changes each Zulu hour). State the
+current letter when requesting startup/taxi.
+
+
+===============================================================================
+ GROUND CONTROL — 250.100 AM  ("Al Minhad Ground")
+===============================================================================
+All 16 commands below are fully implemented.
+
+  1.  Radio check
+      Say: "radio check" / "comm check" / "comms check"
+      -> Replies "loud and clear."
+
+  2.  Say again
+      Say: "say again" / "repeat"
+      -> Re-transmits Ground's last instruction verbatim.
+
+  3.  Readback (taxi/EOR)
+      Say: read back your taxi clearance — "...taxi to runway...", "hold short",
+           "via...", "contact tower..."
+      -> Validates your readback; confirms, or re-issues with "negative".
+
+  4.  Request startup
+      Say: "request startup" / "start up" / "request engine start"
+      -> Checks ATIS, approves engine start, then expects a taxi request.
+
+  5.  Request pushback
+      Say: "request pushback" / "push back request"
+      -> Approves pushback (with direction if stated).
+
+  6.  Pushback complete
+      Say: "pushback complete" / "push back completed"
+      -> Acknowledges; expects taxi request.
+
+  7.  Request taxi
+      Say: "request taxi" / "ready to taxi" / "ready for taxi"
+      -> Verifies ATIS, detects your ramp, issues taxi route to the active
+         runway with hold-short + Tower handoff.
+
+  8.  Request taxi to EOR (end of runway / arming)
+      Say: "request taxi to eor" / "request eor" / "end of runway"
+      -> Clears you to the EOR/arming area (falls back to normal taxi if EOR
+         is unavailable at this field).
+
+  9.  EOR complete
+      Say: "eor complete" / "arming complete" / "ready at eor"
+      -> Clears you from EOR to the runway/hold-short with Tower handoff.
+
+  10. Request progressive taxi
+      Say: "progressive taxi" / "request progressive"
+      -> Issues step-by-step taxi, one taxiway at a time.
+
+  11. Holding short / ready for departure
+      Say: "holding short" / "ready for departure" / "ready at the hold short"
+      -> Hands you off to Tower frequency.
+
+  12. Request taxi back
+      Say: "taxi back" / "return to ramp" / "return to parking"
+      -> Routes you from your current position back to parking.
+
+  13. Request parking
+      Say: "request parking" / "parking" / "taxi to parking"
+      -> Same as taxi-back (routes to parking).
+
+  14. Request rearm/refuel
+      Say: "rearm" / "refuel" / "taxi to rearm"
+      -> Directs you to the maintenance ramp.
+
+  15. Abort taxi
+      Say: "abort taxi" / "aborting taxi" / "return to ramp"
+      -> Routes you back to parking.
+
+  16. Ground emergency
+      Say: "emergency" / "brake failure" / "engine fire" / "ground emergency"
+      -> Acknowledges; tells you to hold position.
+
+
+===============================================================================
+ TOWER — 310.500 AM  ("Al Minhad Tower")
+===============================================================================
+14 implemented commands.
+
+  1.  Readback (takeoff/landing)
+      Say: "line up and wait" / "cleared for takeoff" / "cleared to land" /
+           "go around"
+      -> Validates your readback against the runway issued.
+
+  2.  Departure check-in
+      Say: "holding short" / "holding short runway..." / "ready for departure"
+      -> Assesses the runway and issues continue-hold / line-up-and-wait /
+         cleared-for-takeoff.
+
+  3.  Request takeoff
+      Say: "request takeoff" / "ready for takeoff" / "ready to depart" / "ready"
+      -> Runway assessment and takeoff clearance.
+
+  4.  Abort takeoff
+      Say: "abort takeoff" / "aborting takeoff"
+      -> Acknowledges; exit the runway and contact Ground.
+
+  5.  Inbound full stop
+      Say: "inbound full stop" / "inbound landing" / "request landing" /
+           "full stop landing"
+      -> Issues pattern entry (downwind / straight-in / initial) + reporting.
+
+  6.  Inbound touch-and-go
+      Say: "touch and go" / "touch-and-go" / "inbound touch and go"
+      -> Pattern/downwind entry with report instruction.
+
+  7.  Inbound overhead
+      Say: "inbound overhead" / "request overhead" / "initial for overhead"
+      -> "Enter initial Runway X, report initial."
+
+  8.  Report initial
+      Say: "initial" / "report initial" / "at initial"
+      -> "Break approved, report downwind."
+
+  9.  Report downwind
+      Say: "downwind" / "report downwind" / "midfield downwind"
+      -> Issues landing clearance (with wind).
+
+  10. Report base
+      Say: "base" / "report base" / "turning base"
+      -> Cleared to land.
+
+  11. Report final
+      Say: "final" / "on final" / "five mile final"
+      -> Cleared to land.
+
+  12. Clear of runway
+      Say: "clear of runway" / "runway vacated" / "off the runway"
+      -> Transfers you to Ground.
+
+  13. Going around / missed approach
+      Say: "going around" / "go around" / "missed approach"
+      -> "Fly runway heading, report upwind."
+
+  14. Request closed traffic
+      Say: "closed traffic" / "request closed traffic" / "stay in the pattern"
+      -> "Closed traffic approved Runway X, report downwind."
+
+  NOT YET IMPLEMENTED on Tower (declared but no handler -> generic prompt):
+    - "radio check" (HandleRadioCheck not defined for Tower)
+    - "request route/departure/recovery..." (HandleRouteRequest not defined)
+    - "say again" (no dedicated handler)
+
+
+===============================================================================
+ CENTER — 251.000 AM  ("Emirates Center")
+===============================================================================
+16 implemented commands.
+
+  1.  Radio check — "radio check" / "comm check"
+      -> "loud and clear."
+
+  2.  Check-in — "checking in" / "with you" / "level"
+      -> "Radar contact"; reads altitude and next waypoint if a flight plan is
+         on file.
+
+  3.  Request flight following — "request flight following" / "request advisories"
+      -> Same as check-in.
+
+  4.  Request direct — "request direct" / "proceed direct"
+      -> Clears you direct to a flight-plan fix; arms a readback.
+
+  5.  Request vector to waypoint — "request vector" / "vectors to..."
+      -> Bearing/distance vector to the requested waypoint.
+
+  6.  Request range — "request range" / "vector to range" / "range work"
+      -> Vectors to a range waypoint on your flight plan ("unable" if none).
+
+  7.  Request tanker — "request tanker" / "request AAR" / "vector to tanker"
+      -> Vector to nearest active tanker + TACAN + radio frequency.
+
+  8.  Request recovery — "request recovery" / "vectors home"
+      -> Approves recovery; hands off to arrival Tower.
+
+  9.  Request divert — "request divert" / "request alternate"
+      -> Clears direct to the flight plan's divert field ("unable" if none).
+
+  10. Request frequency change — "frequency change" / "request switch"
+      -> Approves; directs you to Tower.
+
+  11. Request MARSA — "request marsa" / "request own separation"
+      -> Activates MARSA; reads approved altitude block if defined.
+
+  12. Cancel MARSA — "cancel marsa" / "resume atc separation"
+      -> Deactivates MARSA; "ATC separation resumed."
+
+  13. Request block altitude — "request block altitude" / "request block"
+      -> Approves a min/max altitude block ("unable" if none resolvable).
+
+  14. Request VFR on top — "request vfr on top" / "vfr on top"
+      -> Approves; maintain own terrain clearance/nav.
+
+  15. Course check — "course check" / "am i on course" / "on course"
+      -> On-course + distance remaining, or off-course side/distance + rejoin
+         heading.
+
+  16. Readback — "proceed direct" / "maintain" / "climb" / "descend"
+      -> Validates a pending Center instruction.
+
+  NOT YET IMPLEMENTED on Center:
+    - "say again" (no dedicated handler -> generic prompt)
+
+
+===============================================================================
+ AWACS — 251.500 AM  ("Overlord" / "Magic")
+===============================================================================
+~50 implemented commands. All handlers are defined (only "say again" lacks one).
+
+STANDARD COMMS
+  - Radio check — "radio check" / "comm check"          -> "loud and clear."
+  - Readback     — "wilco" / "copy" / "roger" / "affirm" -> logged, no reply.
+
+CHECK-IN / CHECK-OUT
+  - Check in     — "checking in" / "on station" / "cap check in" /
+                   "request alpha check"                 -> "radar contact,
+                   check in complete."
+  - Check out    — "good day" / "checking out" / "departing frequency"
+
+AIR PICTURE
+  - Picture      — "picture" / "request picture" / "new picture"
+                   -> BULLSEYE group call, or "picture clean."
+
+POSITION / BRAA QUERIES
+  - Bogey dope   — "bogey dope" / "nearest threat" / "nearest bogey"
+  - BRAA         — "braa" / "braa north group" / "braa lead group"
+  - Alpha check  — "alpha check" / "confirm position" / "say bullseye"
+  - Vector to target — "vector to target" / "commit vector" / "vector group"
+  - Vector home  — "vector home" / "home plate"
+  - Declare      — "declare" / "identify" / "what is that group"
+
+THREAT / INTEL
+  - Say threat   — "say threat" / "threat warning" / "any threats"
+  - Words        — "words" / "intel update" / "threat axis"
+
+RECOVERY / LOGISTICS
+  - Combat recovery — "combat recovery" / "rtb" / "returning to base"
+                      -> hands off to Tower.
+  - Playtime     — "playtime" / "fuel state" / "time on station"
+  - Tanker       — "request tanker" / "need gas" / "nearest tanker"
+
+FIGHTER REPORTS (pilot-initiated brevity)
+  - Commit       — "commit" / "committing north"
+  - Targeted     — "targeted" / "sorted"
+  - Splash       — "splash" / "good kill" / "kill confirmed"
+  - Spiked       — "spiked" / "radar spike" / "singer"
+  - Defending    — "defending" / "defensive" / "missile launch"
+  - Merge        — "merge" / "merged" / "visual merge"
+  - Tally        — "tally" / "tally bandit" / "visual contact"
+  - No joy       — "no joy" / "no visual" / "lost visual"
+  - Clean        — "clean" / "no radar contact"
+  - Anchored     — "anchored" / "established at cap"
+  - Pushing      — "pushing" / "egressing"
+  - Judy         — "judy" / "i have the target"
+  - Unable       — "unable" / "negative"
+  - Abort        — "abort" / "knock it off"
+  - VID          — "vid hostile" / "vid friendly" / "declaring hostile"
+  - Fox          — "fox one/two/three" / "guns guns guns"
+  - Practice ready — "ready" / "ready for intercept" / "next run"
+
+  NOT YET IMPLEMENTED on AWACS:
+    - "say again" (no dedicated handler -> generic prompt)
+
+
+===============================================================================
+ AAPVE TRAINING RANGE
+===============================================================================
+The range is controlled BOTH by voice (over AWACS 251.500 AM) and by the F10
+radio menu "A/A RANGE SETUP" (BLUE). Voice and menu are kept at parity — both
+call the same underlying range functions.
+
+Voice control requires NASG_ATC + AWACS to be loaded (registered to airport
+"al_minhad"). If NASG_ATC is absent, the range falls back to F10-menu-only
+control with standalone TTS.
+
+-------------------------------------------------------------------------------
+ A. PILOT VOICE INTENTS WITH A RANGE HANDLER (spoken to AWACS)
+-------------------------------------------------------------------------------
+  - Check in     — "check in" / "on station" / "cap check in" /
+                   "request alpha check"
+                   -> Assigns a CAP station/package; alpha check + angels block.
+                      (In practice mode, starts a practice session.)
+  - Picture      — "picture" / "new picture" / "tactical picture"
+                   -> BULLSEYE picture of your package's live hostile / new pic.
+  - Commit       — "commit" / "committing north"        -> scores commit call.
+  - Targeted     — "targeted" / "sorted"                -> scores targeted call.
+  - Say threat   — "threats" / "threat check"           -> scores threat ack.
+  - Defending    — "defending" / "missile in the air"   -> scores defensive ack.
+  - Fox          — "fox one/two/three" / "guns guns guns"
+                   -> detects missile type; scores shot range/aspect/envelope.
+  - Merge        — "merge" / "merging"                  -> commits package FSM.
+  - Splash       — "splash" / "good kill"               -> confirms kill, retasks
+                   package back to CAP.
+  - Combat recovery — "rtb" / "request recovery"        -> disengages package for
+                   home-plate vector.
+  - Tanker       — "request tanker" / "need gas"        -> BULLSEYE vector to
+                   nearest tanker.
+  - Check out    — "good day" / "checking out"          -> closes out package /
+                   ends practice session.
+  - Practice ready — "ready" / "next run"               -> spawns next practice
+                   intercept.
+
+  (Bogey dope / BRAA / declare / alpha check / vector-to-target also return LIVE
+   range contact data — the AWACS formats the reply, the range supplies the
+   bullseye/BRAA/aspect.)
+
+-------------------------------------------------------------------------------
+ B. RANGE-CONTROL VOICE INTENTS (mode & setup, spoken to AWACS)
+-------------------------------------------------------------------------------
+  - Start BLUE CAP  — "start blue cap" / "activate cap defense"
+  - Start RED CAP   — "start red cap" / "target practice mode"
+  - Start Practice  — "start intercept practice" / "start practice"  (ungraded)
+  - Stop mode       — "range stop" / "range idle"
+  - Fox trainer ON  — "fox trainer on" / "missile trainer on"
+  - Fox trainer OFF — "fox trainer off" / "missile trainer off"
+  - Range status    — "range status" / "range report"
+  - Difficulty      — "difficulty easy" / "difficulty medium" / "difficulty hard"
+  - Picture cadence — "picture cadence fast / normal / slow"
+  - Timeline BVR    — "timeline bvr" / "spawn bvr"   -> BVR bandit (~80 NM hot).
+  - Timeline WVR    — "timeline wvr" / "spawn wvr"   -> WVR bandit (~20 NM hot).
+  - Timeline BFM    — "timeline bfm" / "dogfight setup" -> BFM bandit (~5 NM,
+                      weapons-free at merge).
+
+-------------------------------------------------------------------------------
+ C. F10 MENU  —  "A/A RANGE SETUP"  (BLUE coalition)
+-------------------------------------------------------------------------------
+  Mode >
+    - Start RED CAP Target Practice
+    - Start BLUE CAP Defense
+    - Start Intercept Practice (Ungraded)
+    - Stop Current Mode
+  Manual RED CAP Spawn >
+    - Spawn <type> x1 / x2 / x4   (MiG-29, Su-27, F-16, F-14, F-5)
+  Timeline Spawn >
+    - Refresh Timeline Client List
+    - BVR / WVR / BFM > <per-client>
+  CAP Check-in Client Selector >
+    - Refresh... / <per-client>
+  Range Settings >
+    - Difficulty > Easy / Medium / Hard
+    - Picture Cadence > Fast / Normal / Slow
+  Toggle FOX Missile Trainer
+  Clear Range
+  Show Status
+
+
+===============================================================================
+ APPENDIX — DECLARED BUT NOT YET IMPLEMENTED
+===============================================================================
+These phrases are recognized but currently fall through to a generic
+"say again" prompt (no working handler):
+
+  Tower:  "radio check"           (HandleRadioCheck not defined)
+          "request route/departure/recovery ..." (HandleRouteRequest not defined)
+          "say again"
+  Center: "say again"
+  AWACS:  "say again"
+
+(All Ground commands are implemented.)
+===============================================================================
