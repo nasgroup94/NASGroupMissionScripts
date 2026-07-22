@@ -1,12 +1,14 @@
 
 
--- Al Minhad ATIS on 125.1 AM
-atisDubaiInt = ATIS:New(AIRBASE.PersianGulf.Dubai_Intl, 131.7, radio.modulation.AM)
-atisDubaiInt:SetRadioRelayUnitName("AMAFBRelay")
-atisDubaiInt:SetSRS("", "female", "en-US")
-NASG_TTS:Use(atisDubaiInt.msrs, "Al Minhad ATIS", "Zoe")
-atisDubaiInt:SetQueueUpdateTime(100)
-atisDubaiInt:__Start(20)
+-- Al Minhad ATIS on 131.7 AM. Bound to Al Minhad AFB so the wind-derived
+-- active runway and Zulu-hour information letter reflect Al Minhad — NASG_ATC
+-- reads these live for taxi/tower clearances (see NASG_ATC:AttachMooseATIS).
+atisAlMinhad = ATIS:New(AIRBASE.PersianGulf.Al_Minhad_AFB, 131.7, radio.modulation.AM)
+atisAlMinhad:SetRadioRelayUnitName("AMAFBRelay")
+atisAlMinhad:SetSRS("", "female", "en-US")
+NASG_TTS:Use(atisAlMinhad.msrs, "Al Minhad ATIS", "Zoe")
+atisAlMinhad:SetQueueUpdateTime(100)
+atisAlMinhad:__Start(20)
 
 -- Abu Dhabi ATIS on 126.2 AM
 atisAbuDhabi = ATIS:New(AIRBASE.PersianGulf.Abu_Dhabi_Intl, 125.1, radio.modulation.AM)

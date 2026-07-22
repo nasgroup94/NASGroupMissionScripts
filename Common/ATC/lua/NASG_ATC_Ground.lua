@@ -377,33 +377,33 @@ function NASG_ATC_GROUND:BuildTaxiClearanceMessage(atc, airport, session, callsi
     local route = atc:GetTaxiRoute(airport, parkingArea, runway)
     local routeText = atc:JoinTaxiRoute(route)
 
-    if routeText and towerFrequency then
-        return string.format(
-                "%s, taxi to Runway %s via, %s. Hold short Runway %s. Contact Tower %s.",
-                callsign,
-                runwaySpeech,
-                routeText,
-                runwaySpeech,
-                atc:FormatFrequency(towerFrequency)
-        )
-    end
+    local message
 
     if routeText then
-        return string.format(
-                "%s, taxi to Runway %s via the following taxiways: %s. Hold short Runway %s.",
+        message = string.format(
+                "%s, taxi to Runway %s via, %s. Hold short Runway %s.",
                 callsign,
                 runwaySpeech,
                 routeText,
                 runwaySpeech
         )
+    else
+        message = string.format(
+                "%s, taxi to Runway %s. Hold short Runway %s.",
+                callsign,
+                runwaySpeech,
+                runwaySpeech
+        )
     end
 
-    return string.format(
-            "%s, taxi to Runway %s. Hold short Runway %s.",
-            callsign,
-            runwaySpeech,
-            runwaySpeech
-    )
+    -- Always hand the pilot off to Tower when a frequency is configured, even
+    -- if no taxiway route resolved (e.g. parking area undetected). Coupling the
+    -- handoff to the route would otherwise strand the pilot on Ground.
+    if towerFrequency then
+        message = message .. string.format(" Contact Tower %s.", atc:FormatFrequency(towerFrequency))
+    end
+
+    return message
 end
 
 function NASG_ATC_GROUND:BuildEORCompleteTaxiToRunwayMessage(atc, airport, session, callsign)

@@ -4,6 +4,7 @@ import os
 import queue
 import re
 import signal
+import socket
 import struct
 import subprocess
 import sys
@@ -16,6 +17,13 @@ from pathlib import Path
 
 
 CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+
+# Retry/backoff settings used when (re)connecting SRS listeners. SRS is often
+# not running yet when DCS launches this bridge (and may be restarted during a
+# session), so listeners wait for the server and reconnect instead of exiting.
+SRS_RETRY_INITIAL_SECONDS = 2.0
+SRS_RETRY_MAX_SECONDS = 15.0
+SRS_REACHABLE_TIMEOUT_SECONDS = 1.5
 
 LOG_FILE = Path(__file__).resolve().parent / "tmp" / "nasg_stt_bridge.log"
 
@@ -856,6 +864,29 @@ class DCSEventWriter:
 
 
 
+def parse_srs_address(address: str) -> tuple[str, int]:
+    text = str(address or "").strip()
+    host, _, port = text.partition(":")
+    host = host or "127.0.0.1"
+
+    try:
+        port_number = int(port)
+    except (TypeError, ValueError):
+        port_number = 5002
+
+    return host, port_number
+
+
+def is_srs_reachable(address: str, timeout: float = SRS_REACHABLE_TIMEOUT_SECONDS) -> bool:
+    host, port = parse_srs_address(address)
+
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
 def start_srs_listener(config: BridgeConfig, runtime: RuntimeConfig, channel: ListenerChannel) -> subprocess.Popen:
     if not config.srs_listener_exe.exists():
         raise RuntimeError(f"SRS listener executable not found: {config.srs_listener_exe}")
@@ -1027,6 +1058,111 @@ def read_stdout_events(process: subprocess.Popen, events: queue.Queue, stop_even
         events.put(event)
 
 
+def supervise_channel(
+        config: BridgeConfig,
+        runtime: RuntimeConfig,
+        channel: ListenerChannel,
+        events: queue.Queue,
+        stop_event: threading.Event,
+        current_processes: dict,
+        process_lock: threading.Lock,
+):
+    """Keep one SRS listener alive for a channel.
+
+    Waits for the SRS server to be reachable before spawning a listener (so
+    the bridge can start before SRS is up and connect once it comes online),
+    then restarts the listener with capped backoff whenever it exits until a
+    stop is requested. This also transparently recovers if SRS is restarted
+    mid-session.
+    """
+    backoff = SRS_RETRY_INITIAL_SECONDS
+    announced_waiting = False
+
+    while not stop_event.is_set():
+        # Don't spawn a listener that would immediately fail: wait until SRS is
+        # actually accepting connections.
+        if not is_srs_reachable(runtime.srs_address):
+            if not announced_waiting:
+                log_info(
+                    f"[{channel.id}] SRS server not reachable at {runtime.srs_address}; "
+                    f"waiting for it to come online."
+                )
+                announced_waiting = True
+
+            if stop_event.wait(backoff):
+                return
+
+            backoff = min(backoff * 1.5, SRS_RETRY_MAX_SECONDS)
+            continue
+
+        if announced_waiting:
+            log_info(f"[{channel.id}] SRS server reachable at {runtime.srs_address}; starting listener.")
+            announced_waiting = False
+
+        backoff = SRS_RETRY_INITIAL_SECONDS
+
+        try:
+            process = start_srs_listener(config, runtime, channel)
+        except Exception as exc:
+            log_error(f"[{channel.id}] Failed to start SRS listener: {exc}")
+
+            if stop_event.wait(backoff):
+                return
+
+            backoff = min(backoff * 1.5, SRS_RETRY_MAX_SECONDS)
+            continue
+
+        with process_lock:
+            current_processes[channel.id] = process
+
+        stderr_thread = threading.Thread(
+            target=read_stderr,
+            args=(process, stop_event),
+            daemon=True,
+        )
+        stderr_thread.start()
+
+        stdout_thread = threading.Thread(
+            target=read_stdout_events,
+            args=(process, events, stop_event),
+            daemon=True,
+        )
+        stdout_thread.start()
+
+        # Block until the listener exits or a stop is requested.
+        while not stop_event.is_set():
+            if process.poll() is not None:
+                break
+
+            time.sleep(0.25)
+
+        with process_lock:
+            if current_processes.get(channel.id) is process:
+                current_processes.pop(channel.id, None)
+
+        if stop_event.is_set():
+            try:
+                if process.poll() is None:
+                    process.terminate()
+            except Exception:
+                pass
+
+            return
+
+        return_code = process.poll()
+
+        log_error(
+            f"[{channel.id}] SRS listener exited with code {return_code}; reconnecting to SRS. "
+            f"frequency={channel.frequency}, modulation={channel.modulation}, "
+            f"client_name={channel.client_name!r}"
+        )
+
+        if stop_event.wait(backoff):
+            return
+
+        backoff = min(backoff * 1.5, SRS_RETRY_MAX_SECONDS)
+
+
 def process_events(
         config: BridgeConfig,
         channel: ListenerChannel,
@@ -1104,7 +1240,12 @@ def main():
 
     stop_event = threading.Event()
     event_writer = DCSEventWriter(runtime.event_file)
-    processes: list[tuple[ListenerChannel, subprocess.Popen]] = []
+
+    # The current live listener process per channel, replaced each time a
+    # supervisor restarts its listener. Guarded by process_lock so request_stop
+    # and the supervisors don't race on it.
+    current_processes: dict[str, subprocess.Popen] = {}
+    process_lock = threading.Lock()
 
     cleanup_stt_audio_files(config)
     cleanup_empty_directories(config.output_dir)
@@ -1134,21 +1275,6 @@ def main():
 
     for channel in runtime.channels:
         events = queue.Queue()
-        process = start_srs_listener(config, runtime, channel)
-        processes.append((channel, process))
-        stderr_thread = threading.Thread(
-            target=read_stderr,
-            args=(process, stop_event),
-            daemon=True,
-        )
-        stderr_thread.start()
-
-        stdout_thread = threading.Thread(
-            target=read_stdout_events,
-            args=(process, events, stop_event),
-            daemon=True,
-        )
-        stdout_thread.start()
 
         worker_thread = threading.Thread(
             target=process_events,
@@ -1157,19 +1283,31 @@ def main():
         )
         worker_thread.start()
 
+        # The supervisor owns the listener process lifecycle: it waits for SRS,
+        # starts the listener, and restarts it with backoff whenever it dies.
+        supervisor_thread = threading.Thread(
+            target=supervise_channel,
+            args=(config, runtime, channel, events, stop_event, current_processes, process_lock),
+            daemon=True,
+        )
+        supervisor_thread.start()
+
     def request_stop(*_):
         if stop_event.is_set():
             return
 
         stop_event.set()
 
-        for channel, process in processes:
+        with process_lock:
+            live_processes = list(current_processes.items())
+
+        for channel_id, process in live_processes:
             try:
                 if process.poll() is None:
-                    log_info(f"[{channel.id}] Terminating SRS listener")
+                    log_info(f"[{channel_id}] Terminating SRS listener")
                     process.terminate()
             except Exception as exc:
-                log_error(f"[{channel.id}] Failed to terminate SRS listener: {exc}")
+                log_error(f"[{channel_id}] Failed to terminate SRS listener: {exc}")
 
     signal.signal(signal.SIGINT, request_stop)
 
@@ -1179,23 +1317,14 @@ def main():
     log_info("SRS STT bridge manager running.")
 
     try:
+        # Listener deaths are handled by the per-channel supervisors (which
+        # reconnect to SRS), so the manager only needs to watch for a stop
+        # request here.
         while not stop_event.is_set():
             if config.stop_file.exists():
                 log_info(f"Stop file detected: {config.stop_file}")
                 request_stop()
                 break
-
-            for channel, process in list(processes):
-                return_code = process.poll()
-
-                if return_code is not None:
-                    log_error(
-                        f"[{channel.id}] SRS listener exited unexpectedly with code {return_code}. "
-                        f"frequency={channel.frequency}, modulation={channel.modulation}, "
-                        f"client_name={channel.client_name!r}"
-                    )
-                    request_stop()
-                    break
 
             time.sleep(0.25)
 
@@ -1210,7 +1339,10 @@ def main():
     finally:
         stop_event.set()
 
-        for channel, process in processes:
+        with process_lock:
+            live_processes = list(current_processes.values())
+
+        for process in live_processes:
             try:
                 if process.poll() is None:
                     process.terminate()

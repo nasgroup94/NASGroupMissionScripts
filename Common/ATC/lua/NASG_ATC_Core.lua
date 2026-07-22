@@ -1039,9 +1039,45 @@ function NASG_ATC:GetParkingAreaForClient(client, airport)
         return nil
     end
 
+    -- 1. Strict membership (ME zone / parking spots / center+radius).
     for _, parkingArea in ipairs(airport.ParkingAreas) do
         if self:IsCoordinateInParkingArea(airport, parkingArea, coordinate) then
             return parkingArea
+        end
+    end
+
+    -- 2. Nearest parking area whose coordinate resolves, bounded to the airport
+    --    detection radius. Handles a jet sitting just outside the strict
+    --    membership test (e.g. pushed back off the parking zone edge).
+    local nearestArea, nearestDist = nil, nil
+
+    for _, parkingArea in ipairs(airport.ParkingAreas) do
+        local areaCoord = self:GetParkingAreaCoordinate(airport, parkingArea)
+
+        if areaCoord then
+            local d = self:GetCoordinateDistanceMeters(coordinate, areaCoord)
+
+            if d ~= nil and (nearestDist == nil or d < nearestDist) then
+                nearestArea, nearestDist = parkingArea, d
+            end
+        end
+    end
+
+    if nearestArea then
+        local maxMeters = (airport.DetectionRadiusNM or self.Defaults.DetectionRadiusNM) * 1852
+
+        if not nearestDist or nearestDist <= maxMeters then
+            return nearestArea
+        end
+    end
+
+    -- 3. Declared default ramp, so taxi routing still yields a clearance when
+    --    no coordinate source resolves (e.g. the ME parking zones are absent).
+    if airport.DefaultParkingAreaName then
+        local defaultArea = self:GetParkingAreaByName(airport, airport.DefaultParkingAreaName)
+
+        if defaultArea then
+            return defaultArea
         end
     end
 
@@ -1281,9 +1317,103 @@ end
 
 
 
+---------------------------------------------------------------------------
+-- MOOSE ATIS integration.
+--
+-- When a MOOSE ATIS object is attached to an airport, the active runway and
+-- information letter are taken live from it (wind-derived runway, Zulu-hour
+-- letter) instead of the static config values. The static config values
+-- remain as fallbacks when no ATIS is attached or a live value cannot be
+-- resolved.
+---------------------------------------------------------------------------
+
+function NASG_ATC:AttachMooseATIS(airportId, atisObject)
+    local airport = self:GetAirport(airportId)
+
+    if not airport then
+        self:Log("AttachMooseATIS: unknown airport " .. tostring(airportId))
+        return
+    end
+
+    airport.MooseATIS = atisObject
+    self:Log("Attached MOOSE ATIS to airport " .. tostring(airportId))
+end
+
+-- Active runway string from a MOOSE ATIS object (wind-derived). takeoff nil/true
+-- selects the departure runway, false the landing runway. Returns nil on any
+-- failure so callers fall back to the static config.
+function NASG_ATC:GetMooseATISRunway(atisObject, takeoff)
+    if not atisObject or type(atisObject.GetActiveRunway) ~= "function" then
+        return nil
+    end
+
+    local name = nil
+
+    pcall(function()
+        local runwayName = atisObject:GetActiveRunway(takeoff ~= false)
+
+        if runwayName and runwayName ~= "" then
+            name = tostring(runwayName)
+        end
+    end)
+
+    return name
+end
+
+-- Information letter a MOOSE ATIS is currently broadcasting. MOOSE derives it
+-- from the Zulu hour (ATIS.Alphabet[hour + 1]); we replicate that exactly,
+-- honouring the ATIS object's own zulu offset, so our letter matches what the
+-- pilot hears. Returns nil on any failure so callers fall back to the config.
+function NASG_ATC:ComputeMooseATISLetter(atisObject)
+    if not atisObject then
+        return nil
+    end
+
+    local alphabet = ATIS and ATIS.Alphabet
+
+    if not alphabet then
+        return nil
+    end
+
+    local letter = nil
+
+    pcall(function()
+        local time = timer.getAbsTime()
+
+        if atisObject.zuludiff then
+            time = time - atisObject.zuludiff * 60 * 60
+        else
+            time = time - UTILS.GMTToLocalTimeDifference() * 60 * 60
+        end
+
+        if time < 0 then
+            time = 24 * 60 * 60 + time
+        end
+
+        local clock = UTILS.SecondsToClock(time)
+        local zulu = UTILS.Split(clock, ":")
+        local hour = zulu and tonumber(zulu[1])
+
+        if hour ~= nil then
+            letter = alphabet[hour + 1]
+        end
+    end)
+
+    return letter
+end
+
 function NASG_ATC:GetCurrentATISLetter(airport)
     if not airport then
         return nil
+    end
+
+    -- Prefer the live MOOSE ATIS letter so we match what pilots hear.
+    if airport.MooseATIS then
+        local letter = self:ComputeMooseATISLetter(airport.MooseATIS)
+
+        if letter and letter ~= "" then
+            return tostring(letter)
+        end
     end
 
     if airport.ATIS and airport.ATIS.CurrentInformation then
@@ -1310,6 +1440,15 @@ end
 function NASG_ATC:GetActiveRunway(airport, takeoff)
     if not airport then
         return nil
+    end
+
+    -- Prefer the live MOOSE ATIS active runway (wind-derived) when attached.
+    if airport.MooseATIS then
+        local runway = self:GetMooseATISRunway(airport.MooseATIS, takeoff)
+
+        if runway and runway ~= "" then
+            return runway
+        end
     end
 
     if takeoff == false and airport.ArrivalRunway then

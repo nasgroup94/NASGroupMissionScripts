@@ -2,8 +2,8 @@
   "AWACS|freqs=251.5|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\AWACS_freqs_251.5_modulations_AM_coalition_2.mp3",
     "initiator": "AWACS|freqs=251.5|modulations=AM|coalition=2",
-    "text_hash": "ee44e9d72a768b3cdda50cfe0e1040e5161bdf98d683b2d209e868cef0318d44",
-    "updated_at": 1784674715.3527622
+    "text_hash": "187f837f0512ada905f8cca72e58278b5e1c6ec7b565de73d6eb01915718314d",
+    "updated_at": 1784674762.4844534
   },
   "Abu Dhabi ATIS|freqs=125.1|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Abu_Dhabi_ATIS_freqs_125.1_modulations_AM_coalition_2.mp3",

@@ -15,6 +15,7 @@ NASG_RADIO_SPEECH.DigitWords = {
 
 NASG_RADIO_SPEECH.PhoneticToLetter = {
     ALPHA = "A",
+    ALFA = "A",  -- MOOSE ATIS spells the A-letter "Alfa" (ATIS.Alphabet[1]).
     BRAVO = "B",
     CHARLIE = "C",
     DELTA = "D",

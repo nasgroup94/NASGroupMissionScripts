@@ -70,4 +70,12 @@ NASG_ATC:ActivateAirport("al_minhad", {
     },
 })
 
+-- Drive Al Minhad's active runway and information letter from the live MOOSE
+-- ATIS object (created in NATO/ATIS.lua, which loads before this file). The
+-- static ActiveRunway/ArrivalRunway and ATIS.CurrentInformation above remain
+-- as fallbacks if the ATIS is unavailable.
+if atisAlMinhad then
+    NASG_ATC:AttachMooseATIS("al_minhad", atisAlMinhad)
+end
+
 NASG_ATC:Log("Persian Gulf ATC config loaded")
