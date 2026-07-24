@@ -104,6 +104,19 @@ func (c *Client) ClientsOnFrequency() int {
 	return count
 }
 
+// Clients returns a snapshot of all peers currently known to this client
+// (same coalition, on this client's frequency), including their radio and
+// IFF/transponder state.
+func (c *Client) Clients() []types.ClientInfo {
+	c.clientsLock.RLock()
+	defer c.clientsLock.RUnlock()
+	clients := make([]types.ClientInfo, 0, len(c.clients))
+	for _, client := range c.clients {
+		clients = append(clients, client)
+	}
+	return clients
+}
+
 func isBot(client types.ClientInfo) bool {
 	return strings.HasSuffix(client.Name, "[BOT]")
 }

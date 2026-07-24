@@ -38,6 +38,10 @@ NASG_ATC:DefineAirport({
     -- Ground -> Tower -> Center -> Tower -> Ground (false) vs AWACS (true).
     UseAWACSForDeparture = false,
 
+    -- Default departure climb-out altitude (feet). Overridden per-flight
+    -- when the flight plan tags a "departure" waypoint with its own altitude.
+    DepartureClimbAltitudeFt = 5000,
+
     Coalition = coalition.side.BLUE,
 
     EOR = {

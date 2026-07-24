@@ -269,17 +269,44 @@ function NASG_ATC_TOWER:GetRunwayForArrival(atc, airport, event)
     )
 end
 
-function NASG_ATC_TOWER:BuildTakeoffClearanceMessage(atc, airport, callsign, runway)
+function NASG_ATC_TOWER:GetDepartureClimbAltitudeFeet(atc, client, airport, session, event)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
+
+    if flightPlan then
+        local departureWaypoint = atc:FindWaypointByRole(flightPlan, "departure")
+        local altitudeFeet = departureWaypoint and atc:GetWaypointAltitudeFeet(departureWaypoint)
+
+        if altitudeFeet then
+            return altitudeFeet
+        end
+    end
+
+    return airport.DepartureClimbAltitudeFt or atc.Defaults.DepartureClimbAltitudeFt
+end
+
+function NASG_ATC_TOWER:BuildTakeoffClearanceMessage(atc, airport, callsign, runway, climbAltitudeFt)
     local runwaySpeech = atc:NormalizeRunway(runway)
     local departureFacility = self:GetDepartureFacility(atc, airport)
     local departureFrequency = atc:GetFacilityFrequency(airport, departureFacility)
     local windText = airport.WindText
+    local climbAltitudeSpeech = climbAltitudeFt and atc:FormatAltitudeSpeech(climbAltitudeFt)
 
-    local message = string.format(
-            "%s, Runway %s, cleared for takeoff.",
-            callsign,
-            runwaySpeech
-    )
+    local message
+
+    if climbAltitudeSpeech then
+        message = string.format(
+                "%s, climb and maintain %s, Runway %s, cleared for takeoff.",
+                callsign,
+                climbAltitudeSpeech,
+                runwaySpeech
+        )
+    else
+        message = string.format(
+                "%s, Runway %s, cleared for takeoff.",
+                callsign,
+                runwaySpeech
+        )
+    end
 
     if windText then
         message = message .. " Wind " .. tostring(windText) .. "."
@@ -568,15 +595,18 @@ function NASG_ATC_TOWER:IssueDepartureClearance(atc, client, airport, session, e
     end
 
     -- Runway and departure corridor clear: issue takeoff clearance.
-    local message, departureFacility, departureFrequency = self:BuildTakeoffClearanceMessage(atc, airport, callsign, runway)
+    local climbAltitudeFt = self:GetDepartureClimbAltitudeFeet(atc, client, airport, session, event)
+    local message, departureFacility, departureFrequency = self:BuildTakeoffClearanceMessage(atc, airport, callsign, runway, climbAltitudeFt)
 
     session.State = atc.States.TAKEOFF_CLEARED
     session.NextFacility = departureFacility
+    session.ClimbAltitudeFt = climbAltitudeFt
 
     atc:SetPendingReadback(session, {
         Type = "takeoff",
         InstructionText = message,
         Runway = runway,
+        AltitudeFt = climbAltitudeFt,
         DepartureFacility = departureFacility,
         DepartureFrequency = departureFrequency,
     })
@@ -765,6 +795,10 @@ function NASG_ATC_TOWER:IsTakeoffReadbackCorrect(atc, rawText, pending)
             or string.find(text, "takeoff", 1, true)
 
     if not hasTakeoff then
+        return false
+    end
+
+    if pending.AltitudeFt and not atc:IsAltitudeReadbackCorrect(rawText, pending.AltitudeFt) then
         return false
     end
 

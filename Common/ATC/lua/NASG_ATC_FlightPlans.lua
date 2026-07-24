@@ -34,6 +34,81 @@ function NASG_ATC:NormalizeFlightPlanLookup(value)
     return text
 end
 
+-- Classic edit distance between two already-normalized strings.
+function NASG_ATC:LevenshteinDistance(a, b)
+    local la, lb = #a, #b
+
+    if la == 0 then
+        return lb
+    end
+
+    if lb == 0 then
+        return la
+    end
+
+    local prevRow = {}
+
+    for j = 0, lb do
+        prevRow[j] = j
+    end
+
+    for i = 1, la do
+        local currRow = { [0] = i }
+        local ca = a:byte(i)
+
+        for j = 1, lb do
+            local cost = (ca == b:byte(j)) and 0 or 1
+            currRow[j] = math.min(
+                    prevRow[j] + 1,
+                    currRow[j - 1] + 1,
+                    prevRow[j - 1] + cost
+            )
+        end
+
+        prevRow = currRow
+    end
+
+    return prevRow[lb]
+end
+
+-- Recovers from an STT mishear of a fix/point/waypoint name (e.g. "bopeet"
+-- heard for "BOPIT") by finding the closest of `keys` (a list of names
+-- already run through NormalizeFlightPlanLookup) to `value` by edit
+-- distance. Tolerance scales with word length so short names (3-4 letters)
+-- still require a near-exact hit. A tie between two equally-close
+-- candidates is treated as no match — guessing wrong sends a pilot to the
+-- wrong place, so ambiguity should fall through to "say again" instead.
+function NASG_ATC:FuzzyMatchLookupKey(value, keys)
+    local query = self:NormalizeFlightPlanLookup(value)
+
+    if query == "" or #query < 3 then
+        return nil
+    end
+
+    local tolerance = math.max(1, math.floor(#query / 4))
+    local bestKey, bestDistance, tie = nil, tolerance + 1, false
+
+    for _, key in ipairs(keys) do
+        if key ~= "" and key ~= query then
+            local distance = self:LevenshteinDistance(query, key)
+
+            if distance <= tolerance then
+                if distance < bestDistance then
+                    bestKey, bestDistance, tie = key, distance, false
+                elseif distance == bestDistance then
+                    tie = true
+                end
+            end
+        end
+    end
+
+    if tie then
+        return nil
+    end
+
+    return bestKey
+end
+
 function NASG_ATC:RegisterFlightPlanLookup(value, flightPlan)
     local key = self:NormalizeFlightPlanLookup(value)
 
@@ -982,6 +1057,22 @@ function NASG_ATC:AttachFlightPlanToSession(session, flightPlan)
     session.ActiveLegIndex = session.ActiveLegIndex or 1
 end
 
+function NASG_ATC:GetOrAttachFlightPlan(client, session, event)
+    local flightPlan = self:GetSessionFlightPlan(session)
+
+    if flightPlan then
+        return flightPlan
+    end
+
+    flightPlan = self:GetFlightPlanForClient(client, event)
+
+    if flightPlan then
+        self:AttachFlightPlanToSession(session, flightPlan)
+    end
+
+    return flightPlan
+end
+
 function NASG_ATC:GetDefaultFlightPlanSequenceName(flightPlan)
     if not flightPlan then
         return nil
@@ -1028,6 +1119,23 @@ function NASG_ATC:GetWaypointRole(waypoint)
     return tostring(waypoint and (waypoint.role or waypoint.Role or "") or ""):lower()
 end
 
+function NASG_ATC:GetWaypointAltitudeFeet(waypoint)
+    if not waypoint then
+        return nil
+    end
+
+    return tonumber(
+            waypoint.altitude_ft
+                    or waypoint.AltitudeFt
+                    or waypoint.alt
+                    or waypoint.Alt
+                    or waypoint.altitude
+                    or waypoint.Altitude
+                    or waypoint.elevation
+                    or waypoint.Elevation
+    )
+end
+
 function NASG_ATC:FindWaypointByNumber(flightPlan, waypointNumber)
     local number = tonumber(waypointNumber)
 
@@ -1051,12 +1159,28 @@ function NASG_ATC:FindWaypointByName(flightPlan, name)
         return nil
     end
 
-    for _, waypoint in ipairs(self:GetFlightPlanWaypoints(flightPlan)) do
-        local waypointName = self:GetWaypointName(waypoint)
+    local waypoints = self:GetFlightPlanWaypoints(flightPlan)
+    local keyToWaypoint = {}
+    local keys = {}
 
-        if self:NormalizeFlightPlanLookup(waypointName) == lookup then
+    for _, waypoint in ipairs(waypoints) do
+        local normalizedName = self:NormalizeFlightPlanLookup(self:GetWaypointName(waypoint))
+
+        if normalizedName == lookup then
             return waypoint
         end
+
+        if normalizedName ~= "" then
+            keys[#keys + 1] = normalizedName
+            keyToWaypoint[normalizedName] = waypoint
+        end
+    end
+
+    local fuzzyKey = self:FuzzyMatchLookupKey(lookup, keys)
+
+    if fuzzyKey then
+        self:Log(string.format("Fuzzy-matched flight-plan waypoint request '%s' to '%s'", lookup, fuzzyKey))
+        return keyToWaypoint[fuzzyKey]
     end
 
     return nil

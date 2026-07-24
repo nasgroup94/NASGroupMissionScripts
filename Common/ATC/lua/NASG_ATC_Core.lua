@@ -44,6 +44,15 @@ NASG_ATC.Defaults = {
     -- Membership radius (meters) around an individual parking spot when a
     -- parking area is defined by AIRBASE terminal SpotIDs.
     ParkingSpotRadiusM = 60,
+    -- Fallback departure climb-out altitude (feet) when neither the flight
+    -- plan's departure waypoint nor the airport config specify one.
+    DepartureClimbAltitudeFt = 5000,
+    -- Fallback recovery descent altitude (feet) issued by Center before
+    -- handing an inbound aircraft off to Tower.
+    RecoveryDescentAltitudeFt = 6000,
+    -- Squawk codes real-world ATC never assigns (hijack/comm-fail/emergency/
+    -- VFR-conspicuity) — excluded from Clearance Delivery's assignment pool.
+    ReservedSquawkCodes = { "7500", "7600", "7700", "1200", "7000" },
 }
 
 NASG_ATC.Facilities = {
@@ -52,6 +61,7 @@ NASG_ATC.Facilities = {
     CENTER = "center",
     AWACS = "awacs",
     ATIS = "atis",
+    CLEARANCE = "clearance",
 }
 
 NASG_ATC.Intents = {
@@ -580,6 +590,10 @@ function NASG_ATC:GetFacilityConfig(airport, facility)
         return airport.ATIS
     end
 
+    if facility == self.Facilities.CLEARANCE then
+        return airport.Clearance
+    end
+
     return nil
 end
 
@@ -681,6 +695,65 @@ function NASG_ATC:IsFrequencyReadbackCorrect(rawText, frequency)
 
     if numericFrequencyText ~= "" and string.find(text, numericFrequencyText, 1, true) then
         return true
+    end
+
+    return false
+end
+
+function NASG_ATC:FormatAltitudeSpeech(altitudeFeet)
+    local feet = tonumber(altitudeFeet)
+
+    if not feet then
+        return nil
+    end
+
+    if feet >= 18000 then
+        local flightLevel = math.floor((feet / 100) + 0.5)
+        local speech = self:GetSpeechFormatter()
+
+        if speech and speech.FormatFlightLevel then
+            return speech:FormatFlightLevel(flightLevel)
+        end
+
+        return string.format("flight level %03d", flightLevel)
+    end
+
+    local roundedThousands = math.floor((feet / 1000) + 0.5)
+
+    if roundedThousands <= 0 then
+        return "low altitude"
+    end
+
+    return string.format("%d thousand", roundedThousands)
+end
+
+function NASG_ATC:IsAltitudeReadbackCorrect(rawText, altitudeFeet)
+    local feet = tonumber(altitudeFeet)
+
+    if not feet then
+        return true
+    end
+
+    local text = self:NormalizeReadbackText(rawText)
+    local altitudeSpeechText = self:NormalizeReadbackText(self:FormatAltitudeSpeech(feet) or "")
+    local numericAltitudeText = self:NormalizeReadbackText(tostring(math.floor(feet + 0.5)))
+
+    if altitudeSpeechText ~= "" and string.find(text, altitudeSpeechText, 1, true) then
+        return true
+    end
+
+    if numericAltitudeText ~= "" and string.find(text, numericAltitudeText, 1, true) then
+        return true
+    end
+
+    local roundedThousands = math.floor((feet / 1000) + 0.5)
+
+    if roundedThousands > 0 then
+        local thousandsText = self:NormalizeReadbackText(tostring(roundedThousands))
+
+        if thousandsText ~= "" and string.find(text, thousandsText, 1, true) then
+            return true
+        end
     end
 
     return false
@@ -1573,9 +1646,36 @@ function NASG_ATC:SendSayAgain(airport, facility, client, event)
     )
 end
 
+-- Live SRS transponder (Mode3/IFF) sync — fired periodically for any peer
+-- SRS is currently reporting a Mode3 value for, independent of any ATC
+-- contact. Read-only session lookup: must NOT create a session, since this
+-- is background noise for anyone who hasn't contacted ATC.
+function NASG_ATC:HandleLiveSquawkUpdate(event)
+    local client = self:FindClientForSpeechEvent(event.client_name)
+
+    if not client then
+        return false
+    end
+
+    local session = self.ClientSessions[self:GetClientKey(client)]
+
+    if not session then
+        return false
+    end
+
+    local mode3 = tonumber(event.mode3)
+    session.LiveSquawkCode = (mode3 and mode3 >= 0) and string.format("%04d", mode3) or nil
+
+    return true
+end
+
 function NASG_ATC:HandleSpeechEvent(event)
     if not event then
         return false
+    end
+
+    if event.intent == "live_squawk_update" then
+        return self:HandleLiveSquawkUpdate(event)
     end
 
     local airportId = event.airport_id or event.airport or "al_minhad"
@@ -1651,20 +1751,68 @@ function NASG_ATC:HandleClientEngineStart(client, eventData)
     end
 end
 
+function NASG_ATC:GetEventUnitName(eventData)
+    if not eventData then
+        return nil
+    end
+
+    if eventData.IniUnitName then
+        return eventData.IniUnitName
+    end
+
+    local unitName = nil
+
+    if eventData.IniUnit then
+        pcall(function()
+            unitName = eventData.IniUnit:GetName()
+        end)
+    end
+
+    return unitName
+end
+
+-- Dispatches to every registered facility's optional OnClientSessionEnded
+-- hook when a client's ATC session is over (landed, killed, disconnected).
+-- Looked up by unit name directly (the session key) rather than through
+-- GetClientFromEvent, since that helper requires a live player on the unit
+-- and a disconnecting/dead player may already have neither.
+function NASG_ATC:HandleClientSessionEnded(unitName, reason)
+    if not unitName or unitName == "" then
+        return
+    end
+
+    local session = self.ClientSessions[unitName]
+
+    if not session then
+        return
+    end
+
+    for facility, controller in pairs(self.Controllers or {}) do
+        if controller.OnClientSessionEnded then
+            local ok, err = pcall(controller.OnClientSessionEnded, controller, self, session, reason)
+
+            if not ok then
+                self:Log(
+                        string.format(
+                                "OnClientSessionEnded error facility=%s client=%s: %s",
+                                tostring(facility),
+                                tostring(unitName),
+                                tostring(err)
+                        )
+                )
+            end
+        end
+    end
+
+    self:Log(string.format("ATC session ended client=%s reason=%s", tostring(unitName), tostring(reason)))
+end
+
 function NASG_ATC:GetClientFromEvent(eventData)
     if not eventData then
         return nil
     end
 
-    local unitName = nil
-
-    if eventData.IniUnitName then
-        unitName = eventData.IniUnitName
-    elseif eventData.IniUnit then
-        pcall(function()
-            unitName = eventData.IniUnit:GetName()
-        end)
-    end
+    local unitName = self:GetEventUnitName(eventData)
 
     if not unitName or unitName == "" then
         return nil
@@ -1699,6 +1847,10 @@ function NASG_ATC:StartEventHandler()
     self.EventHandler = EVENTHANDLER:New()
     self.EventHandler:HandleEvent(EVENTS.Birth)
     self.EventHandler:HandleEvent(EVENTS.EngineStartup)
+    self.EventHandler:HandleEvent(EVENTS.Land)
+    self.EventHandler:HandleEvent(EVENTS.Crash)
+    self.EventHandler:HandleEvent(EVENTS.Dead)
+    self.EventHandler:HandleEvent(EVENTS.PlayerLeaveUnit)
 
     function self.EventHandler:OnEventBirth(eventData)
         local client = NASG_ATC:GetClientFromEvent(eventData)
@@ -1716,6 +1868,26 @@ function NASG_ATC:StartEventHandler()
         end
     end
 
+    -- Session-end cleanup (releases per-client resources like Clearance's
+    -- assigned squawk code back to the pool) fires on unit name alone, not
+    -- a live CLIENT/player lookup — on disconnect or death the player may
+    -- already be gone from the unit by the time the event arrives.
+    function self.EventHandler:OnEventLand(eventData)
+        NASG_ATC:HandleClientSessionEnded(NASG_ATC:GetEventUnitName(eventData), "land")
+    end
+
+    function self.EventHandler:OnEventCrash(eventData)
+        NASG_ATC:HandleClientSessionEnded(NASG_ATC:GetEventUnitName(eventData), "crash")
+    end
+
+    function self.EventHandler:OnEventDead(eventData)
+        NASG_ATC:HandleClientSessionEnded(NASG_ATC:GetEventUnitName(eventData), "dead")
+    end
+
+    function self.EventHandler:OnEventPlayerLeaveUnit(eventData)
+        NASG_ATC:HandleClientSessionEnded(NASG_ATC:GetEventUnitName(eventData), "disconnect")
+    end
+
     self:Log("Started ATC event handler")
 end
 
@@ -1727,6 +1899,10 @@ function NASG_ATC:StopEventHandler()
     pcall(function()
         self.EventHandler:UnHandleEvent(EVENTS.Birth)
         self.EventHandler:UnHandleEvent(EVENTS.EngineStartup)
+        self.EventHandler:UnHandleEvent(EVENTS.Land)
+        self.EventHandler:UnHandleEvent(EVENTS.Crash)
+        self.EventHandler:UnHandleEvent(EVENTS.Dead)
+        self.EventHandler:UnHandleEvent(EVENTS.PlayerLeaveUnit)
     end)
 
     self.EventHandler = nil

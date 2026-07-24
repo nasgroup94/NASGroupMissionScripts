@@ -531,6 +531,17 @@ NASG_ATC_AWACS.Requests = {
         Handler = "HandleUnable",
     },
 
+    -- ── NO FACTOR — pilot declines a contact as not a threat / not in AOR ─
+    report_no_factor = {
+        Patterns = {
+            "no factor",
+            "not a factor",
+            "not in aor",
+            "not in my aor",
+        },
+        Handler = "HandleNoFactor",
+    },
+
     -- ── ABORT — pilot terminates engagement ───────────────────────────────
     report_abort = {
         Patterns = {
@@ -1408,6 +1419,27 @@ function NASG_ATC_AWACS:HandleUnable(atc, client, airport, session, event)
     self:Send(atc, airport, string.format(
         "%s, %s, copy unable. Maintain CAP. Stand by new tasking.",
         callsign, facCallsign))
+    return true
+end
+
+---------------------------------------------------------------------------
+-- NO FACTOR — pilot declines a contact as not a threat / outside their AOR.
+-- AWACS acknowledges; a scenario listener (range) may check whether this
+-- was correct and score it.
+---------------------------------------------------------------------------
+
+function NASG_ATC_AWACS:HandleNoFactor(atc, client, airport, session, event)
+    local callsign    = atc:GetClientCallsign(client, event)
+    local facCallsign = atc:GetFacilityCallsign(airport, atc.Facilities.AWACS)
+    self:TouchSession(session)
+
+    local reply = self:Notify("OnNoFactor", atc, client, airport, session, event)
+    if type(reply) == "string" then
+        self:Send(atc, airport, reply)
+    elseif reply ~= true then
+        self:Send(atc, airport, string.format(
+            "%s, %s, copy no factor.", callsign, facCallsign))
+    end
     return true
 end
 

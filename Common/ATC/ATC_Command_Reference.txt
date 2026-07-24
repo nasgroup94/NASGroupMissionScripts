@@ -1,7 +1,7 @@
 ===============================================================================
  NASG ATC — VOICE COMMAND REFERENCE
  Airport: Al Minhad (al_minhad) + AAPVE Training Range
- Generated: 2026-07-21
+ Generated: 2026-07-23
 ===============================================================================
 
 This lists every ATC/range voice command that currently has a DEVELOPED handler
@@ -19,6 +19,7 @@ HOW IT WORKS
     instruction verbatim.
 
 FACILITIES & FREQUENCIES (Al Minhad)
+  Clearance ....... 126.200 AM   "Al Minhad Clearance"
   Ground .......... 250.100 AM   "Al Minhad Ground"
   Tower ........... 310.500 AM   "Al Minhad Tower"
   Center .......... 251.000 AM   "Emirates Center"
@@ -29,6 +30,83 @@ FACILITIES & FREQUENCIES (Al Minhad)
 NOTE ON ATIS: Ground taxi/startup requires the correct ATIS information letter
 (now driven live by the MOOSE ATIS — it changes each Zulu hour). State the
 current letter when requesting startup/taxi.
+
+NOTE ON CENTER TRACKED POINTS: named points Center can vector you to that
+aren't on your flight plan (tankers, bullseye, objectives, range entry
+points) are defined per-mission in
+"CVW-17/Persian Gulf/NATO/Persian_Gulf_ATC_TrackedPoints.lua" via
+NASG_ATC:RegisterTrackedPoint — edit that file to add/remove points. That
+file also registers 526 named enroute (ENR) fixes imported from the Persian
+Gulf ENR waypoint template, covering the whole theater — say "request
+direct <fix name>" or "request vector to <fix name>" for any of them
+(e.g. "request direct ALKAD"). Fix/waypoint name lookups tolerate a small
+amount of STT mis-hearing (a one-letter slip, or a name split into two
+words like "bop it" for BOPIT) via a fuzzy match in
+NASG_ATC:FuzzyMatchLookupKey (NASG_ATC_FlightPlans.lua) — it only accepts
+an unambiguous closest match, so a badly garbled transcription still falls
+through to "unable"/say-again rather than guessing among these
+similarly-named fixes.
+
+NOTE ON NAMED PROCEDURES / ASSIGNED ROUTES: named departure/recovery
+procedures ("Dream departure", "Strike recovery") are ordered sequences of
+tracked points, defined per-mission in
+"CVW-17/Persian Gulf/NATO/Persian_Gulf_ATC_Procedures.lua" via
+NASG_ATC:RegisterProcedure. Requesting one from Clearance Delivery attaches
+it to your session as an assigned route that Center can fall back to (see
+Center section below) and sanity-checks at check-in/recovery. This is a
+STRUCTURAL check only (do the remaining route legs still resolve to a live
+point) — there is no multi-aircraft traffic deconfliction anywhere in this
+codebase.
+
+NOTE ON SQUAWK CODES: Clearance Delivery assigns a squawk code and reads it
+back to you. DCS's mission-scripting environment cannot read a player's
+actual transponder setting, so verbal readback is the primary check.
+However, our SRS listener can also see a live Mode3/IFF transponder value if
+you've set one in SRS's IFF overlay (or fly a module SRS can read the
+in-cockpit transponder from) — if that value matches your assigned code,
+Clearance accepts it automatically, and you don't have to speak the code
+back. This is a supplementary cross-check, not a requirement: most pilots
+never set an SRS IFF value, so the normal path is still to read the code
+back verbally. Codes are returned to the pool automatically on landing,
+crash, death, or disconnect, so a long-running server won't run out —
+request clearance again after any of those and you'll get a fresh code.
+
+
+===============================================================================
+ CLEARANCE DELIVERY — 126.200 AM  ("Al Minhad Clearance")
+===============================================================================
+Optional facility — you don't have to call Clearance before Ground/Tower;
+if you never do, nothing downstream changes.
+
+  1.  Radio check
+      Say: "radio check" / "comm check" / "comms check"
+      -> Replies "loud and clear."
+
+  2.  Say again
+      Say: "say again" / "repeat"
+      -> Re-transmits Clearance's last instruction verbatim.
+
+  3.  Request clearance (squawk only)
+      Say: "request clearance" / "ready to copy" / "request ifr clearance"
+      -> Assigns a squawk code: "squawk XXXX. Remain this frequency for
+         clearance." Read back the squawk code (see #4).
+
+  4.  Request clearance with a named route
+      Say a departure/recovery procedure name and, optionally, a destination,
+      e.g. "request clearance, Dream departure, destination Al Dhafra."
+      -> Looks up the named procedure (see
+         Persian_Gulf_ATC_Procedures.lua); if found, attaches it to your
+         session as your assigned route and replies "cleared to <destination>,
+         <procedure> departure/recovery, squawk XXXX." If the named
+         procedure isn't found: "unable, say requested route." Read back the
+         squawk code AND the procedure name.
+
+  5.  Readback
+      Say back the squawk code (and procedure name, if one was assigned).
+      -> Validates; confirms, or re-issues with "negative" on a mismatch.
+
+  NOT YET IMPLEMENTED on Clearance:
+    - (none — all declared intents have handlers)
 
 
 ===============================================================================
@@ -112,16 +190,22 @@ All 16 commands below are fully implemented.
   1.  Readback (takeoff/landing)
       Say: "line up and wait" / "cleared for takeoff" / "cleared to land" /
            "go around"
-      -> Validates your readback against the runway issued.
+      -> Validates your readback against the runway issued and, on takeoff
+         clearance, the climb altitude assigned (see #2/#3); "negative" +
+         re-issue on a mismatch.
 
   2.  Departure check-in
       Say: "holding short" / "holding short runway..." / "ready for departure"
       -> Assesses the runway and issues continue-hold / line-up-and-wait /
-         cleared-for-takeoff.
+         cleared-for-takeoff. Takeoff clearance includes "climb and maintain
+         X" (flight plan's departure-waypoint altitude, else the airport's
+         configured default) before the runway/cleared-for-takeoff clause;
+         read back the altitude along with the runway.
 
   3.  Request takeoff
       Say: "request takeoff" / "ready for takeoff" / "ready to depart" / "ready"
-      -> Runway assessment and takeoff clearance.
+      -> Runway assessment and takeoff clearance, same climb-altitude clause
+         and readback requirement as #2.
 
   4.  Abort takeoff
       Say: "abort takeoff" / "aborting takeoff"
@@ -183,17 +267,33 @@ All 16 commands below are fully implemented.
       -> "loud and clear."
 
   2.  Check-in — "checking in" / "with you" / "level"
-      -> "Radar contact"; reads altitude and next waypoint if a flight plan is
-         on file.
+      Say your position, current altitude, and goal altitude, e.g. "Emirates
+      Center, HOBO11, 20 west of Al Minhad, climbing through 8 thousand for
+      1 6 thousand."
+      -> "Radar contact" + your live altitude (authoritative, not the stated
+         one); reassigns/confirms an altitude — your stated goal if given,
+         else the flight plan's active-leg altitude if on file — as "climb/
+         descend/maintain and maintain X." Read back the assigned altitude
+         (see #16). If Clearance Delivery assigned you a route, Center also
+         does a structural check that its remaining legs still resolve to a
+         live point (not a traffic check) and appends "advise, unable <leg>,
+         resolve at own discretion" if one doesn't.
 
   3.  Request flight following — "request flight following" / "request advisories"
-      -> Same as check-in.
+      -> Same as check-in, including altitude reassignment.
 
   4.  Request direct — "request direct" / "proceed direct"
-      -> Clears you direct to a flight-plan fix; arms a readback.
+      -> Clears you direct to a flight-plan fix, or a registered tracked
+         point (see Persian_Gulf_ATC_TrackedPoints.lua) if no matching fix is
+         on your flight plan; if you name no fix at all and Clearance
+         Delivery assigned you a route, defaults to that route's next leg.
+         Arms a readback.
 
   5.  Request vector to waypoint — "request vector" / "vectors to..."
-      -> Bearing/distance vector to the requested waypoint.
+      -> Bearing/distance vector to the requested flight-plan waypoint, or a
+         registered tracked point (tanker, bullseye, objective, etc.) if the
+         name doesn't match a waypoint; same assigned-route-leg fallback as
+         #4 when no name is given.
 
   6.  Request range — "request range" / "vector to range" / "range work"
       -> Vectors to a range waypoint on your flight plan ("unable" if none).
@@ -202,7 +302,13 @@ All 16 commands below are fully implemented.
       -> Vector to nearest active tanker + TACAN + radio frequency.
 
   8.  Request recovery — "request recovery" / "vectors home"
-      -> Approves recovery; hands off to arrival Tower.
+      -> Approves recovery with a "descend and maintain X" clause (flight
+         plan's recovery-waypoint altitude, else the airport's configured
+         recovery descent default) before handing you off to arrival Tower;
+         read back the descent altitude (see #16). Arrival airport falls
+         back to a Clearance-assigned route's stated destination if your
+         flight plan has none on file. Same structural route-leg check as
+         check-in (#2) applies here too.
 
   9.  Request divert — "request divert" / "request alternate"
       -> Clears direct to the flight plan's divert field ("unable" if none).
@@ -227,7 +333,9 @@ All 16 commands below are fully implemented.
          heading.
 
   16. Readback — "proceed direct" / "maintain" / "climb" / "descend"
-      -> Validates a pending Center instruction.
+      -> Validates a pending Center instruction, including the altitude
+         assigned at check-in (#2/#3) or recovery (#8); "negative" +
+         re-issue on a mismatch.
 
   NOT YET IMPLEMENTED on Center:
     - "say again" (no dedicated handler -> generic prompt)

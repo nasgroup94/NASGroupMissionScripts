@@ -19,6 +19,29 @@
 -- Change this value as needed if you are not seeing correct results.
 local good_height_range = 0.1
 
+-- Applies an alarm state to a crew member's group only if it differs from
+-- the last state we applied to it. check_moving() below re-evaluates and
+-- re-applies a state every second for as long as the aircraft is parked,
+-- but the desired state for a given branch never changes tick to tick —
+-- without this guard, every tick calls Controller:setOption() again for no
+-- reason, which DCS logs as a "group change option" event and floods
+-- dcs.log (thousands of redundant lines over a long parked session).
+local function apply_crew_alarm_state(crew_member, desired_state)
+    if crew_member.last_applied_state == desired_state then
+        return
+    end
+
+    if desired_state == "Auto" then
+        crew_member.crew_group:OptionAlarmStateAuto()
+    elseif desired_state == "Green" then
+        crew_member.crew_group:OptionAlarmStateGreen()
+    elseif desired_state == "Red" then
+        crew_member.crew_group:OptionAlarmStateRed()
+    end
+
+    crew_member.last_applied_state = desired_state
+end
+
 -- local newClient = EVENTHANDLER:New()
 -- newClient:HandleEvent(EVENTS.PlayerEnterAircraft)
 
@@ -168,38 +191,20 @@ BASE:I("Dynamic Crewchief loading.")
                             if distance < 15 and airspeed >= 2  then
                                 -- set_client:I("------------ check_moving: distance < 15")
                                 for _, crew_member in pairs(the_crew) do
-                                    if crew_member.state_motion == "Auto" then
-                                        crew_member.crew_group:OptionAlarmStateAuto()
-                                    elseif crew_member.state_motion == "Green" then
-                                        crew_member.crew_group:OptionAlarmStateGreen()
-                                    elseif crew_member.state_motion == "Red" then
-                                        crew_member.crew_group:OptionAlarmStateRed()
-                                    end
+                                    apply_crew_alarm_state(crew_member, crew_member.state_motion)
                                 end
                                 client_given_salute = true
                                 SCHEDULER:New(nil, check_moving, {}, 1)
                             elseif distance > 15 then
                                 -- set_client:I("------------ check_moving: distance > 15")
                                 for _, crew_member in pairs(the_crew) do
-                                    if crew_member.state_normal == "Auto" then
-                                        crew_member.crew_group:OptionAlarmStateAuto()
-                                    elseif crew_member.state_normal == "Green" then
-                                        crew_member.crew_group:OptionAlarmStateGreen()
-                                    elseif crew_member.state_normal == "Red" then
-                                        crew_member.crew_group:OptionAlarmStateRed()
-                                    end
+                                    apply_crew_alarm_state(crew_member, crew_member.state_normal)
                                 end
                                 SCHEDULER:New(nil, destroy_crew, {}, 60)
                             else
                                 -- set_client:I("------------ check_moving: waiting")
                                 for _, crew_member in pairs(the_crew) do
-                                    if crew_member.state_normal == "Auto" then
-                                        crew_member.crew_group:OptionAlarmStateAuto()
-                                    elseif crew_member.state_normal == "Green" then
-                                        crew_member.crew_group:OptionAlarmStateGreen()
-                                    elseif crew_member.state_normal == "Red" then
-                                        crew_member.crew_group:OptionAlarmStateRed()
-                                    end
+                                    apply_crew_alarm_state(crew_member, crew_member.state_normal)
                                 end
                                 SCHEDULER:New(nil, check_moving, {}, 1)
                             end

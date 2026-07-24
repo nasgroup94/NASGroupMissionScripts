@@ -206,6 +206,7 @@ function NASG_ATC:BuildSTTBridgeConfigTable()
         self:AddSTTChannel(channels, airport, self.Facilities.TOWER, airport.Tower)
         self:AddSTTChannel(channels, airport, self.Facilities.CENTER, airport.Center)
         self:AddSTTChannel(channels, airport, self.Facilities.AWACS, airport.AWACS)
+        self:AddSTTChannel(channels, airport, self.Facilities.CLEARANCE, airport.Clearance)
     end
 
     return {

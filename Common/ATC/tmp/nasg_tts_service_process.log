@@ -1,4 +1,4 @@
-[Tue 07/21/2026 18:00:59.35] start_tts_service.bat launched 
+[Fri 07/24/2026 16:53:59.70] start_tts_service.bat launched 
 Working directory: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts 
 ATC root: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\.. 
 TTS affinity mask: C000 
@@ -28,4 +28,4 @@ SRS host:    127.0.0.1
 SRS sender:  C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\bin\srs-tts-send.exe
 Verbose:     False
 TTS service stop file detected: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\nasg_tts_service.stop
-[Tue 07/21/2026 18:01:33.30] start_tts_service.bat exiting with code 0 
+[Fri 07/24/2026 16:57:35.32] start_tts_service.bat exiting with code 0 

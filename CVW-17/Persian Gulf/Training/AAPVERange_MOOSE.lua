@@ -265,6 +265,8 @@ AAPVE_MOOSE.TimelineSpawnOptions = {
 
 AAPVE_MOOSE.TimelineDefaultTemplate  = "AAPVE_RED_MIG29"
 AAPVE_MOOSE.TimelineDefaultGroupSize = 1
+AAPVE_MOOSE.TimelineMinAltitudeFt    = 20000
+AAPVE_MOOSE.TimelineMaxAltitudeFt    = 28000
 
 ---------------------------------------------------------------------------
 -- TTS / MSRS configuration.
@@ -722,7 +724,7 @@ function AAPVE_MOOSE:GetLiveGroupData(pkg, client)
     local grpCoord = pkg.ActiveHostileGroup:GetCoordinate()
     if not grpCoord then return nil end
 
-    local altFt  = math.floor(grpCoord:GetAltitude() / 0.3048)
+    local altFt  = math.floor(grpCoord:GetY() / 0.3048)
     local bulls  = self:GetBullseyeText(grpCoord)
     local braaStr, aspectStr
 
@@ -791,6 +793,7 @@ function AAPVE_MOOSE:InitScoreCard(pkg)
         cap_zone_exits      = 0,
         cap_alt_violations  = 0,
         ghost_commits       = 0,
+        no_factor_calls     = 0,
         -- Geometry  (INTEGER, base 0 — additions applied)
         geo_score           = 0,
         commit_range_nm     = -1,
@@ -844,6 +847,10 @@ function AAPVE_MOOSE:RecordScoreEvent(pkg, eventType, data)
     elseif eventType == "ghost_commit" then
         sc.ghost_commits = sc.ghost_commits + 1
         sc.cap_score     = math.max(0, sc.cap_score - 15)
+
+    elseif eventType == "no_factor_correct" then
+        sc.no_factor_calls = sc.no_factor_calls + 1
+        sc.cap_score       = math.min(20, sc.cap_score + 5)
 
     elseif eventType == "commit" then
         local rNm = data.range_nm or -1
@@ -1800,6 +1807,7 @@ function AAPVE_MOOSE:RequestCapCheckIn(leadClient)
         ActiveHostileGroup = nil,
         CommitAnnounced   = false,
         OutOfAorWarned    = false,
+        GhostCallPending  = false, -- true while a "no factor"/"not in AOR" call is correct
         NASGSession       = nil,   -- bound NASG_ATC session for this lead client
         ScoreCard         = nil,   -- flat DB row; set by InitScoreCard at check-in
         PictureHeld       = false, -- true while client is off-station (e.g. at tanker)
@@ -2273,6 +2281,10 @@ function AAPVE_MOOSE:GenerateGhostBullseyeCall(pkg)
     -- voice queries (Bogey Dope, BRAA, Declare) return "picture clean" rather
     -- than serving stale data from the previous hostile spawn.
     self:UpdateSessionGroupData(pkg, nil)
+
+    -- Flag that a "no factor" / "not in AOR" call is now correct for this
+    -- package until the next ghost or real contact replaces it.
+    pkg.GhostCallPending = true
 end
 
 ---------------------------------------------------------------------------
@@ -2374,7 +2386,7 @@ function AAPVE_MOOSE:SpawnVIDOpportunity(pkg, opt)
         if not group or not group:IsAlive() then return end
         local vidCoord = group:GetCoordinate()
         if not vidCoord then return end
-        local vidAltFt = math.floor(vidCoord:GetAltitude() / 0.3048)
+        local vidAltFt = math.floor(vidCoord:GetY() / 0.3048)
         AAPVE_MOOSE:UpdateSessionGroupData(pkg, {
             Bulls    = AAPVE_MOOSE:GetBullseyeText(vidCoord),
             Braa     = nil,
@@ -2516,7 +2528,7 @@ function AAPVE_MOOSE:SpawnHostileForPackage(pkg)
         -- (declare, commit, no joy, clean, threat) have group data.
         local spawnCoord = group:GetCoordinate()
         if spawnCoord then
-            local altFt = math.floor(spawnCoord:GetAltitude() / 0.3048)
+            local altFt = math.floor(spawnCoord:GetY() / 0.3048)
             AAPVE_MOOSE:UpdateSessionGroupData(pkg, {
                 Bulls    = AAPVE_MOOSE:GetBullseyeText(spawnCoord),
                 Braa     = nil,      -- computed live in voice handlers
@@ -2535,6 +2547,7 @@ function AAPVE_MOOSE:SpawnHostileForPackage(pkg)
     pkg.CommitAnnounced    = false
     pkg.TacCallMade        = false   -- TAC (45 NM) auto-call guard
     pkg.MeldCallMade       = false   -- MELD (35 NM) auto-call guard
+    pkg.GhostCallPending   = false   -- a real contact replaces any pending ghost call
 
     -- Start the bogie reaction monitor for this package.
     self:StartBogieMonitor(pkg, group)
@@ -2606,7 +2619,7 @@ function AAPVE_MOOSE:StartBogieMonitor(pkg, group)
 
             if closestClient then
                 local closestNm = UTILS.MetersToNM(closestDist)
-                local altFt     = math.floor(bogieCoord:GetAltitude() / 0.3048)
+                local altFt     = math.floor(bogieCoord:GetY() / 0.3048)
 
                 -- TAC call: BULLSEYE PICTURE at 45 NM (first threshold).
                 if not pkg.TacCallMade and closestNm <= self.TACDistanceNm then
@@ -2922,6 +2935,12 @@ function AAPVE_MOOSE:SpawnTimelineBanditForClient(client, timelineName)
     local clientHdg   = self:GetClientHeading(client)
     local distM       = UTILS.NMToMeters(tl.DistanceNm)
     local spawnCoord  = clientCoord:Translate(distM, clientHdg)
+    if spawnCoord then
+        -- Translate() defaults to ground height at the new point; set an
+        -- explicit BVR/WVR altitude instead (matches SpawnHostileForPackage).
+        spawnCoord.y = UTILS.FeetToMeters(
+            math.random(self.TimelineMinAltitudeFt, self.TimelineMaxAltitudeFt))
+    end
 
     local opt = self:GetRandomOption(self.RedCapTemplates)
     local templateName = opt and opt.Template or self.TimelineDefaultTemplate
@@ -3288,7 +3307,7 @@ function AAPVE_MOOSE:PracticeBogieIntercepted(uName, session)
             local bearAway = (self:GetBearingDegrees(protCoord, gCoord) or 0) % 360
             local coldDest = gCoord:Translate(UTILS.NMToMeters(200), bearAway)
             local task = group:TaskRouteToVec2(coldDest:GetVec2(), coldSpdMs,
-                gCoord:GetAltitude(), "BARO")
+                gCoord:GetY(), "BARO")
             if task then group:SetTask(task) end
         end
         SCHEDULER:New(nil, function()
@@ -3843,16 +3862,17 @@ function AAPVE_MOOSE:RegisterAWACSIntegration()
 
     -----------------------------------------------------------------------
     -- 1) Live contact-data provider.
-    -- Returns live data for the speaking client's package, or nil when there
-    -- is no live hostile (so the controller falls back to any stored session
-    -- group, e.g. a VID or ghost contact).
+    -- DISABLED (interactive AWACS STT off for now — see RegisterAWACSIntegration
+    -- header). Only the passive scoring/progression listeners below run.
     -----------------------------------------------------------------------
+    --[[
     NASG_ATC_AWACS:SetGroupDataProvider(function(_, client, _session)
         if not rangeActive() then return nil end
         local pkg = pkgForClient(client)
         if not pkg then return nil end
         return AAPVE_MOOSE:GetLiveGroupData(pkg, client)
     end)
+    ]]
 
     -----------------------------------------------------------------------
     -- 2) Event listener. A method may return a string (custom spoken reply)
@@ -3861,6 +3881,7 @@ function AAPVE_MOOSE:RegisterAWACSIntegration()
     -----------------------------------------------------------------------
     local listener = {}
 
+    --[[ DISABLED (interactive AWACS STT off for now)
     function listener:OnCheckIn(ctrl, atc, client, airport, session, event)
         -- Intercept Practice: begin a practice session (self-announces).
         if AAPVE_MOOSE:GetRangeMode() == "InterceptPractice" then
@@ -3926,12 +3947,29 @@ function AAPVE_MOOSE:RegisterAWACSIntegration()
         end
         return nil
     end
+    ]]
 
     function listener:OnCommit(ctrl, atc, client, airport, session, event)
         if rangeActive() then
             local pkg = pkgForClient(client)
             if pkg then AAPVE_MOOSE:RecordScoreEvent(pkg, "commit_called") end
         end
+    end
+
+    -- NO FACTOR / NOT IN AOR — pilot correctly declines a ghost (out-of-AOR)
+    -- contact. Only scores if a ghost call is actually pending for this
+    -- package; otherwise fall through to the generic AWACS acknowledgement.
+    function listener:OnNoFactor(ctrl, atc, client, airport, session, event)
+        if not rangeActive() then return nil end
+        local pkg = pkgForClient(client)
+        if pkg and pkg.GhostCallPending then
+            pkg.GhostCallPending = false
+            AAPVE_MOOSE:RecordScoreEvent(pkg, "no_factor_correct")
+            return string.format("%s, %s, copy no factor. Good picture, maintain CAP.",
+                atc:GetClientCallsign(client, event),
+                atc:GetFacilityCallsign(airport, atc.Facilities.AWACS))
+        end
+        return nil
     end
 
     function listener:OnTargeted(ctrl, atc, client, airport, session, event)
@@ -4018,6 +4056,7 @@ function AAPVE_MOOSE:RegisterAWACSIntegration()
         -- Return nil so the controller issues the tower / home-plate vector.
     end
 
+    --[[ DISABLED (interactive AWACS STT off for now)
     function listener:OnTanker(ctrl, atc, client, airport, session, event)
         local pkg = pkgForClient(client)
         if pkg and rangeActive() then
@@ -4064,13 +4103,16 @@ function AAPVE_MOOSE:RegisterAWACSIntegration()
         end
         return nil
     end
+    ]]
 
     NASG_ATC_AWACS:AddListener(listener)
 
     -----------------------------------------------------------------------
-    -- 3) Range-control voice commands. Each method returns the spoken reply
-    -- and calls the SAME range functions as the F10 menus.
+    -- 3) Range-control voice commands. DISABLED (interactive AWACS STT off
+    -- for now) — the F10 "A/A RANGE SETUP" menu still calls the same
+    -- underlying range functions directly, so menu control is unaffected.
     -----------------------------------------------------------------------
+    --[[
     local function cs(atc, client, event) return atc:GetClientCallsign(client, event) end
     local function fac(atc, airport) return atc:GetFacilityCallsign(airport, atc.Facilities.AWACS) end
 
@@ -4162,20 +4204,23 @@ function AAPVE_MOOSE:RegisterAWACSIntegration()
     end
 
     NASG_ATC_AWACS:SetRangeController(rangeCtl)
+    ]]
 
     -----------------------------------------------------------------------
-    -- 4) Periodic picture broadcast. The controller owns the cadence and
-    -- formatting; the range supplies the live groups (on-station packages
-    -- with an active hostile). Started/stopped with BlueCapDefense mode.
+    -- 4) Periodic picture broadcast. DISABLED (interactive AWACS STT off
+    -- for now).
     -----------------------------------------------------------------------
+    --[[
     NASG_ATC_AWACS:ConfigurePictureBroadcast({
         AirportId         = self.NASGATCAirportId,
         IntervalSecs      = self.BroadcastIntervalSecs,
         CleanIntervalSecs = self.BroadcastCleanIntervalSecs,
         Source            = function(_) return AAPVE_MOOSE:CollectBroadcastGroups() end,
     })
+    ]]
 
-    self:Log("AWACS integration registered (provider, listener, range control, broadcast).")
+    self:Log("AWACS integration registered (scoring/progression listeners only — " ..
+        "check-in, picture, tanker, checkout, and range-control voice intents disabled).")
 end
 
 ---------------------------------------------------------------------------

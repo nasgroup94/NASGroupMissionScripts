@@ -18,6 +18,17 @@ NASG_ATC_SCRIPT_LOADER.MissionATCAirports = NASG_ATC_SCRIPT_LOADER.MissionATCAir
 NASG_ATC_SCRIPT_LOADER.MissionATCConfig = NASG_ATC_SCRIPT_LOADER.MissionATCConfig
         or NASG_ATC_SCRIPT_LOADER.MissionScriptsPath .. "NATO/Persian_Gulf_ATC_Config.lua"
 
+-- Center-tracked points (tankers, bullseye, objectives, etc.). Loaded
+-- after the comms config so its RegisterTrackedPoint calls run last.
+NASG_ATC_SCRIPT_LOADER.MissionATCTrackedPoints = NASG_ATC_SCRIPT_LOADER.MissionATCTrackedPoints
+        or NASG_ATC_SCRIPT_LOADER.MissionScriptsPath .. "NATO/Persian_Gulf_ATC_TrackedPoints.lua"
+
+-- Named navigation procedures (SID/STAR-style routes built from tracked
+-- points). Loaded after tracked points so its RegisterProcedure calls can
+-- reference them.
+NASG_ATC_SCRIPT_LOADER.MissionATCProcedures = NASG_ATC_SCRIPT_LOADER.MissionATCProcedures
+        or NASG_ATC_SCRIPT_LOADER.MissionScriptsPath .. "NATO/Persian_Gulf_ATC_Procedures.lua"
+
 function NASG_ATC_SCRIPT_LOADER:LoadScript(path)
     assert(loadfile(path))()
 end
@@ -55,16 +66,21 @@ function NASG_ATC_SCRIPT_LOADER:Load()
 
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_FlightPlans.lua")
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_Navigation.lua")
+    self:LoadScript(self.ATCLuaPath .. "NASG_ATC_TrackedPoints.lua")
+    self:LoadScript(self.ATCLuaPath .. "NASG_ATC_Procedures.lua")
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_Ground.lua")
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_Tower.lua")
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_Center.lua")
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_AWACS.lua")
+    self:LoadScript(self.ATCLuaPath .. "NASG_ATC_Clearance.lua")
 
     -- Mission-specific airport/controller configuration.
     -- Database (structural defs) first, then the comms/mission layer that
     -- activates and tunes them.
     self:LoadScript(self.MissionATCAirports)
     self:LoadScript(self.MissionATCConfig)
+    self:LoadScript(self.MissionATCTrackedPoints)
+    self:LoadScript(self.MissionATCProcedures)
 
     -- Bridges after config so they can discover registered airports/frequencies.
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_TTSBridge.lua")

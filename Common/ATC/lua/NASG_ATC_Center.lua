@@ -199,29 +199,13 @@ function NASG_ATC_CENTER:Send(atc, airport, message)
     atc:SendFacilityTTS(airport, atc.Facilities.CENTER, message)
 end
 
-function NASG_ATC_CENTER:GetOrAttachFlightPlan(atc, client, session, event)
-    local flightPlan = atc:GetSessionFlightPlan(session)
-
-    if flightPlan then
-        return flightPlan
-    end
-
-    flightPlan = atc:GetFlightPlanForClient(client, event)
-
-    if flightPlan then
-        atc:AttachFlightPlanToSession(session, flightPlan)
-    end
-
-    return flightPlan
-end
-
 function NASG_ATC_CENTER:GetWaypointForEvent(atc, flightPlan, event, fallbackRole)
     if not flightPlan then
         return nil
     end
 
     local rawText = tostring(event and event.raw_text or "")
-    local fix = event and (event.fix or event.destination or event.waypoint) or nil
+    local fix = event and (event.fix or event.destination or event.waypoint or event.vector_target) or nil
 
     if fix then
         local waypoint = atc:FindFlightPlanWaypoint(flightPlan, fix)
@@ -252,19 +236,63 @@ function NASG_ATC_CENTER:GetWaypointForEvent(atc, flightPlan, event, fallbackRol
     return nil
 end
 
-function NASG_ATC_CENTER:SendVectorToWaypoint(atc, client, airport, event, waypoint, prefix)
+-- Resolves a Center navigation target for a speech event: a flight-plan
+-- waypoint first (existing behavior), falling back to a registered tracked
+-- point (tanker/bullseye/objective/etc., see NASG_ATC_TrackedPoints.lua),
+-- falling back to the current leg of a Clearance-Delivery-assigned route
+-- (see NASG_ATC_Procedures.lua) when the event named no explicit target —
+-- so an unnamed "request direct"/"request vector" defaults to the next
+-- assigned-route leg. Returns targetType ("waypoint"|"tracked_point"), target.
+function NASG_ATC_CENTER:GetTargetForEvent(atc, airport, flightPlan, session, event, fallbackRole)
+    local waypoint = self:GetWaypointForEvent(atc, flightPlan, event, fallbackRole)
+
+    if waypoint then
+        return "waypoint", waypoint
+    end
+
+    local rawValue = event and (event.vector_target or event.fix or event.destination or event.waypoint) or nil
+
+    if rawValue then
+        local point = atc:FindTrackedPoint(rawValue, airport and airport.Id)
+
+        if point then
+            return "tracked_point", point
+        end
+    end
+
+    if not rawValue and session and session.Route and session.Route.Legs then
+        local leg = session.Route.Legs[session.Route.ActiveLegIndex or 1]
+
+        if leg then
+            return "tracked_point", leg
+        end
+    end
+
+    return nil, nil
+end
+
+function NASG_ATC_CENTER:SendVectorToTarget(atc, client, airport, event, targetType, target, prefix)
     local callsign = atc:GetClientCallsign(client, event)
-    local waypointName = atc:GetWaypointDisplayName(waypoint)
+    local targetName = targetType == "waypoint"
+            and atc:GetWaypointDisplayName(target)
+            or tostring(target.Name or target.Id or "point")
 
     if not NASG_ATC_NAVIGATION then
         self:Send(atc, airport, string.format("%s, unable vector. Navigation helper unavailable.", callsign))
         return true
     end
 
-    local vector = NASG_ATC_NAVIGATION:GetVectorToWaypoint(client, waypoint)
+    local vector
+
+    if targetType == "waypoint" then
+        vector = NASG_ATC_NAVIGATION:GetVectorToWaypoint(client, target)
+    else
+        local coordinate = atc:GetTrackedPointCoordinate(target)
+        vector = coordinate and NASG_ATC_NAVIGATION:GetVectorToCoordinate(client, coordinate)
+    end
 
     if not vector then
-        self:Send(atc, airport, string.format("%s, unable vector to %s.", callsign, waypointName))
+        self:Send(atc, airport, string.format("%s, unable vector to %s.", callsign, targetName))
         return true
     end
 
@@ -277,7 +305,7 @@ function NASG_ATC_CENTER:SendVectorToWaypoint(atc, client, airport, event, waypo
                     "%s, %s %s, bearing %s, distance %.0f miles.",
                     callsign,
                     messagePrefix,
-                    waypointName,
+                    targetName,
                     NASG_ATC_NAVIGATION:FormatHeading(vector.Bearing),
                     vector.DistanceNM
             )
@@ -299,9 +327,9 @@ function NASG_ATC_CENTER:HandleRadioCheck(atc, client, airport, session, event)
 end
 
 -- Reads the client's CURRENT altitude, queried live at the moment of the
--- call (not cached or polled on a timer), and returns a spoken ATC altitude
--- phrase. Returns nil if the aircraft position is unavailable.
-function NASG_ATC_CENTER:GetClientAltitudeCall(atc, client)
+-- call (not cached or polled on a timer). Returns feet, or nil if the
+-- aircraft position is unavailable.
+function NASG_ATC_CENTER:GetClientAltitudeFeet(client)
     if not client then
         return nil
     end
@@ -320,112 +348,176 @@ function NASG_ATC_CENTER:GetClientAltitudeCall(atc, client)
         end
     end)
 
-    if not altitudeFeet then
+    return altitudeFeet
+end
+
+-- Resolves the pilot's goal altitude for a check-in: a stated goal altitude
+-- wins; otherwise falls back to the flight plan's active-leg end-waypoint
+-- altitude, if tagged. Returns nil (no reassignment) when neither is known.
+function NASG_ATC_CENTER:GetCheckInGoalAltitudeFeet(atc, flightPlan, session, event)
+    local stated = tonumber(event and event.goal_altitude_ft)
+
+    if stated then
+        return stated
+    end
+
+    if not flightPlan then
         return nil
     end
 
-    local speech = atc:GetSpeechFormatter()
+    local activeLeg = atc:GetActiveLeg(flightPlan, session)
 
-    -- Above the transition altitude use flight levels; below, thousands of feet.
-    if altitudeFeet >= 18000 then
-        local flightLevel = math.floor((altitudeFeet / 100) + 0.5)
+    if not activeLeg or not activeLeg.EndWaypoint then
+        return nil
+    end
 
-        if speech and speech.FormatFlightLevel then
-            return speech:FormatFlightLevel(flightLevel)
+    return atc:GetWaypointAltitudeFeet(activeLeg.EndWaypoint)
+end
+
+-- Structural resolvability check for a Clearance-Delivery-assigned route:
+-- NOT traffic deconfliction (this codebase has no multi-aircraft awareness
+-- to compute that) — just confirms every remaining leg still resolves to a
+-- coordinate (e.g. a tanker hasn't despawned/died). Returns a warning
+-- clause to append to the outgoing message, or nil if everything resolves.
+function NASG_ATC_CENTER:CheckRouteSafetyOfFlight(atc, session)
+    if not session or not session.Route or not session.Route.Legs then
+        return nil
+    end
+
+    for index = session.Route.ActiveLegIndex or 1, #session.Route.Legs do
+        local leg = session.Route.Legs[index]
+        local coordinate = atc:GetTrackedPointCoordinate(leg)
+
+        if not coordinate then
+            local legName = tostring(leg.Name or leg.Id or "route point")
+            return string.format(" Advise, unable %s, resolve at own discretion.", legName)
         end
-
-        return string.format("flight level %03d", flightLevel)
     end
 
-    local roundedThousands = math.floor((altitudeFeet / 1000) + 0.5)
-
-    if roundedThousands <= 0 then
-        return "low altitude"
-    end
-
-    return string.format("%d thousand", roundedThousands)
+    return nil
 end
 
 function NASG_ATC_CENTER:HandleCheckIn(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
     -- Scan the client's live position on demand rather than relying on the
     -- speech event carrying an altitude (which STT does not provide).
-    local altitude = self:GetClientAltitudeCall(atc, client) or event.altitude or "altitude unknown"
-    local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
+    local liveAltitudeFt = self:GetClientAltitudeFeet(client)
+    local altitude = (liveAltitudeFt and atc:FormatAltitudeSpeech(liveAltitudeFt)) or event.altitude or "altitude unknown"
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
 
     session.State = atc.States.CENTER_CONTROL
     session.Facility = atc.Facilities.CENTER
     session.UpdatedAt = timer.getTime()
 
+    session.Center = session.Center or {}
+
+    if event.position_text then
+        session.Center.ReportedPositionText = event.position_text
+    end
+
+    if event.current_altitude_ft then
+        session.Center.ReportedCurrentAltitudeFt = tonumber(event.current_altitude_ft)
+    end
+
+    local goalAltitudeFt = self:GetCheckInGoalAltitudeFeet(atc, flightPlan, session, event)
+    local altitudeSentence = nil
+
+    if goalAltitudeFt then
+        session.Center.RequestedAltitudeFt = goalAltitudeFt
+        session.Center.AssignedAltitudeFt = goalAltitudeFt
+        session.Center.AssignedAltitudeAt = timer.getTime()
+
+        local verb = "maintain"
+
+        if liveAltitudeFt then
+            if goalAltitudeFt > liveAltitudeFt + 250 then
+                verb = "climb and maintain"
+            elseif goalAltitudeFt < liveAltitudeFt - 250 then
+                verb = "descend and maintain"
+            end
+        end
+
+        local clause = string.format("%s %s", verb, atc:FormatAltitudeSpeech(goalAltitudeFt))
+        altitudeSentence = clause:sub(1, 1):upper() .. clause:sub(2) .. "."
+    end
+
+    local message
+
     if flightPlan then
         local activeLeg = atc:GetActiveLeg(flightPlan, session)
 
         if activeLeg and activeLeg.EndWaypoint then
-            self:Send(
-                    atc,
-                    airport,
-                    string.format(
-                            "%s, %s, radar contact, %s. Flight plan on file. Proceed toward %s.",
-                            callsign,
-                            atc:GetFacilityCallsign(airport, atc.Facilities.CENTER),
-                            tostring(altitude),
-                            atc:GetWaypointDisplayName(activeLeg.EndWaypoint)
-                    )
+            message = string.format(
+                    "%s, %s, radar contact, %s. Flight plan on file. Proceed toward %s.",
+                    callsign,
+                    atc:GetFacilityCallsign(airport, atc.Facilities.CENTER),
+                    tostring(altitude),
+                    atc:GetWaypointDisplayName(activeLeg.EndWaypoint)
             )
-            return true
-        end
-
-        self:Send(
-                atc,
-                airport,
-                string.format(
-                        "%s, %s, radar contact, %s. Flight plan on file.",
-                        callsign,
-                        atc:GetFacilityCallsign(airport, atc.Facilities.CENTER),
-                        tostring(altitude)
-                )
-        )
-        return true
-    end
-
-    self:Send(
-            atc,
-            airport,
-            string.format(
-                    "%s, %s, radar contact, %s.",
+        else
+            message = string.format(
+                    "%s, %s, radar contact, %s. Flight plan on file.",
                     callsign,
                     atc:GetFacilityCallsign(airport, atc.Facilities.CENTER),
                     tostring(altitude)
             )
-    )
+        end
+    else
+        message = string.format(
+                "%s, %s, radar contact, %s.",
+                callsign,
+                atc:GetFacilityCallsign(airport, atc.Facilities.CENTER),
+                tostring(altitude)
+        )
+    end
+
+    if altitudeSentence then
+        message = message .. " " .. altitudeSentence
+
+        atc:SetPendingReadback(session, {
+            Type = "center_altitude",
+            InstructionText = message,
+            AltitudeFt = goalAltitudeFt,
+        })
+    end
+
+    local routeWarning = self:CheckRouteSafetyOfFlight(atc, session)
+
+    if routeWarning then
+        message = message .. routeWarning
+    end
+
+    self:Send(atc, airport, message)
 
     return true
 end
 
 function NASG_ATC_CENTER:HandleDirect(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
-    local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
-    local waypoint = self:GetWaypointForEvent(atc, flightPlan, event, nil)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
+    local targetType, target = self:GetTargetForEvent(atc, airport, flightPlan, session, event, nil)
 
     session.State = atc.States.CENTER_CONTROL
     session.Facility = atc.Facilities.CENTER
     session.UpdatedAt = timer.getTime()
 
-    if waypoint then
-        local waypointName = atc:GetWaypointDisplayName(waypoint)
-        local message = string.format("%s, proceed direct %s.", callsign, waypointName)
+    if target then
+        local targetName = targetType == "waypoint"
+                and atc:GetWaypointDisplayName(target)
+                or tostring(target.Name or target.Id)
+        local message = string.format("%s, proceed direct %s.", callsign, targetName)
 
         atc:SetPendingReadback(session, {
             Type = "center_direct",
             InstructionText = message,
-            Fix = waypointName,
+            Fix = targetName,
         })
 
         self:Send(atc, airport, message)
         return true
     end
 
-    local fix = event.fix or event.destination or event.waypoint or "requested point"
+    local fix = event.vector_target or event.fix or event.destination or event.waypoint or "requested point"
     local message = string.format("%s, proceed direct %s.", callsign, tostring(fix))
 
     atc:SetPendingReadback(session, {
@@ -439,23 +531,23 @@ function NASG_ATC_CENTER:HandleDirect(atc, client, airport, session, event)
 end
 
 function NASG_ATC_CENTER:HandleVectorToWaypoint(atc, client, airport, session, event)
-    local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
-    local waypoint = self:GetWaypointForEvent(atc, flightPlan, event, nil)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
+    local targetType, target = self:GetTargetForEvent(atc, airport, flightPlan, session, event, nil)
 
     session.State = atc.States.CENTER_CONTROL
     session.Facility = atc.Facilities.CENTER
     session.UpdatedAt = timer.getTime()
 
-    if not waypoint then
+    if not target then
         self:Send(atc, airport, string.format("%s, unable. Say requested waypoint.", atc:GetClientCallsign(client, event)))
         return true
     end
 
-    return self:SendVectorToWaypoint(atc, client, airport, event, waypoint, "vector for")
+    return self:SendVectorToTarget(atc, client, airport, event, targetType, target, "vector for")
 end
 
 function NASG_ATC_CENTER:HandleRangeRequest(atc, client, airport, session, event)
-    local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
     local waypoint = self:GetWaypointForEvent(atc, flightPlan, event, "range")
 
     session.State = atc.States.CENTER_CONTROL
@@ -463,7 +555,7 @@ function NASG_ATC_CENTER:HandleRangeRequest(atc, client, airport, session, event
     session.UpdatedAt = timer.getTime()
 
     if waypoint then
-        return self:SendVectorToWaypoint(atc, client, airport, event, waypoint, "vector for")
+        return self:SendVectorToTarget(atc, client, airport, event, "waypoint", waypoint, "vector for")
     end
 
     self:Send(atc, airport, string.format("%s, unable range routing. No range waypoint on file.", atc:GetClientCallsign(client, event)))
@@ -570,39 +662,80 @@ function NASG_ATC_CENTER:HandleTankerRequest(atc, client, airport, session, even
 end
 
 
+function NASG_ATC_CENTER:GetRecoveryDescentAltitudeFeet(atc, flightPlan, recoveryAirport)
+    if flightPlan then
+        local recoveryWaypoint = atc:FindWaypointByRole(flightPlan, "recovery")
+        local altitudeFeet = recoveryWaypoint and atc:GetWaypointAltitudeFeet(recoveryWaypoint)
+
+        if altitudeFeet then
+            return altitudeFeet
+        end
+    end
+
+    local centerConfig = atc:GetFacilityConfig(recoveryAirport, atc.Facilities.CENTER)
+
+    return (centerConfig and centerConfig.RecoveryDescentAltitudeFt) or atc.Defaults.RecoveryDescentAltitudeFt
+end
+
 function NASG_ATC_CENTER:HandleRecovery(atc, client, airport, session, event)
     --local callsign = atc:GetClientCallsign(client, event)
     local callsign = client:GetCallsign()
-    local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
+    -- Flight-plan arrival stays authoritative; a Clearance-Delivery-assigned
+    -- route's stated destination is only consulted when the flight plan has
+    -- none on file.
     local arrivalAirportId = atc:GetFlightPlanArrivalAirportId(flightPlan)
+            or (session.Route and session.Route.DestinationText)
     local recoveryAirport = arrivalAirportId and atc:GetAirport(arrivalAirportId) or airport
     local towerFrequency = atc:GetFacilityFrequency(recoveryAirport, atc.Facilities.TOWER)
     local towerCallsign = atc:GetFacilityCallsign(recoveryAirport, atc.Facilities.TOWER)
+    local descentAltitudeFt = self:GetRecoveryDescentAltitudeFeet(atc, flightPlan, recoveryAirport)
 
     session.State = atc.States.INBOUND
     session.Facility = atc.Facilities.TOWER
     session.UpdatedAt = timer.getTime()
 
+    local handoffText
+
     if towerFrequency then
-        self:Send(
-                atc,
-                airport,
-                string.format("%s, recovery approved. Contact %s %s.", callsign, towerCallsign, atc:FormatFrequency(towerFrequency))
-        )
+        handoffText = string.format("Recovery approved. Contact %s %s.", towerCallsign, atc:FormatFrequency(towerFrequency))
     else
-        self:Send(
-                atc,
-                airport,
-                string.format("%s, recovery approved. Contact %s.", callsign, towerCallsign)
-        )
+        handoffText = string.format("Recovery approved. Contact %s.", towerCallsign)
     end
+
+    local message
+
+    if descentAltitudeFt then
+        message = string.format(
+                "%s, descend and maintain %s. %s",
+                callsign,
+                atc:FormatAltitudeSpeech(descentAltitudeFt),
+                handoffText
+        )
+
+        atc:SetPendingReadback(session, {
+            Type = "center_altitude",
+            InstructionText = message,
+            AltitudeFt = descentAltitudeFt,
+        })
+    else
+        message = string.format("%s, %s", callsign, handoffText)
+    end
+
+    local routeWarning = self:CheckRouteSafetyOfFlight(atc, session)
+
+    if routeWarning then
+        message = message .. routeWarning
+    end
+
+    self:Send(atc, airport, message)
 
     return true
 end
 
 function NASG_ATC_CENTER:HandleDivert(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
-    local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
     local divert = atc:GetPrimaryDivert(flightPlan)
 
     session.State = atc.States.CENTER_CONTROL
@@ -639,7 +772,7 @@ end
 
 function NASG_ATC_CENTER:HandleMARSARequest(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
-    local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
     local marsa = flightPlan and (flightPlan.marsa or flightPlan.MARSA) or nil
 
     session.Center = session.Center or {}
@@ -701,7 +834,7 @@ end
 
 function NASG_ATC_CENTER:HandleBlockAltitudeRequest(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
-    local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
     local marsa = flightPlan and (flightPlan.marsa or flightPlan.MARSA) or nil
     local block = marsa and marsa.allowed_block_altitudes and marsa.allowed_block_altitudes[1] or nil
 
@@ -750,7 +883,7 @@ end
 
 function NASG_ATC_CENTER:HandleCourseCheck(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
-    local flightPlan = self:GetOrAttachFlightPlan(atc, client, session, event)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
 
     if not flightPlan or not NASG_ATC_NAVIGATION then
         self:Send(atc, airport, string.format("%s, unable course check. No flight plan available.", callsign))
@@ -842,6 +975,18 @@ function NASG_ATC_CENTER:HandleReadback(atc, client, airport, session, event)
         if fix == "" or string.find(text, fix, 1, true) then
             session.PendingReadback = nil
             atc:Log("Center direct readback correct for client=" .. tostring(session.ClientKey))
+            return true
+        end
+
+        local callsign = atc:GetClientCallsign(client, event)
+        self:Send(atc, airport, string.format("%s, negative. %s", callsign, pending.InstructionText))
+        return true
+    end
+
+    if pending.Type == "center_altitude" then
+        if not pending.AltitudeFt or atc:IsAltitudeReadbackCorrect(rawText, pending.AltitudeFt) then
+            session.PendingReadback = nil
+            atc:Log("Center altitude readback correct for client=" .. tostring(session.ClientKey))
             return true
         end
 

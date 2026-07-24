@@ -46,6 +46,7 @@ NASG_ATC:ActivateAirport("al_minhad", {
         Speed = 190,
         Pitch = -1,
         Volume = 1.0,
+        RecoveryDescentAltitudeFt = 6000,
     },
 
     AWACS = {
@@ -55,6 +56,16 @@ NASG_ATC:ActivateAirport("al_minhad", {
         Voice = "Daniel",
         Speed = 180,
         Pitch = -2,
+        Volume = 1.0,
+    },
+
+    Clearance = {
+        Callsign = "Al Minhad Clearance",
+        Frequency = 126.200,
+        Modulation = radio.modulation.AM,
+        Voice = "Nathan",
+        Speed = 200,
+        Pitch = 0,
         Volume = 1.0,
     },
 

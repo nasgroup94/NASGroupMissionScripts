@@ -726,14 +726,97 @@ class ATCSpeechEventBuilder:
 
         return None
 
+    # Captures the whole rest of the named-fix phrase (not just the first
+    # word) since STT often splits a single fix name into two or more words
+    # phonetically (e.g. "BOPIT" heard as "bop it") — NormalizeFlightPlanLookup
+    # on the Lua side strips spaces before matching, so "bop it" still
+    # resolves to "BOPIT" as long as we hand over the full phrase.
+    _FIX_PHRASE = r"([a-z0-9][a-z0-9 _-]{0,40}?)(?=[.,!?]|$)"
+
     def extract_direct_fix(self, text: str) -> str | None:
         normalized = self.normalize_text(text)
-        match = re.search(r"\bdirect\s+([a-zA-Z0-9_-]+)\b", normalized)
+        match = re.search(r"\bdirect\s+" + self._FIX_PHRASE, normalized)
 
         if match:
-            return match.group(1).upper()
+            candidate = match.group(1).strip()
+
+            if candidate:
+                return candidate.upper()
 
         return None
+
+    def extract_vector_target(self, text: str) -> str | None:
+        normalized = self.normalize_text(text)
+        match = re.search(r"\bvectors?\s+(?:to|for)\s+" + self._FIX_PHRASE, normalized)
+
+        if match:
+            candidate = match.group(1).strip()
+
+            if candidate:
+                return candidate.upper()
+
+        return None
+
+    def extract_route_request(self, text: str) -> dict | None:
+        normalized = self.normalize_text(text)
+        result = {}
+
+        procedure_match = re.search(
+            r"\b([a-zA-Z][a-zA-Z0-9_-]*)\s+(departure|recovery)\b", normalized
+        )
+
+        if procedure_match:
+            result["route_name"] = procedure_match.group(1).upper()
+            result["route_type"] = procedure_match.group(2)
+
+        destination_match = re.search(
+            r"\b(?:clearance|destination)\s+to\s+([a-zA-Z0-9_-]+)\b", normalized
+        )
+
+        if destination_match:
+            result["destination"] = destination_match.group(1).upper()
+
+        if not result:
+            return None
+
+        return result
+
+    def extract_check_in_altitudes(self, text: str) -> dict | None:
+        normalized = self.normalize_text(text)
+
+        match = re.search(
+            r"\b(climbing through|descending through|level at|level|out of)"
+            r"\s+(.+?)\s+for\s+(.+?)(?:\s|$)",
+            normalized,
+        )
+
+        if not match:
+            return None
+
+        direction_phrase = match.group(1)
+
+        if "climb" in direction_phrase:
+            direction = "climb"
+        elif "descend" in direction_phrase:
+            direction = "descend"
+        else:
+            direction = "level"
+
+        result = {"direction": direction}
+
+        current_ft = self.parse_altitude_token(match.group(2))
+        goal_ft = self.parse_altitude_token(match.group(3))
+
+        if current_ft:
+            result["current_ft"] = current_ft
+
+        if goal_ft:
+            result["goal_ft"] = goal_ft
+
+        if "current_ft" not in result and "goal_ft" not in result:
+            return None
+
+        return result
 
     def contains_readback_phrase(self, normalized: str, service: str) -> bool:
         if service == "tower":
@@ -786,6 +869,16 @@ class ATCSpeechEventBuilder:
             )
 
             return any(phrase in normalized for phrase in awacs_phrases)
+
+        if service == "clearance":
+            clearance_phrases = (
+                "squawk",
+                "cleared to",
+                "departure",
+                "recovery",
+            )
+
+            return any(phrase in normalized for phrase in clearance_phrases)
 
         return False
 
@@ -846,6 +939,32 @@ class ATCSpeechEventBuilder:
 
         if fix:
             speech_event["fix"] = fix
+
+        vector_target = self.extract_vector_target(text)
+
+        if vector_target:
+            speech_event["vector_target"] = vector_target
+
+        check_in_altitudes = self.extract_check_in_altitudes(text)
+
+        if check_in_altitudes:
+            if "current_ft" in check_in_altitudes:
+                speech_event["current_altitude_ft"] = check_in_altitudes["current_ft"]
+
+            if "goal_ft" in check_in_altitudes:
+                speech_event["goal_altitude_ft"] = check_in_altitudes["goal_ft"]
+
+            speech_event["altitude_direction"] = check_in_altitudes["direction"]
+
+        route_request = self.extract_route_request(text)
+
+        if route_request:
+            if "route_name" in route_request:
+                speech_event["route_name"] = route_request["route_name"]
+                speech_event["route_type"] = route_request["route_type"]
+
+            if "destination" in route_request:
+                speech_event["destination"] = route_request["destination"]
 
         return speech_event
 
@@ -1187,6 +1306,24 @@ def process_events(
             continue
 
         try:
+            if str(event.get("type") or "") == "squawk_update":
+                client_name = normalize_dcs_client_name(str(event.get("client_name") or ""))
+
+                if client_name and client_name.lower() not in ignored_client_names:
+                    event_writer.write({
+                        "source": "srs_stt_bridge",
+                        "channel_id": channel.id,
+                        "airport_id": channel.airport_id,
+                        "service": channel.service,
+                        "facility": channel.service,
+                        "intent": "live_squawk_update",
+                        "client_name": client_name,
+                        "mode3": event.get("mode3"),
+                        "created_at": time.time(),
+                    })
+
+                continue
+
             audio_file = Path(event["audio_file"])
             audio_file.parent.mkdir(parents=True, exist_ok=True)
             client_name = str(event.get("client_name") or "").strip()

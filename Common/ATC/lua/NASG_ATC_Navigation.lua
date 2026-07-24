@@ -172,4 +172,22 @@ function NASG_ATC_NAVIGATION:GetVectorToWaypoint(client, waypoint)
     return self:GetBearingDistance(aircraftCoord, waypointCoord)
 end
 
+function NASG_ATC_NAVIGATION:GetVectorToCoordinate(client, coordinate)
+    if not client or not coordinate then
+        return nil
+    end
+
+    local aircraftCoord = nil
+
+    pcall(function()
+        aircraftCoord = client:GetCoordinate()
+    end)
+
+    if not aircraftCoord then
+        return nil
+    end
+
+    return self:GetBearingDistance(aircraftCoord, coordinate)
+end
+
 NASG_ATC_NAVIGATION:NormalizeHeading(360)
