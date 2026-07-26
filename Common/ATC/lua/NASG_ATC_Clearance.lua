@@ -2,10 +2,11 @@ NASG_ATC = NASG_ATC or {}
 NASG_ATC_CLEARANCE = NASG_ATC_CLEARANCE or {}
 
 ---------------------------------------------------------------------------
--- Clearance Delivery: assigns squawk codes and, optionally, a named
--- departure/recovery procedure ("Dream departure", "Strike recovery") to
--- an end destination, attaching the result to the pilot's session as
--- session.Route for Center to consume (see NASG_ATC_Procedures.lua).
+-- Clearance Delivery: assigns squawk codes and, optionally, a chained
+-- route of one or more named procedures and/or tracked points ("Dream
+-- departure", "Dream departure to Student Gap") to an end destination,
+-- attaching the result to the pilot's session as session.Route for
+-- Center to consume (see NASG_ATC_Procedures.lua's AttachChainedRoute).
 --
 -- Contacting Clearance Delivery is optional — a pilot who never calls it
 -- gets exactly today's behavior; nothing downstream requires session.Route
@@ -175,35 +176,35 @@ end
 
 function NASG_ATC_CLEARANCE:HandleClearanceRequest(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
-    local requestedRouteName = event and event.route_name
+    local routeSegments = event and event.route_segments
 
-    if requestedRouteName and requestedRouteName ~= "" then
-        local procedure = atc:FindProcedure(requestedRouteName, airport.Id, event.route_type)
+    if routeSegments and #routeSegments > 0 then
+        local destinationText = event and event.destination
+        local runway = atc:GetActiveRunway(airport, true)
+        local route = atc:AttachChainedRoute(session, routeSegments, destinationText, runway, airport.Id)
 
-        if not procedure then
+        if not route then
             self:Send(atc, airport, string.format("%s, unable, say requested route.", callsign))
             return true
         end
 
-        local destinationText = event and event.destination
         local code = self:AssignSquawkCode(atc, session)
-
-        atc:AttachRequestedRoute(session, procedure, destinationText)
-
-        local procedureClause = string.format("%s %s", procedure.Name, procedure.Type == "recovery" and "recovery" or "departure")
         local message
 
         if destinationText and destinationText ~= "" then
-            message = string.format(
-                    "%s, cleared to %s, %s, squawk %s.",
-                    callsign,
-                    destinationText,
-                    procedureClause,
-                    code
-            )
+            message = string.format("%s, cleared to %s, %s", callsign, destinationText, route.SpokenClause)
         else
-            message = string.format("%s, %s, squawk %s.", callsign, procedureClause, code)
+            message = string.format("%s, %s", callsign, route.SpokenClause)
         end
+
+        local procedure = route.ProcedureId and atc.Procedures[route.ProcedureId]
+        local altitudeClause = procedure and atc:FormatAltitudeConstraintClause(procedure)
+
+        if altitudeClause then
+            message = message .. ", maintain " .. altitudeClause
+        end
+
+        message = message .. string.format(", squawk %s.", code)
 
         self:Send(atc, airport, message)
 
@@ -215,7 +216,7 @@ function NASG_ATC_CLEARANCE:HandleClearanceRequest(atc, client, airport, session
             Type = "clearance",
             InstructionText = message,
             SquawkCode = code,
-            ProcedureName = procedure.Name,
+            RouteSegmentNames = route.SegmentNames,
         })
 
         return true
@@ -261,7 +262,16 @@ function NASG_ATC_CLEARANCE:HandleReadback(atc, client, airport, session, event)
     local squawkSpoken = pending.SquawkCode and string.find(text, pending.SquawkCode, 1, true)
     local squawkLive = pending.SquawkCode and session.LiveSquawkCode and session.LiveSquawkCode == pending.SquawkCode
     local squawkOk = not pending.SquawkCode or squawkSpoken or squawkLive
-    local procedureOk = not pending.ProcedureName or string.find(text, string.lower(pending.ProcedureName), 1, true)
+    local procedureOk = true
+
+    if pending.RouteSegmentNames then
+        for _, segmentName in ipairs(pending.RouteSegmentNames) do
+            if not string.find(text, string.lower(segmentName), 1, true) then
+                procedureOk = false
+                break
+            end
+        end
+    end
 
     if squawkOk and procedureOk then
         session.PendingReadback = nil
@@ -294,6 +304,16 @@ function NASG_ATC_CLEARANCE:HandleSpeechEvent(atc, client, airport, session, eve
         if request.Handler and self[request.Handler] then
             return self[request.Handler](self, atc, client, airport, session, event)
         end
+    end
+
+    -- A chained route request ("dream departure to student gap") doesn't
+    -- always carry one of the fixed trigger phrases above (e.g. it may be
+    -- spoken with no "request clearance" lead-in at all), but the speech
+    -- bridge still extracts route_segments independently of intent
+    -- matching -- so fall back to handling it as a clearance request
+    -- rather than a flat "say again" when segments are present.
+    if event and event.route_segments and #event.route_segments > 0 then
+        return self:HandleClearanceRequest(atc, client, airport, session, event)
     end
 
     atc:SendSayAgain(airport, atc.Facilities.CLEARANCE, client, event)

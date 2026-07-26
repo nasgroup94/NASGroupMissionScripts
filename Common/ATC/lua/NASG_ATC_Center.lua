@@ -96,6 +96,16 @@ NASG_ATC_CENTER.Requests = {
         Handler = "HandleRecovery",
     },
 
+    request_route = {
+        Patterns = {
+            "request route",
+            "recovery via",
+            "request recovery via",
+            "route via",
+        },
+        Handler = "HandleRouteRequest",
+    },
+
     request_divert = {
         Patterns = {
             "request divert",
@@ -242,8 +252,10 @@ end
 -- falling back to the current leg of a Clearance-Delivery-assigned route
 -- (see NASG_ATC_Procedures.lua) when the event named no explicit target —
 -- so an unnamed "request direct"/"request vector" defaults to the next
--- assigned-route leg. Returns targetType ("waypoint"|"tracked_point"), target.
-function NASG_ATC_CENTER:GetTargetForEvent(atc, airport, flightPlan, session, event, fallbackRole)
+-- assigned-route leg. client (may be nil) lets the route fallback advance
+-- past any legs already reached (AdvanceRouteLegIfReached) before picking
+-- one. Returns targetType ("waypoint"|"tracked_point"), target.
+function NASG_ATC_CENTER:GetTargetForEvent(atc, airport, flightPlan, session, event, fallbackRole, client)
     local waypoint = self:GetWaypointForEvent(atc, flightPlan, event, fallbackRole)
 
     if waypoint then
@@ -261,6 +273,10 @@ function NASG_ATC_CENTER:GetTargetForEvent(atc, airport, flightPlan, session, ev
     end
 
     if not rawValue and session and session.Route and session.Route.Legs then
+        if client then
+            atc:AdvanceRouteLegIfReached(client, session)
+        end
+
         local leg = session.Route.Legs[session.Route.ActiveLegIndex or 1]
 
         if leg then
@@ -298,18 +314,22 @@ function NASG_ATC_CENTER:SendVectorToTarget(atc, client, airport, event, targetT
 
     local messagePrefix = prefix or "proceed direct"
 
-    self:Send(
-            atc,
-            airport,
-            string.format(
-                    "%s, %s %s, bearing %s, distance %.0f miles.",
-                    callsign,
-                    messagePrefix,
-                    targetName,
-                    NASG_ATC_NAVIGATION:FormatHeading(vector.Bearing),
-                    vector.DistanceNM
-            )
+    local instruction = string.format(
+            "%s, %s %s, bearing %s, distance %.0f miles.",
+            callsign,
+            messagePrefix,
+            targetName,
+            NASG_ATC_NAVIGATION:FormatHeading(vector.Bearing),
+            vector.DistanceNM
     )
+
+    local altitudeClause = targetType ~= "waypoint" and atc:FormatAltitudeConstraintClause(target) or nil
+
+    if altitudeClause then
+        instruction = instruction .. string.format(" Cross %s %s.", targetName, altitudeClause)
+    end
+
+    self:Send(atc, airport, instruction)
 
     return true
 end
@@ -495,7 +515,7 @@ end
 function NASG_ATC_CENTER:HandleDirect(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
     local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
-    local targetType, target = self:GetTargetForEvent(atc, airport, flightPlan, session, event, nil)
+    local targetType, target = self:GetTargetForEvent(atc, airport, flightPlan, session, event, nil, client)
 
     session.State = atc.States.CENTER_CONTROL
     session.Facility = atc.Facilities.CENTER
@@ -532,7 +552,7 @@ end
 
 function NASG_ATC_CENTER:HandleVectorToWaypoint(atc, client, airport, session, event)
     local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
-    local targetType, target = self:GetTargetForEvent(atc, airport, flightPlan, session, event, nil)
+    local targetType, target = self:GetTargetForEvent(atc, airport, flightPlan, session, event, nil, client)
 
     session.State = atc.States.CENTER_CONTROL
     session.Facility = atc.Facilities.CENTER
@@ -661,6 +681,41 @@ function NASG_ATC_CENTER:HandleTankerRequest(atc, client, airport, session, even
     return true
 end
 
+
+-- Attaches a chained route requested directly from Center ("student gap
+-- to mintt recovery", "recovery via student gap to mintt recovery").
+-- Unlike Clearance's HandleClearanceRequest this stays on Center
+-- frequency -- no squawk assignment, no facility handoff -- since the
+-- pilot is already talking to Center; the normal course-check/leg-
+-- advancement plumbing (HandleRouteCourseCheck, AdvanceRouteLegIfReached)
+-- picks up session.Route from here on exactly as it would if Clearance
+-- had set it. A trailing recovery-procedure segment still sets up the
+-- eventual HandleRecovery arrival airport via AttachChainedRoute's
+-- destination inference, so "student gap to mintt recovery" alone is
+-- enough -- no separate destination needs to be stated.
+function NASG_ATC_CENTER:HandleRouteRequest(atc, client, airport, session, event)
+    local callsign = atc:GetClientCallsign(client, event)
+    local routeSegments = event and event.route_segments
+
+    if not routeSegments or #routeSegments == 0 then
+        self:Send(atc, airport, string.format("%s, unable, say requested route.", callsign))
+        return true
+    end
+
+    local destinationText = event and event.destination
+    local route = atc:AttachChainedRoute(session, routeSegments, destinationText, nil, airport.Id)
+
+    if not route then
+        self:Send(atc, airport, string.format("%s, unable, say requested route.", callsign))
+        return true
+    end
+
+    session.UpdatedAt = timer.getTime()
+
+    self:Send(atc, airport, string.format("%s, roger, cleared via %s.", callsign, route.SpokenClause))
+
+    return true
+end
 
 function NASG_ATC_CENTER:GetRecoveryDescentAltitudeFeet(atc, flightPlan, recoveryAirport)
     if flightPlan then
@@ -881,20 +936,176 @@ function NASG_ATC_CENTER:HandleVFROnTopRequest(atc, client, airport, session, ev
     return true
 end
 
+-- Reports radial/DME/altitude compliance for a route leg with no trackable
+-- fix at all (e.g. "intercept the R-346 radial of BLD", or a full radial+
+-- DME fix like "ARCOE, LSV R-209 at 30 DME, cross at 15,000") -- see
+-- NASG_ATC_Tacan.lua. DME and AltitudeFt/AltitudeConstraint are both
+-- optional on routeLeg; whichever the leg doesn't carry is skipped.
+function NASG_ATC_CENTER:HandleRadialCourseCheck(atc, client, airport, callsign, routeLeg)
+    local legName = tostring(routeLeg.Name or string.format("%s R-%03d", tostring(routeLeg.Airbase), routeLeg.Radial))
+
+    if not NASG_ATC_TACAN then
+        self:Send(atc, airport, string.format("%s, unable course check.", callsign))
+        return true
+    end
+
+    local vector = NASG_ATC_TACAN:GetClientRadial(client, routeLeg.Airbase)
+
+    if not vector then
+        self:Send(atc, airport, string.format("%s, unable course check. Coordinates unavailable.", callsign))
+        return true
+    end
+
+    local tolerance = routeLeg.ToleranceDeg or 2
+    local diff = NASG_ATC_NAVIGATION:HeadingDifference(routeLeg.Radial, vector.Bearing)
+
+    if math.abs(diff) > tolerance then
+        local side = diff > 0 and "right" or "left"
+
+        self:Send(
+                atc,
+                airport,
+                string.format(
+                        "%s, %.0f degrees %s of the %s, currently on the %s radial.",
+                        callsign,
+                        math.abs(diff),
+                        side,
+                        legName,
+                        NASG_ATC_NAVIGATION:FormatHeading(vector.Bearing)
+                )
+        )
+        return true
+    end
+
+    if routeLeg.DME and math.abs(vector.DistanceNM - routeLeg.DME) > (routeLeg.DMEToleranceNM or 1) then
+        self:Send(
+                atc,
+                airport,
+                string.format(
+                        "%s, on the %s, %.1f DME, %s the fix.",
+                        callsign,
+                        legName,
+                        vector.DistanceNM,
+                        vector.DistanceNM > routeLeg.DME and "inside" or "outside"
+                )
+        )
+        return true
+    end
+
+    local liveAltitudeFt = self:GetClientAltitudeFeet(client)
+    local altitudeOk = atc:IsAltitudeConstraintSatisfied(liveAltitudeFt, routeLeg)
+
+    if altitudeOk == false then
+        local requiredClause = atc:FormatAltitudeConstraintClause(routeLeg)
+        local liveClause = liveAltitudeFt and atc:FormatAltitudeSpeech(liveAltitudeFt)
+
+        self:Send(
+                atc,
+                airport,
+                string.format(
+                        "%s, at %s. Restriction requires %s, currently %s.",
+                        callsign,
+                        legName,
+                        requiredClause,
+                        liveClause or "altitude unknown"
+                )
+        )
+        return true
+    end
+
+    self:Send(atc, airport, string.format("%s, on the %s.", callsign, legName))
+    return true
+end
+
+-- Reports course/altitude compliance against a Clearance-assigned named
+-- procedure (session.Route) when the pilot has no filed flight plan.
+-- Unlike a flight-plan leg, a route leg is a single tracked point with no
+-- "leg start", so this reports bearing/distance/altitude-compliance rather
+-- than a lateral cross-track deviation. A leg with Radial/Airbase instead
+-- of a coordinate (a TACAN/VORTAC radial intercept) is delegated to
+-- HandleRadialCourseCheck. Advances past any already-reached legs first
+-- (AdvanceRouteLegIfReached) so a multi-leg procedure reports against
+-- whichever fix the pilot is actually approaching, not always leg 1.
+function NASG_ATC_CENTER:HandleRouteCourseCheck(atc, client, airport, session, event)
+    local callsign = atc:GetClientCallsign(client, event)
+    local route = session and session.Route
+
+    if not route or not NASG_ATC_NAVIGATION then
+        self:Send(atc, airport, string.format("%s, unable course check. No flight plan available.", callsign))
+        return true
+    end
+
+    atc:AdvanceRouteLegIfReached(client, session)
+
+    local routeLeg = route.Legs and route.Legs[route.ActiveLegIndex or 1]
+
+    if not routeLeg then
+        self:Send(atc, airport, string.format("%s, unable course check. No active route leg.", callsign))
+        return true
+    end
+
+    if routeLeg.Radial and routeLeg.Airbase then
+        return self:HandleRadialCourseCheck(atc, client, airport, callsign, routeLeg)
+    end
+
+    local coordinate = atc:GetTrackedPointCoordinate(routeLeg)
+    local vector = coordinate and NASG_ATC_NAVIGATION:GetVectorToCoordinate(client, coordinate)
+
+    if not vector then
+        self:Send(atc, airport, string.format("%s, unable course check. Coordinates unavailable.", callsign))
+        return true
+    end
+
+    local legName = tostring(routeLeg.Name or routeLeg.Id or "the fix")
+    local liveAltitudeFt = self:GetClientAltitudeFeet(client)
+    local altitudeOk = atc:IsAltitudeConstraintSatisfied(liveAltitudeFt, routeLeg)
+
+    if altitudeOk == false then
+        local requiredClause = atc:FormatAltitudeConstraintClause(routeLeg)
+        local liveClause = liveAltitudeFt and atc:FormatAltitudeSpeech(liveAltitudeFt)
+
+        self:Send(
+                atc,
+                airport,
+                string.format(
+                        "%s, on course to %s, bearing %s, distance %.0f miles. Restriction requires %s, currently %s.",
+                        callsign,
+                        legName,
+                        NASG_ATC_NAVIGATION:FormatHeading(vector.Bearing),
+                        vector.DistanceNM,
+                        requiredClause,
+                        liveClause or "altitude unknown"
+                )
+        )
+        return true
+    end
+
+    self:Send(
+            atc,
+            airport,
+            string.format(
+                    "%s, on course to %s, bearing %s, distance %.0f miles.",
+                    callsign,
+                    legName,
+                    NASG_ATC_NAVIGATION:FormatHeading(vector.Bearing),
+                    vector.DistanceNM
+            )
+    )
+    return true
+end
+
 function NASG_ATC_CENTER:HandleCourseCheck(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
     local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
 
     if not flightPlan or not NASG_ATC_NAVIGATION then
-        self:Send(atc, airport, string.format("%s, unable course check. No flight plan available.", callsign))
-        return true
+        return self:HandleRouteCourseCheck(atc, client, airport, session, event)
     end
 
     local leg = atc:GetActiveLeg(flightPlan, session)
 
     if not leg then
-        self:Send(atc, airport, string.format("%s, unable course check. No active route leg.", callsign))
-        return true
+        return self:HandleRouteCourseCheck(atc, client, airport, session, event)
     end
 
     local startCoord = NASG_ATC_NAVIGATION:GetWaypointCoordinate(leg.StartWaypoint)
@@ -1006,6 +1217,15 @@ function NASG_ATC_CENTER:HandleSpeechEvent(atc, client, airport, session, event)
         if request.Handler and self[request.Handler] then
             return self[request.Handler](self, atc, client, airport, session, event)
         end
+    end
+
+    -- A chained route request ("student gap to mintt recovery") doesn't
+    -- always carry one of the fixed trigger phrases above, but the speech
+    -- bridge still extracts route_segments independently of intent
+    -- matching -- so fall back to handling it as a route request rather
+    -- than a flat "say again" when segments are present.
+    if event and event.route_segments and #event.route_segments > 0 then
+        return self:HandleRouteRequest(atc, client, airport, session, event)
     end
 
     atc:SendSayAgain(airport, atc.Facilities.CENTER, client, event)

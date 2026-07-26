@@ -1558,10 +1558,10 @@ function NASG_ATC:GetTaxiRoute(airport, parkingArea, runway)
 
     -- Prefer dynamic graph routing when the airport defines a taxi graph.
     if airport.TaxiGraph and NASG_ATC_TAXIGRAPH then
-        local route = NASG_ATC_TAXIGRAPH:RouteParkingToRunway(airport, parkingArea, runwayKey)
+        local route, routeDetail = NASG_ATC_TAXIGRAPH:RouteParkingToRunway(airport, parkingArea, runwayKey)
 
         if route and #route > 0 then
-            return route
+            return route, routeDetail
         end
     end
 
@@ -1573,6 +1573,42 @@ function NASG_ATC:GetTaxiRoute(airport, parkingArea, runway)
     local runwayWithoutLR = runwayKey:gsub("[LRC]$", "")
 
     return parkingArea.TaxiRoutes[runwayKey] or parkingArea.TaxiRoutes[runwayWithoutLR]
+end
+
+-- Given a routeDetail from GetTaxiRoute/TaxiGraph, returns an ordered list of
+-- runway end-ids the route crosses, canonicalized against airport.Runways
+-- (reciprocal ends sharing a RunwayZone collapse to one entry) and with the
+-- destination runway excluded (arriving at your assigned runway isn't
+-- "crossing" it). Returns nil when the route has no crossings.
+function NASG_ATC:GetRouteCrossedRunways(airport, routeDetail, destinationRunway)
+    if not routeDetail or not routeDetail.CrossesRunways or #routeDetail.CrossesRunways == 0 then
+        return nil
+    end
+
+    local destKey = destinationRunway and tostring(destinationRunway) or nil
+    local runwaysCfg = airport and airport.Runways or nil
+    local destZone = destKey and runwaysCfg and runwaysCfg[destKey] and runwaysCfg[destKey].RunwayZone or nil
+
+    local result = {}
+    local seenZone = {}
+
+    for _, endId in ipairs(routeDetail.CrossesRunways) do
+        local key = tostring(endId)
+        local cfg = runwaysCfg and runwaysCfg[key]
+        local zone = (cfg and cfg.RunwayZone) or key
+        local isDestination = key == destKey or (destZone ~= nil and zone == destZone)
+
+        if not isDestination and not seenZone[zone] then
+            seenZone[zone] = true
+            table.insert(result, key)
+        end
+    end
+
+    if #result == 0 then
+        return nil
+    end
+
+    return result
 end
 
 function NASG_ATC:SendFacilityTTS(airport, facility, messageText)
@@ -2033,6 +2069,170 @@ function NASG_ATC:GetCoordinateBearingDegrees(fromCoord, toCoord)
     end
 
     return nil
+end
+
+-- Shared traffic-conditioned assessment, used by Tower's departure-clearance
+-- logic and Ground's runway-crossing logic. Scans live plane/helicopter units
+-- against a reference coordinate (field center for Tower's whole-field check,
+-- a runway-pavement zone centroid for Ground's crossing check) and classifies
+-- the most relevant conflict:
+--   "HOLD"   - an arrival is on final about to land.
+--   "LINEUP" - traffic rolling on/near the runway, or just airborne off it.
+--   "CLEAR"  - environment is clear.
+-- options:
+--   ExcludeUnitName   - unit name to skip (the requesting aircraft itself).
+--   Categories        - unit categories to scan (default plane/helicopter).
+--   ZoneName          - optional ME trigger zone name covering the runway
+--                        pavement. When it resolves, a scanned unit
+--                        physically inside it and not airborne is a
+--                        decisive LINEUP signal (fast path), in addition to
+--                        the NM-radius/bearing heuristic below (fallback for
+--                        airports that haven't declared the zone yet).
+--   CorridorZoneName  - optional ME trigger zone name covering the extended
+--                        approach/departure corridor. When it resolves, a
+--                        scanned unit inside it that's airborne, inbound,
+--                        and below the approach ceiling is a decisive HOLD
+--                        signal; airborne, outbound, and it is a decisive
+--                        LINEUP signal -- both in addition to the
+--                        NM-radius/bearing heuristic below.
+-- Returns status, info (info describes the most relevant conflicting unit).
+function NASG_ATC:AssessRunwayTraffic(referenceCoord, cfg, options)
+    if not referenceCoord or not cfg then
+        return "LINEUP", nil
+    end
+
+    options = options or {}
+
+    local zone = nil
+
+    if options.ZoneName then
+        pcall(function() zone = ZONE:FindByName(options.ZoneName) end)
+    end
+
+    local corridorZone = nil
+
+    if options.CorridorZoneName then
+        pcall(function() corridorZone = ZONE:FindByName(options.CorridorZoneName) end)
+    end
+
+    local status = "CLEAR"
+    local info = nil
+
+    local trafficSet = SET_UNIT:New()
+                               :FilterCategories(options.Categories or { "plane", "helicopter" })
+                               :FilterOnce()
+
+    trafficSet:ForEachUnit(function(unit)
+        if not unit then
+            return
+        end
+
+        local alive = false
+        pcall(function() alive = unit:IsAlive() end)
+        if not alive then
+            return
+        end
+
+        local unitName = nil
+        pcall(function() unitName = unit:GetName() end)
+        if unitName and options.ExcludeUnitName and unitName == options.ExcludeUnitName then
+            return  -- skip the requesting aircraft
+        end
+
+        local coord = nil
+        pcall(function() coord = unit:GetCoordinate() end)
+        if not coord then
+            return
+        end
+
+        local distanceMeters = self:GetCoordinateDistanceMeters(referenceCoord, coord)
+        if not distanceMeters then
+            return
+        end
+
+        local distanceNM = distanceMeters / 1852
+
+        local inZone = false
+        if zone then
+            pcall(function() inZone = zone:IsCoordinateInZone(coord) end)
+        end
+
+        local inCorridor = false
+        if corridorZone then
+            pcall(function() inCorridor = corridorZone:IsCoordinateInZone(coord) end)
+        end
+
+        -- Ignore anything well clear of the runway environment, unless a
+        -- declared zone itself says otherwise.
+        if not inZone and not inCorridor and distanceNM > cfg.FinalApproachNM then
+            return
+        end
+
+        local inAir = true
+        pcall(function() inAir = unit:InAir() end)
+
+        local speedKts = 0
+        pcall(function() speedKts = (unit:GetVelocityKMH() or 0) / 1.852 end)
+
+        local aglFt = 0
+        pcall(function()
+            local vec3 = coord:GetVec3()
+            aglFt = ((vec3 and vec3.y or 0) - coord:GetLandHeight()) / 0.3048
+        end)
+
+        -- Is the unit tracking toward the reference point (inbound) or away?
+        local inbound = false
+        local heading = nil
+        pcall(function() heading = unit:GetHeading() end)
+        local bearingToField = self:GetCoordinateBearingDegrees(coord, referenceCoord)
+
+        if heading and bearingToField then
+            local diff = math.abs(heading - bearingToField)
+            if diff > 180 then
+                diff = 360 - diff
+            end
+            inbound = diff <= cfg.InboundToleranceDeg
+        end
+
+        local unitStatus = nil
+
+        if inZone and (not inAir) then
+            -- Physically on the declared pavement: decisive rolling/occupying signal.
+            unitStatus = "LINEUP"
+        elseif inAir and inbound and (inCorridor or distanceNM <= cfg.FinalApproachNM) and aglFt <= cfg.ApproachCeilingFt then
+            unitStatus = "HOLD"
+        elseif inAir and (not inbound) and (inCorridor or distanceNM <= cfg.DepartureClearNM) then
+            unitStatus = "LINEUP"
+        elseif (not inAir) and distanceNM <= cfg.RunwayProximityNM and speedKts >= cfg.RollingSpeedKts then
+            unitStatus = "LINEUP"
+        end
+
+        if not unitStatus then
+            return
+        end
+
+        local candidate = {
+            Name       = unitName,
+            DistanceNM = distanceNM,
+            AltitudeFt = aglFt,
+            Status     = unitStatus,
+        }
+
+        -- HOLD outranks LINEUP; within a status keep the nearest conflict.
+        if unitStatus == "HOLD" then
+            if status ~= "HOLD" or (info and candidate.DistanceNM < info.DistanceNM) then
+                info = candidate
+            end
+            status = "HOLD"
+        elseif unitStatus == "LINEUP" and status ~= "HOLD" then
+            if status ~= "LINEUP" or (info and candidate.DistanceNM < info.DistanceNM) then
+                info = candidate
+            end
+            status = "LINEUP"
+        end
+    end)
+
+    return status, info
 end
 
 function NASG_ATC:RefreshAirwingAssets(watchedSource)

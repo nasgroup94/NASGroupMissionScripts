@@ -416,7 +416,7 @@ end
 --              of the departure end (line up and wait).
 --   "CLEAR"  - runway and departure corridor are clear (cleared for takeoff).
 -- The requesting client's own aircraft is excluded from the scan.
-function NASG_ATC_TOWER:AssessRunwayForDeparture(atc, client, airport)
+function NASG_ATC_TOWER:AssessRunwayForDeparture(atc, client, airport, runway)
     local fieldCoord = self:GetAirbaseCoordinate(airport)
 
     if not fieldCoord then
@@ -425,118 +425,16 @@ function NASG_ATC_TOWER:AssessRunwayForDeparture(atc, client, airport)
         return "LINEUP", nil
     end
 
-    local cfg = self.RunwayCheck
-
     local myUnitName = nil
     pcall(function() myUnitName = client:GetName() end)
 
-    local status = "CLEAR"
-    local info = nil
+    local runwayCfg = airport.Runways and runway and airport.Runways[tostring(runway)]
 
-    local trafficSet = SET_UNIT:New()
-                               :FilterCategories({ "plane", "helicopter" })
-                               :FilterOnce()
-
-    trafficSet:ForEachUnit(function(unit)
-        if not unit then
-            return
-        end
-
-        local alive = false
-        pcall(function() alive = unit:IsAlive() end)
-        if not alive then
-            return
-        end
-
-        local unitName = nil
-        pcall(function() unitName = unit:GetName() end)
-        if unitName and myUnitName and unitName == myUnitName then
-            return  -- skip the requesting aircraft
-        end
-
-        local coord = nil
-        pcall(function() coord = unit:GetCoordinate() end)
-        if not coord then
-            return
-        end
-
-        local distanceMeters = atc:GetCoordinateDistanceMeters(fieldCoord, coord)
-        if not distanceMeters then
-            return
-        end
-
-        local distanceNM = distanceMeters / 1852
-
-        -- Ignore anything well clear of the runway environment.
-        if distanceNM > cfg.FinalApproachNM then
-            return
-        end
-
-        local inAir = true
-        pcall(function() inAir = unit:InAir() end)
-
-        local speedKts = 0
-        pcall(function() speedKts = (unit:GetVelocityKMH() or 0) / 1.852 end)
-
-        local aglFt = 0
-        pcall(function()
-            local vec3 = coord:GetVec3()
-            aglFt = ((vec3 and vec3.y or 0) - coord:GetLandHeight()) / 0.3048
-        end)
-
-        -- Is the unit tracking toward the field (inbound) or away (outbound)?
-        local inbound = false
-        local heading = nil
-        pcall(function() heading = unit:GetHeading() end)
-        local bearingToField = atc:GetCoordinateBearingDegrees(coord, fieldCoord)
-
-        if heading and bearingToField then
-            local diff = math.abs(heading - bearingToField)
-            if diff > 180 then
-                diff = 360 - diff
-            end
-            inbound = diff <= cfg.InboundToleranceDeg
-        end
-
-        local unitStatus = nil
-
-        if inAir and inbound and distanceNM <= cfg.FinalApproachNM and aglFt <= cfg.ApproachCeilingFt then
-            -- Airborne, low, and tracking toward the field: arrival about to land.
-            unitStatus = "HOLD"
-        elseif inAir and (not inbound) and distanceNM <= cfg.DepartureClearNM then
-            -- Airborne, tracking away, still within half a mile: just departed.
-            unitStatus = "LINEUP"
-        elseif (not inAir) and distanceNM <= cfg.RunwayProximityNM and speedKts >= cfg.RollingSpeedKts then
-            -- On the ground and moving within the runway environment: rolling.
-            unitStatus = "LINEUP"
-        end
-
-        if not unitStatus then
-            return
-        end
-
-        local candidate = {
-            Name       = unitName,
-            DistanceNM = distanceNM,
-            AltitudeFt = aglFt,
-            Status     = unitStatus,
-        }
-
-        -- HOLD outranks LINEUP; within a status keep the nearest conflict.
-        if unitStatus == "HOLD" then
-            if status ~= "HOLD" or (info and candidate.DistanceNM < info.DistanceNM) then
-                info = candidate
-            end
-            status = "HOLD"
-        elseif unitStatus == "LINEUP" and status ~= "HOLD" then
-            if status ~= "LINEUP" or (info and candidate.DistanceNM < info.DistanceNM) then
-                info = candidate
-            end
-            status = "LINEUP"
-        end
-    end)
-
-    return status, info
+    return atc:AssessRunwayTraffic(fieldCoord, self.RunwayCheck, {
+        ExcludeUnitName  = myUnitName,
+        ZoneName         = runwayCfg and runwayCfg.RunwayZone,
+        CorridorZoneName = runwayCfg and runwayCfg.CorridorZone,
+    })
 end
 
 -- Shared departure-clearance logic used by both the holding-short check-in
@@ -546,7 +444,7 @@ function NASG_ATC_TOWER:IssueDepartureClearance(atc, client, airport, session, e
     local callsign = atc:GetClientCallsign(client, event)
     local runway = self:GetRunwayForDeparture(atc, airport, session, event)
     local runwaySpeech = atc:NormalizeRunway(runway)
-    local status, info = self:AssessRunwayForDeparture(atc, client, airport)
+    local status, info = self:AssessRunwayForDeparture(atc, client, airport, runway)
 
     session.Facility = atc.Facilities.TOWER
     session.LineupRunway = runway
@@ -703,12 +601,34 @@ function NASG_ATC_TOWER:HandleLandingClearance(atc, client, airport, session, ev
     return true
 end
 
+-- Plain VFR-pattern go-around unless the pilot is flying a Clearance-
+-- assigned recovery procedure (session.Route) that publishes a
+-- MissedApproach -- in that case, switch the route's active legs over to
+-- the published miss so a subsequent "course check" verifies it the same
+-- way it verified the inbound (see NASG_ATC_Procedures.lua's
+-- GetProcedureMissedApproachLegs and NASG_ATC_Center.lua's
+-- HandleRouteCourseCheck/HandleRadialCourseCheck).
 function NASG_ATC_TOWER:HandleGoingAround(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
 
     session.State = atc.States.GO_AROUND
     session.Facility = atc.Facilities.TOWER
     session.UpdatedAt = timer.getTime()
+
+    local route = session.Route
+    local procedure = route and atc.Procedures[route.ProcedureId]
+    local missedLegs = procedure and atc:GetProcedureMissedApproachLegs(procedure)
+
+    if route and missedLegs and #missedLegs > 0 then
+        route.Legs = missedLegs
+        route.ActiveLegIndex = 1
+
+        self:Send(atc, airport, string.format(
+                "%s, roger missed approach. Fly published miss, report established.",
+                callsign
+        ))
+        return true
+    end
 
     self:Send(atc, airport, string.format("%s, roger go around. Fly runway heading. Report upwind.", callsign))
     return true

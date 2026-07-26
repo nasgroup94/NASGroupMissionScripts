@@ -32,4 +32,8 @@ NASG_ATC = NASG_ATC or {}
 --     Points = { "range_entry", "bullseye" },
 -- })
 
+NASG_ATC:RegisterProcedure({
+	Id = ""
+})
+
 NASG_ATC:Log("Persian Gulf ATC procedures loaded")

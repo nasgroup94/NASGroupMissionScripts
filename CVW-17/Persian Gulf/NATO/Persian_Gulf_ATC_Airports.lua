@@ -44,6 +44,35 @@ NASG_ATC:DefineAirport({
 
     Coalition = coalition.side.BLUE,
 
+    -----------------------------------------------------------------------
+    -- Per-runway-end config, keyed like EOR.Runways/TaxiGraph.RunwayNodes
+    -- above. Two ends belong to the same physical strip when they share a
+    -- RunwayZone (plus an explicit Reciprocal for clarity/robustness). A
+    -- second, physically distinct runway would just use a different
+    -- RunwayZone and its own pair of end-keys here.
+    --
+    -- ApproachZone/DepartureZone/RunwayZone are ME trigger-zone names,
+    -- resolved with ZONE:FindByName (same idiom as EOR's Zone/RequireZone).
+    -- They're optional — Ground/Tower fall back to the existing NM-radius/
+    -- bearing traffic heuristic until you draw them in. Al Minhad has a
+    -- single strip today, so this block enables runway-crossing decisions
+    -- for future taxiways/second runways without changing anything else.
+    -----------------------------------------------------------------------
+    Runways = {
+        ["27"] = {
+            Reciprocal = "09",
+            -- RunwayZone    = "AL_MINHAD_RWY_09_27",
+            -- ApproachZone  = "AL_MINHAD_RWY27_APPROACH",
+            -- DepartureZone = "AL_MINHAD_RWY27_DEPARTURE",
+        },
+        ["09"] = {
+            Reciprocal = "27",
+            -- RunwayZone    = "AL_MINHAD_RWY_09_27",
+            -- ApproachZone  = "AL_MINHAD_RWY09_APPROACH",
+            -- DepartureZone = "AL_MINHAD_RWY09_DEPARTURE",
+        },
+    },
+
     EOR = {
         Enabled = false,
         RequireZone = false,

@@ -35,6 +35,12 @@
     "text_hash": "3e9fa06fea134b1a285570cd59f2624c95fbe0664d1cba88090a7509d5b0fcf6",
     "updated_at": 1784862765.6234896
   },
+  "Creech ATIS|freqs=121.1|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Creech_ATIS_freqs_121.1_modulations_AM_coalition_2.mp3",
+    "initiator": "Creech ATIS|freqs=121.1|modulations=AM|coalition=2",
+    "text_hash": "131b6ceea60b5d64b75645804ebf4ddde7d05b6c486d32ee8083bd03d9be70a6",
+    "updated_at": 1785083501.6796196
+  },
   "Emirates Center|freqs=251|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Emirates_Center_freqs_251_modulations_AM_coalition_2.mp3",
     "initiator": "Emirates Center|freqs=251|modulations=AM|coalition=2",
@@ -46,6 +52,30 @@
     "initiator": "Magic|freqs=262|modulations=AM|coalition=2",
     "text_hash": "e5346aeb33742242444ac46c746dd8eb977bc1aa3c508a571cc43106f4ffd19a",
     "updated_at": 1784420542.6598616
+  },
+  "Nellis ATIS|freqs=134.6|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Nellis_ATIS_freqs_134.6_modulations_AM_coalition_2.mp3",
+    "initiator": "Nellis ATIS|freqs=134.6|modulations=AM|coalition=2",
+    "text_hash": "ba2c0d06fd828b9523392bef37a66e578408b67510767eee7b8b6a83598037d6",
+    "updated_at": 1785083509.9939873
+  },
+  "Nellis Approach|freqs=239.4|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Nellis_Approach_freqs_239.4_modulations_AM_coalition_2.mp3",
+    "initiator": "Nellis Approach|freqs=239.4|modulations=AM|coalition=2",
+    "text_hash": "468355706f6e7c8a4b67afc92789cd8893ce46ec2cbbf89c4916d2191dd7449b",
+    "updated_at": 1785040807.775266
+  },
+  "Nellis Clearance|freqs=120.9|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Nellis_Clearance_freqs_120.9_modulations_AM_coalition_2.mp3",
+    "initiator": "Nellis Clearance|freqs=120.9|modulations=AM|coalition=2",
+    "text_hash": "91c051fe1be92ed56bbc576c027082d90c5cea3872f483046d596d2c94d402e4",
+    "updated_at": 1785040478.6344588
+  },
+  "Nellis Tower|freqs=327.1|modulations=AM|coalition=2": {
+    "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Nellis_Tower_freqs_327.1_modulations_AM_coalition_2.mp3",
+    "initiator": "Nellis Tower|freqs=327.1|modulations=AM|coalition=2",
+    "text_hash": "9438a9358ea9b98addb16c4f217b05fb56bd6e393231816c40311aeae2fdddfe",
+    "updated_at": 1785040695.9594474
   },
   "Overlord|freqs=251.5|modulations=AM|coalition=2": {
     "file_path": "C:\\NASGroup\\NASGroupMissionScripts\\Common\\ATC\\tts_cache\\Overlord_freqs_251.5_modulations_AM_coalition_2.mp3",

@@ -757,17 +757,69 @@ class ATCSpeechEventBuilder:
 
         return None
 
+    # Leading filler words that ride along with a route segment name because
+    # the segment/chain patterns below capture generous multi-word spans
+    # (same style as _FIX_PHRASE) rather than anchoring on a fixed prefix.
+    _ROUTE_STOPWORDS = {
+        "request", "requesting", "requests", "a", "an", "the", "please",
+        "clearance", "destination", "for", "and", "then", "via",
+    }
+
+    # 1-3 lowercase words, optionally tagged as a departure/recovery
+    # procedure. Reused for both a single segment and each link of a chain.
+    _ROUTE_SEGMENT_WORDS = r"[a-z][a-z0-9_-]*(?:\s+[a-z][a-z0-9_-]*){0,2}"
+    _ROUTE_SEGMENT = _ROUTE_SEGMENT_WORDS + r"(?:\s+(?:departure|recovery))?"
+    _ROUTE_SEGMENT_TAGGED = _ROUTE_SEGMENT_WORDS + r"\s+(?:departure|recovery)"
+
+    def _parse_route_segment(self, raw_segment: str) -> dict | None:
+        raw_segment = raw_segment.strip()
+        segment_type = None
+
+        type_match = re.search(r"\s+(departure|recovery)$", raw_segment)
+
+        if type_match:
+            segment_type = type_match.group(1)
+            raw_segment = raw_segment[: type_match.start()].strip()
+
+        words = raw_segment.split()
+
+        while words and words[0] in self._ROUTE_STOPWORDS:
+            words.pop(0)
+
+        if not words:
+            return None
+
+        return {"name": " ".join(words).upper(), "type": segment_type}
+
     def extract_route_request(self, text: str) -> dict | None:
         normalized = self.normalize_text(text)
         result = {}
+        segments = []
 
-        procedure_match = re.search(
-            r"\b([a-zA-Z][a-zA-Z0-9_-]*)\s+(departure|recovery)\b", normalized
+        chain_match = re.search(
+            r"\b(" + self._ROUTE_SEGMENT + r"(?:\s+to\s+" + self._ROUTE_SEGMENT + r")+)\b",
+            normalized,
         )
 
-        if procedure_match:
-            result["route_name"] = procedure_match.group(1).upper()
-            result["route_type"] = procedure_match.group(2)
+        if chain_match and re.search(r"\b(?:departure|recovery)\b", chain_match.group(1)):
+            for raw_segment in re.split(r"\s+to\s+", chain_match.group(1)):
+                segment = self._parse_route_segment(raw_segment)
+
+                if segment:
+                    segments.append(segment)
+        else:
+            single_match = re.search(
+                r"\b" + self._ROUTE_SEGMENT_TAGGED + r"\b", normalized
+            )
+
+            if single_match:
+                segment = self._parse_route_segment(single_match.group(0))
+
+                if segment:
+                    segments.append(segment)
+
+        if segments:
+            result["route_segments"] = segments
 
         destination_match = re.search(
             r"\b(?:clearance|destination)\s+to\s+([a-zA-Z0-9_-]+)\b", normalized
@@ -959,9 +1011,8 @@ class ATCSpeechEventBuilder:
         route_request = self.extract_route_request(text)
 
         if route_request:
-            if "route_name" in route_request:
-                speech_event["route_name"] = route_request["route_name"]
-                speech_event["route_type"] = route_request["route_type"]
+            if "route_segments" in route_request:
+                speech_event["route_segments"] = route_request["route_segments"]
 
             if "destination" in route_request:
                 speech_event["destination"] = route_request["destination"]

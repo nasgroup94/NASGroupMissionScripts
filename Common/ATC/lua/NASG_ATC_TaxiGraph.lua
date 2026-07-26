@@ -136,9 +136,9 @@ function NASG_ATC_TAXIGRAPH:Build(airport)
 
     local adjacency = {}
 
-    local function addEdge(from, to, taxiway, cost)
+    local function addEdge(from, to, taxiway, cost, crossesRunway)
         adjacency[from] = adjacency[from] or {}
-        table.insert(adjacency[from], { to = to, taxiway = taxiway, cost = cost })
+        table.insert(adjacency[from], { to = to, taxiway = taxiway, cost = cost, crossesRunway = crossesRunway })
     end
 
     for _, edge in ipairs(graph.Edges or {}) do
@@ -166,10 +166,10 @@ function NASG_ATC_TAXIGRAPH:Build(airport)
                 end
             end
 
-            addEdge(edge.From, edge.To, edge.Taxiway, cost)
+            addEdge(edge.From, edge.To, edge.Taxiway, cost, edge.CrossesRunway)
 
             if not edge.OneWay then
-                addEdge(edge.To, edge.From, edge.Taxiway, cost)
+                addEdge(edge.To, edge.From, edge.Taxiway, cost, edge.CrossesRunway)
             end
         end
     end
@@ -183,8 +183,10 @@ function NASG_ATC_TAXIGRAPH:Build(airport)
 end
 
 -- Shortest path between two named nodes.
--- Returns { Nodes = {...}, Taxiways = {...}, DistanceMeters = n } or nil.
--- Taxiways collapses consecutive duplicate segment names.
+-- Returns { Nodes = {...}, Taxiways = {...}, DistanceMeters = n, CrossesRunways = {...} } or nil.
+-- Taxiways collapses consecutive duplicate segment names. CrossesRunways lists
+-- the distinct CrossesRunway values (author-supplied end-ids) carried by edges
+-- along the route, in traversal order.
 function NASG_ATC_TAXIGRAPH:ComputeRoute(airport, fromName, toName)
     local runtime = self:Build(airport)
 
@@ -203,7 +205,7 @@ function NASG_ATC_TAXIGRAPH:ComputeRoute(airport, fromName, toName)
     end
 
     if fromName == toName then
-        return { Nodes = { fromName }, Taxiways = {}, DistanceMeters = 0 }
+        return { Nodes = { fromName }, Taxiways = {}, DistanceMeters = 0, CrossesRunways = {} }
     end
 
     local adjacency = runtime.Adjacency
@@ -281,6 +283,8 @@ function NASG_ATC_TAXIGRAPH:ComputeRoute(airport, fromName, toName)
     -- Collapse consecutive duplicate taxiway names, drop unnamed connectors.
     local taxiways = {}
     local last = nil
+    local crossesRunways = {}
+    local seenCrossing = {}
 
     for _, edge in ipairs(edgesInOrder) do
         local taxiway = edge.taxiway
@@ -289,9 +293,14 @@ function NASG_ATC_TAXIGRAPH:ComputeRoute(airport, fromName, toName)
             table.insert(taxiways, taxiway)
             last = taxiway
         end
+
+        if edge.crossesRunway and not seenCrossing[edge.crossesRunway] then
+            seenCrossing[edge.crossesRunway] = true
+            table.insert(crossesRunways, edge.crossesRunway)
+        end
     end
 
-    return { Nodes = nodes, Taxiways = taxiways, DistanceMeters = dist[toName] }
+    return { Nodes = nodes, Taxiways = taxiways, DistanceMeters = dist[toName], CrossesRunways = crossesRunways }
 end
 
 -- Nearest node to a coordinate, optionally restricted to a node Type.
