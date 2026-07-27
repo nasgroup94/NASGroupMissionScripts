@@ -50,6 +50,7 @@ MISSION_TANKER_ALTS.Recovery = 8000
 
 NASG_PYWS_DEBUG = false
 
+
 -- Moose/mist (really need to getrid of MIST one of these days!)
 assert(loadfile(moose_folder .. "Moose.lua"))()
 --assert(loadfile(common_scripts_path .. "Test/NASG_ReloadScriptsMenu.lua"))()

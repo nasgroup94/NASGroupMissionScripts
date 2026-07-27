@@ -20,12 +20,12 @@ local NellisParkingIDs = {
 local coral = {
 	zone = ZONE:New("Coral"),
 	speed = 260,
-	hdg = 253,
+	hdg = 252,
 	leg = 25,
 }
 local jade = {
 	zone = ZONE:New("Jade"),
-	speed = 260,
+	speed = 270,
 	hdg = 220,
 	leg = 25,
 }
@@ -39,8 +39,8 @@ local pearl = {
 
 local amber = {
 	zone = ZONE:New("Amber"),
-	speed = 270,
-	hdg = 260,
+	speed = 300,
+	hdg = 268,
 	leg = 35,
 }
 
@@ -54,7 +54,7 @@ local topaz = {
 local onyx = {
 	zone = ZONE:New("Onyx"),
 	speed = 270,
-	hdg = 360,
+	hdg = 1,
 	leg = 35
 }
 
@@ -63,13 +63,13 @@ local onyx = {
 
 
 
--- Tanker Squadron
 
 
+--A6
 
-A6Tank = SQUADRON:New("Jade",2,"Nellis A6 tankers")
+A6Tank = SQUADRON:New("Jade",4,"Nellis A6 tankers")
 :AddMissionCapability({AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
---:SetParkingIDs(NellisParkingIDs.S3Tanker)
+:SetParkingIDs(NellisParkingIDs.S3Tanker)
 :SetFuelLowThreshold(0.5)
 
 NellisAW:AddSquadron(A6Tank)
@@ -81,7 +81,6 @@ AirStartA6Tank = SQUADRON:New("JadeAir",1,"Air Start Nellis A6 tankers")
 :SetFuelLowThreshold(0.5)
 
 NellisAW:AddSquadron(AirStartA6Tank)
-NellisAW:NewPayload(GROUP:FindByName("JadeAir"),2,{AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
 
 
 
@@ -89,9 +88,10 @@ NellisAW:NewPayload(GROUP:FindByName("JadeAir"),2,{AUFTRAG.Type.TANKER,AUFTRAG.T
 
 
 
-S3Tank = SQUADRON:New("Coral",2,"Nellis S3 tankers")
+--S3
+S3Tank = SQUADRON:New("Coral",4,"Nellis S3 tankers")
 :AddMissionCapability({AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
---:SetParkingIDs(NellisParkingIDs.S3Tanker)
+:SetParkingIDs(NellisParkingIDs.S3Tanker)
 :SetFuelLowThreshold(0.5)
 
 NellisAW:AddSquadron(S3Tank)
@@ -103,7 +103,6 @@ AirStartS3Tank = SQUADRON:New("CoralAir",1,"Air Start Nellis S3 tankers")
 :SetFuelLowThreshold(0.5)
 
 NellisAW:AddSquadron(AirStartA6Tank)
-NellisAW:NewPayload(GROUP:FindByName("CoralAir"),2,{AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
 
 
 
@@ -111,9 +110,10 @@ NellisAW:NewPayload(GROUP:FindByName("CoralAir"),2,{AUFTRAG.Type.TANKER,AUFTRAG.
 
 
 
-C130Tank = SQUADRON:New("Pearl",2,"Nellis C-130 tankers")
+--C130
+C130Tank = SQUADRON:New("Pearl",4,"Nellis C-130 tankers")
 :AddMissionCapability({AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
---:SetParkingIDs(NellisParkingIDs.Tanker)
+:SetParkingIDs(NellisParkingIDs.Tanker)
 :SetFuelLowThreshold(0.5)
 
 NellisAW:AddSquadron(C130Tank)
@@ -125,7 +125,6 @@ AirStartC130Tank = SQUADRON:New("PearlAir",1,"Air Start Nellis C-130 tankers")
 :SetFuelLowThreshold(0.5)
 
 NellisAW:AddSquadron(AirStartC130Tank)
-NellisAW:NewPayload(GROUP:FindByName("PearlAir"),2,{AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
 
 
 
@@ -133,9 +132,10 @@ NellisAW:NewPayload(GROUP:FindByName("PearlAir"),2,{AUFTRAG.Type.TANKER,AUFTRAG.
 
 
 
+--KC130
 KC130Tank = SQUADRON:New("Topaz",4,"Nellis KC-130 tankers")
 :AddMissionCapability({AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
---:SetParkingIDs(NellisParkingIDs.Tanker)
+:SetParkingIDs(NellisParkingIDs.Tanker)
 :SetFuelLowThreshold(0.5)
 
 NellisAW:AddSquadron(KC130Tank)
@@ -147,16 +147,31 @@ AirStartKC130Tank = SQUADRON:New("TopazAir",2,"Air Start Nellis KC-130 tankers")
 :SetFuelLowThreshold(0.5)
 
 NellisAW:AddSquadron(AirStartKC130Tank)
-NellisAW:NewPayload(GROUP:FindByName("TopazAir"),4,{AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
 
 
 
-
-
-
-KC135MPRSTank = SQUADRON:New("Amber",2,"Nellis KC-135 MPRS tankers")
+--KC135
+KC135Tank = SQUADRON:New("Onyx",4,"Nellis KC-135 tankers")
 :AddMissionCapability({AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
---:SetParkingIDs(NellisParkingIDs.Tanker)
+:SetParkingIDs(NellisParkingIDs.Tanker)
+:SetFuelLowThreshold(0.5)
+
+NellisAW:AddSquadron(KC135Tank)
+NellisAW:NewPayload(GROUP:FindByName("Onyx"),10,{AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
+
+AirStartKC135Tank = SQUADRON:New("OnyxAir",2,"Air Start Nellis KC-135 tankers")
+:AddMissionCapability({AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
+:SetTakeoffType("Air")
+:SetFuelLowThreshold(0.5)
+
+NellisAW:AddSquadron(AirStartKC135Tank)
+
+
+
+--KC135MPRS
+KC135MPRSTank = SQUADRON:New("Amber",4,"Nellis KC-135 MPRS tankers")
+:AddMissionCapability({AUFTRAG.Type.TANKER,AUFTRAG.Type.ORBIT})
+:SetParkingIDs(NellisParkingIDs.Tanker)
 :SetFuelLowThreshold(0.5)
 
 NellisAW:AddSquadron(KC135MPRSTank)
@@ -172,7 +187,7 @@ NellisAW:AddSquadron(AirStartKC135MPRSTank)
 
 -- add tasks to airWing
 
-Jade = AUFTRAG:NewTANKER(jade.zone:GetCoordinate(),20000, jade.speed,jade.hdg,jade.leg,0)
+Jade = AUFTRAG:NewTANKER(jade.zone:GetCoordinate(),20000, jade.speed,jade.hdg,jade.leg,1)
 :SetTime(1)
 :SetRepeat(10)
 :SetMissionRange(500)
@@ -183,7 +198,7 @@ Jade = AUFTRAG:NewTANKER(jade.zone:GetCoordinate(),20000, jade.speed,jade.hdg,ja
 
 
 
-Coral = AUFTRAG:NewTANKER(coral.zone:GetCoordinate(),20000, coral.speed,coral.hdg,coral.leg,0)
+Coral = AUFTRAG:NewTANKER(coral.zone:GetCoordinate(),20000, coral.speed,coral.hdg,coral.leg,1)
 :SetTime(1)
 :SetRepeat(10)
 :SetMissionRange(500)
@@ -194,7 +209,7 @@ Coral = AUFTRAG:NewTANKER(coral.zone:GetCoordinate(),20000, coral.speed,coral.hd
 
 
 
-Pearl = AUFTRAG:NewTANKER(pearl.zone:GetCoordinate(),15000, pearl.speed,pearl.hdg,pearl.leg,0)
+Pearl = AUFTRAG:NewTANKER(pearl.zone:GetCoordinate(),15000, pearl.speed,pearl.hdg,pearl.leg,1)
 :SetTime(1)
 :SetRepeat(10)
 :SetMissionRange(700)
@@ -216,11 +231,11 @@ Topaz = AUFTRAG:NewTANKER(topaz.zone:GetCoordinate(),15000,topaz.speed,topaz.hdg
 
 
 
-Onyx = AUFTRAG:NewTANKER(onyx.zone:GetCoordinate(),55000,onyx.speed,onyx.hdg,onyx.leg,0)
+Onyx = AUFTRAG:NewTANKER(onyx.zone:GetCoordinate(),25000,onyx.speed,onyx.hdg,onyx.leg,0)
 :SetTime(1)
 :SetRepeat(10)
 :SetMissionRange(700)
-:AssignSquadrons({AirStartKC130Tank,KC130Tank})
+:AssignSquadrons({AirStartKC135Tank,KC135Tank})
 :SetName("Onyx")
 :SetTACAN(24,"Y","ONY")
 :SetRadio(325.6)

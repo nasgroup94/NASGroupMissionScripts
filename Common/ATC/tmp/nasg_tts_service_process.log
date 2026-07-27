@@ -1,4 +1,4 @@
-[Sun 07/26/2026 11:53:34.70] start_tts_service.bat launched 
+[Sun 07/26/2026 14:15:18.26] start_tts_service.bat launched 
 Working directory: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts 
 ATC root: C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\.. 
 TTS affinity mask: C000 
@@ -27,5 +27,57 @@ SRS backend: go_native
 SRS host:    127.0.0.1
 SRS sender:  C:\NASGroup\NASGroupMissionScripts\Common\ATC\scripts\..\bin\srs-tts-send.exe
 Verbose:     False
+[a9ca7f6e49204afd910d00510551510b] Received TTS request: initiator='Nellis ATIS|freqs=134.6|modulations=AM|coalition=2', text_length=424
+[a9ca7f6e49204afd910d00510551510b] TTS job started: initiator='Nellis ATIS|freqs=134.6|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=134.6, modulations=AM, coalition=2, volume=0.3
+[a9ca7f6e49204afd910d00510551510b] TTS job failed: Go native SRS sender failed with exit code 1: SRS address: 127.0.0.1:5002
+Client name: NASGroup TTS
+Coalition: 2
+Frequency MHz: 134.600000
+Modulation: AM
+File: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\tts_output\tmp\main\main_a9ca7f6e49204afd910d00510551510b.mp3.16k_mono_f32le.pcm
+External AWACS password: set
+{"level":"info","address":"127.0.0.1:5002","time":"2026-07-26T14:15:41-05:00","message":"connecting to SRS server TCP socket"}
+transmit failed: create SRS client: failed to connect to SRS server: failed to connect to data socket: dial tcp 127.0.0.1:5002: connectex: No connection could be made because the target machine actively refused it.
+
+[a09a9419cf094758af747885d24d1955] Received TTS request: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2', text_length=425
+[a09a9419cf094758af747885d24d1955] TTS job started: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
+[a09a9419cf094758af747885d24d1955] TTS job failed: Go native SRS sender failed with exit code 1: SRS address: 127.0.0.1:5002
+Client name: NASGroup TTS
+Coalition: 2
+Frequency MHz: 121.100000
+Modulation: AM
+File: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\tts_output\tmp\main\main_a09a9419cf094758af747885d24d1955.mp3.16k_mono_f32le.pcm
+External AWACS password: set
+{"level":"info","address":"127.0.0.1:5002","time":"2026-07-26T14:15:46-05:00","message":"connecting to SRS server TCP socket"}
+transmit failed: create SRS client: failed to connect to SRS server: failed to connect to data socket: dial tcp 127.0.0.1:5002: connectex: No connection could be made because the target machine actively refused it.
+
+[c63914efe0414a95bea6001194a911db] Received TTS request: initiator='Nellis ATIS|freqs=134.6|modulations=AM|coalition=2', text_length=424
+[c63914efe0414a95bea6001194a911db] TTS job started: initiator='Nellis ATIS|freqs=134.6|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=134.6, modulations=AM, coalition=2, volume=0.3
+[c63914efe0414a95bea6001194a911db] TTS job failed: Go native SRS sender failed with exit code 1: SRS address: 127.0.0.1:5002
+Client name: NASGroup TTS
+Coalition: 2
+Frequency MHz: 134.600000
+Modulation: AM
+File: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\tts_output\tmp\main\main_c63914efe0414a95bea6001194a911db.mp3.16k_mono_f32le.pcm
+External AWACS password: set
+{"level":"info","address":"127.0.0.1:5002","time":"2026-07-26T14:17:20-05:00","message":"connecting to SRS server TCP socket"}
+transmit failed: create SRS client: failed to connect to SRS server: failed to connect to data socket: dial tcp 127.0.0.1:5002: connectex: No connection could be made because the target machine actively refused it.
+
+[f4b878cb32744e15a051d59cd02848c9] Received TTS request: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2', text_length=425
+[f4b878cb32744e15a051d59cd02848c9] TTS job started: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
+[f4b878cb32744e15a051d59cd02848c9] TTS job failed: Go native SRS sender failed with exit code 1: SRS address: 127.0.0.1:5002
+Client name: NASGroup TTS
+Coalition: 2
+Frequency MHz: 121.100000
+Modulation: AM
+File: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\tts_output\tmp\main\main_f4b878cb32744e15a051d59cd02848c9.mp3.16k_mono_f32le.pcm
+External AWACS password: set
+{"level":"info","address":"127.0.0.1:5002","time":"2026-07-26T14:17:25-05:00","message":"connecting to SRS server TCP socket"}
+transmit failed: create SRS client: failed to connect to SRS server: failed to connect to data socket: dial tcp 127.0.0.1:5002: connectex: No connection could be made because the target machine actively refused it.
+
 TTS service stop file detected: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\nasg_tts_service.stop
-[Sun 07/26/2026 12:03:03.04] start_tts_service.bat exiting with code 0 
+[Sun 07/26/2026 14:18:26.50] start_tts_service.bat exiting with code 0 
