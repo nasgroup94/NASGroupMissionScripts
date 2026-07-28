@@ -13,7 +13,8 @@ NellisChief:AddMission(Coral)
 NellisChief:AddMission(Amber)
 NellisChief:AddMission(Topaz)
 NellisChief:AddMission(Onyx)
-NellisChief:AddMission(northAWACS)
 NellisChief:AddMission(Pearl)
+NellisChief:AddMission(northAWACS)
+
 
 NASG_ATC:AddAssets(NellisChief)

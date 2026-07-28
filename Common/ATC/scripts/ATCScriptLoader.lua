@@ -71,6 +71,7 @@ function NASG_ATC_SCRIPT_LOADER:Load()
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_Center.lua")
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_AWACS.lua")
     self:LoadScript(self.ATCLuaPath .. "NASG_ATC_Clearance.lua")
+    self:LoadScript(self.ATCLuaPath .. "NASG_ATC_StatusMenu.lua")
 
     -- Mission-specific airport/controller configuration.
     -- Database (structural defs) first, then the comms/mission layer that

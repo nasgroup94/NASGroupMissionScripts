@@ -759,6 +759,27 @@ function NASG_ATC:IsAltitudeReadbackCorrect(rawText, altitudeFeet)
     return false
 end
 
+function NASG_ATC:IsSquawkReadbackCorrect(rawText, squawkCode)
+    if not squawkCode or squawkCode == "" then
+        return true
+    end
+
+    local text = self:NormalizeReadbackText(rawText)
+    local squawkSpeechText = self:NormalizeReadbackText(NASG_RADIO_SPEECH:DigitsToSpeech(squawkCode))
+
+    if squawkSpeechText ~= "" and string.find(text, squawkSpeechText, 1, true) then
+        return true
+    end
+
+    local numericSquawkText = self:NormalizeReadbackText(squawkCode)
+
+    if numericSquawkText ~= "" and string.find(text, numericSquawkText, 1, true) then
+        return true
+    end
+
+    return false
+end
+
 function NASG_ATC:FormatTextForSpeech(text)
     if NASG_RADIO_SPEECH and NASG_RADIO_SPEECH.FormatText then
         return NASG_RADIO_SPEECH:FormatText(text)

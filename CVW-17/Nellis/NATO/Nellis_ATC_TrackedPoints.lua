@@ -483,6 +483,13 @@ NASG_ATC:RegisterTrackedPoint({
 })
 
 NASG_ATC:RegisterTrackedPoint({
+    Id = "phinn",
+    Name = "PHINN",
+    x = -00389987,
+    z = -00010730,
+})
+
+NASG_ATC:RegisterTrackedPoint({
     Id = "pine",
     Name = "PINE",
     x = -204794.9,

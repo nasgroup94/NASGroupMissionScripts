@@ -240,6 +240,61 @@ function NASG_ATC_CLEARANCE:HandleClearanceRequest(atc, client, airport, session
     return true
 end
 
+-- Full CRAFT-format clearance (Clearance limit, Route, Altitude, Frequency,
+-- Transponder), issued once the pilot correctly reads back the squawk on
+-- the plain "request clearance" path (no named departure/recovery
+-- procedure -- that path already front-loads its own clearance message in
+-- HandleClearanceRequest above, before readback). Reuses NASG_ATC_TOWER's
+-- departure-facility/climb-altitude logic rather than duplicating it here.
+function NASG_ATC_CLEARANCE:BuildFullClearanceMessage(atc, client, airport, session, event, callsign)
+    local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
+    local arrivalAirportId = atc:GetFlightPlanArrivalAirportId(flightPlan)
+    local arrivalAirport = arrivalAirportId and atc:GetAirport(arrivalAirportId)
+
+    local clearanceLimitClause = arrivalAirport
+            and string.format("cleared to %s, as filed", arrivalAirport.Name)
+            or "cleared as filed"
+
+    local climbAltitudeFt = NASG_ATC_TOWER:GetDepartureClimbAltitudeFeet(atc, client, airport, session, event)
+    local altitudeClause = climbAltitudeFt and string.format("climb and maintain %s", atc:FormatAltitudeSpeech(climbAltitudeFt))
+
+    local departureFacility = NASG_ATC_TOWER:GetDepartureFacility(atc, airport)
+    local departureFrequency = atc:GetFacilityFrequency(airport, departureFacility)
+    local frequencyClause = departureFrequency
+            and string.format(
+                    "departure frequency %s, %s",
+                    atc:GetFacilityCallsign(airport, departureFacility),
+                    atc:FormatFrequency(departureFrequency)
+            )
+            or nil
+
+    local squawkCode = session.Clearance and session.Clearance.SquawkCode
+    local squawkClause = squawkCode and string.format("squawk %s", squawkCode) or nil
+
+    local parts = { callsign, clearanceLimitClause }
+
+    if altitudeClause then
+        parts[#parts + 1] = altitudeClause
+    end
+
+    if frequencyClause then
+        parts[#parts + 1] = frequencyClause
+    end
+
+    if squawkClause then
+        parts[#parts + 1] = squawkClause
+    end
+
+    session.Clearance = session.Clearance or {}
+    session.Clearance.Issued = true
+    session.Clearance.Destination = arrivalAirport and arrivalAirport.Name or nil
+    session.Clearance.AltitudeFt = climbAltitudeFt
+    session.Clearance.DepartureFacility = departureFacility
+    session.Clearance.DepartureFrequency = departureFrequency
+
+    return table.concat(parts, ", ") .. "."
+end
+
 function NASG_ATC_CLEARANCE:HandleReadback(atc, client, airport, session, event)
     if not session or not session.PendingReadback then
         return true
@@ -259,7 +314,7 @@ function NASG_ATC_CLEARANCE:HandleReadback(atc, client, airport, session, event)
     local rawText = event and event.raw_text or ""
     local text = atc:NormalizeReadbackText(rawText)
 
-    local squawkSpoken = pending.SquawkCode and string.find(text, pending.SquawkCode, 1, true)
+    local squawkSpoken = pending.SquawkCode and atc:IsSquawkReadbackCorrect(rawText, pending.SquawkCode)
     local squawkLive = pending.SquawkCode and session.LiveSquawkCode and session.LiveSquawkCode == pending.SquawkCode
     local squawkOk = not pending.SquawkCode or squawkSpoken or squawkLive
     local procedureOk = true
@@ -284,7 +339,13 @@ function NASG_ATC_CLEARANCE:HandleReadback(atc, client, airport, session, event)
         end
 
         local callsign = atc:GetClientCallsign(client, event)
-        self:Send(atc, airport, string.format("%s, readback correct.", callsign))
+
+        if pending.RouteSegmentNames then
+            self:Send(atc, airport, string.format("%s, readback correct.", callsign))
+        else
+            local message = self:BuildFullClearanceMessage(atc, client, airport, session, event, callsign)
+            self:Send(atc, airport, message)
+        end
 
         return true
     end

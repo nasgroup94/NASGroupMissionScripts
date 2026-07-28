@@ -18,6 +18,8 @@ HOW IT WORKS
     prompt (no dedicated handler) except on Ground, which repeats its last
     instruction verbatim.
 
+Persian  Gulf
+
 FACILITIES & FREQUENCIES (Al Minhad)
   Clearance ....... 126.200 AM   "Al Minhad Clearance"
   Ground .......... 250.100 AM   "Al Minhad Ground"
@@ -26,6 +28,28 @@ FACILITIES & FREQUENCIES (Al Minhad)
   AWACS ........... 251.500 AM   "Overlord" / "Magic"
   ATIS ............ 131.700 AM   "Al Minhad Information"  (listen before taxi)
   AAPVE Range ..... via AWACS 251.500 AM (voice) and F10 "A/A RANGE SETUP" menu
+
+NTTR
+
+FACILITIES & FREQUENCIES (Nellis)
+  Clearance ....... 120.900 AM   "Nellis Clearance"
+  Ground .......... 121.800 AM   "Nellis Ground"
+  Tower ........... 327.100 AM   "Nellis Tower"
+  Center .......... 239.400 AM   "Nellis Approach"
+  AWACS ........... 262.000 AM   "Cowboy"
+  ATIS ............ 270.100 AM   "Nellis Information"  (listen before taxi)
+
+
+FACILITIES & FREQUENCIES (Creech)
+  Clearance ....... 121.100 AM   "Creech Clearance"
+  Ground .......... 259.300 AM   "Creech Ground"
+  Tower ........... 306.200 AM   "Creech Tower"
+
+FACILITIES & FREQUENCIES (Groom Lake)
+  Clearance ....... 128.300 AM   "Dreamland Clearance"
+  Tower ........... 291.500 AM   "Dreamland Tower"
+  (no Ground — minimal airport definition, no taxi infrastructure)
+
 
 NOTE ON ATIS: Ground taxi/startup requires the correct ATIS information letter
 (now driven live by the MOOSE ATIS — it changes each Zulu hour). State the
