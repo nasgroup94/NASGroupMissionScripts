@@ -71,7 +71,7 @@ NASG_ATC:RegisterProcedure({
     Name = "FYTTR Three",
     Type = "departure",
     AirportId = "nellis",
-    Aliases = { "FYTTR3", "FYTTR", "Fighter" },
+    Aliases = { "FYTTR3", "FYTTR", "Fighter", "fighter three", "FIGHTER THREE", "FIGHTER" },
     Points = {
         { Point = "fyttr", AltitudeFt = 14000, AltitudeConstraint = "above" },
     },
@@ -95,7 +95,7 @@ NASG_ATC:RegisterProcedure({
     Name = "Dream Four",
     Type = "departure",
     AirportId = "nellis",
-    Aliases = { "Dream4", "Dream" },
+    Aliases = { "Dream4", "Dream","dream for departure","DREAM FOR","DREAM FOR DEPARTURE", "DREAM FLOOR" },
     RunwayPoints = {
         ["3"] = {
             { Radial = 346, Airbase = AIRBASE.Nevada.Boulder_City, Name = "BLD R-346" },

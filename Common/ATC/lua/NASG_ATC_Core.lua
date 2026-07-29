@@ -1211,6 +1211,34 @@ function NASG_ATC:IsClientHot(client)
         return false
     end
 
+    -- Ground speed alone misses the common case: a hot-started aircraft
+    -- sitting still on the ramp about to call for taxi has velocity 0,
+    -- indistinguishable from a cold, engines-off aircraft. Check actual
+    -- engine state (fuel consumption > 0 means at least one engine is
+    -- running) first; only fall back to velocity if that's unavailable.
+    local engineRunning = false
+
+    pcall(function()
+        local dcsUnit = client:GetDCSObject()
+
+        if dcsUnit and dcsUnit.getFuelConsumption then
+            local consumption = dcsUnit:getFuelConsumption()
+
+            if consumption then
+                for _, rate in pairs(consumption) do
+                    if rate and rate > 0 then
+                        engineRunning = true
+                        break
+                    end
+                end
+            end
+        end
+    end)
+
+    if engineRunning then
+        return true
+    end
+
     local velocityMps = 0
 
     pcall(function()

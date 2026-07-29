@@ -68,6 +68,8 @@ assert(loadfile(common_scripts_path .. "rolln.lua"))() -- Just some helper funct
 --assert(loadfile(common_scripts_path .. "stopGaps standalone.lua"))()
 
 assert(loadfile(mission_scripts_path .. "NATO\\Nellis_AFB.lua"))()
+assert(loadfile(mission_scripts_path .. "NATO\\CTLD-i18n.lua"))()
+assert(loadfile(mission_scripts_path .. "NATO\\CTLD.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\NellisChief.lua"))()
 --assert(loadfile(mission_scripts_path .. "NellisMissiles.lua"))()
 assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))() -- creates atisNellis/atisCreech, must run before ATCScriptLoader

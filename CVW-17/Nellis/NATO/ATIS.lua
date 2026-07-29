@@ -2,7 +2,7 @@
 -- runway and Zulu-hour information letter reflect Nellis — NASG_ATC reads
 -- these live for taxi/tower clearances (see NASG_ATC:AttachMooseATIS in
 -- Nellis_ATC_Config.lua). Must load before Nellis_ATC_Config.lua.
-atisNellis = ATIS:New(AIRBASE.Nevada.Nellis, 134.6, radio.modulation.AM)
+atisNellis = ATIS:New(AIRBASE.Nevada.Nellis, 270.1, radio.modulation.AM)
 atisNellis:SetRadioRelayUnitName("NellisRelay")
 atisNellis:SetSRS("", "female", "en-US")
 NASG_TTS:Use(atisNellis.msrs, "Nellis ATIS", "Zoe")

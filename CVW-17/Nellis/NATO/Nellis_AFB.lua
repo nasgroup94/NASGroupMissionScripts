@@ -281,7 +281,7 @@ AWACSsquad = SQUADRON:New("AWACS", 4, "Nellis AWACS")
 :AddMissionCapability({ AUFTRAG.Type.ORBIT })
 :SetCallsign(CALLSIGN.Aircraft.Wizard, 6)
 :SetFuelLowThreshold(0.3)
-:SetRadio(261.05, radio.modulation.AM)
+:SetRadio(262, radio.modulation.AM)
 
 AWACSsquad:SetParkingIDs(NellisParkingIDs.Tanker)
 
@@ -297,7 +297,7 @@ northAWACS = AUFTRAG:NewAWACS(
 )
 :SetTime(1)
 :SetRepeat(10)
-:SetMissionRange(1000)
+:SetMissionRange(700)
 :SetName("North AWACS")
 :AssignSquadrons({ AWACSsquad })
 

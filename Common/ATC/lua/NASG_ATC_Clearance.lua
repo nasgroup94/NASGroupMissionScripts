@@ -42,6 +42,7 @@ NASG_ATC_CLEARANCE.Requests = {
 
     request_clearance = {
         Patterns = {
+            "request",
             "request clearance",
             "ready to copy",
             "request ifr clearance",

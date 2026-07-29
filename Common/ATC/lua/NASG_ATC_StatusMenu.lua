@@ -12,6 +12,7 @@ NASG_ATC_STATUS_MENU = NASG_ATC_STATUS_MENU or {}
 
 NASG_ATC_STATUS_MENU.MenuText = "ATC Status"
 NASG_ATC_STATUS_MENU.MessageDurationSeconds = 30
+NASG_ATC_STATUS_MENU.LogIntervalSeconds = 60
 
 function NASG_ATC_STATUS_MENU:BuildStatusText(client)
     local atc = NASG_ATC
@@ -148,6 +149,24 @@ function NASG_ATC_STATUS_MENU:ScanForClients()
     end)
 end
 
+-- Writes every active client's status to dcs.log (via NASG_ATC:Log) on a
+-- repeating timer, since the F10 "ATC Status" menu item is not currently
+-- displaying in-game. Same client discovery filter as ScanForClients so
+-- this covers whoever is actually flying, independent of the menu bug.
+function NASG_ATC_STATUS_MENU:LogStatusForAllClients()
+    local clientSet = SET_CLIENT:New()
+                                :FilterCoalitions("blue")
+                                :FilterActive()
+                                :FilterStart()
+
+    clientSet:ForEachClient(function(client)
+        if client and client:IsAlive() then
+            local playerName = client:GetPlayerName() or client:GetName() or "unknown"
+            NASG_ATC:Log(string.format("Status for %s:\n%s", tostring(playerName), NASG_ATC_STATUS_MENU:BuildStatusText(client)))
+        end
+    end)
+end
+
 function NASG_ATC_STATUS_MENU:Start()
     if self._EventHandler then
         return
@@ -169,6 +188,13 @@ function NASG_ATC_STATUS_MENU:Start()
     self._Scanner = SCHEDULER:New(nil, function()
         NASG_ATC_STATUS_MENU:ScanForClients()
     end, {}, NASG_ATC.Defaults.StartupClientScanDelaySeconds or 5)
+
+    -- Repeating dcs.log dump of every active client's status -- the F10
+    -- menu item isn't displaying in-game, so this is the working substitute
+    -- until that's root-caused.
+    self._LogScheduler = SCHEDULER:New(nil, function()
+        NASG_ATC_STATUS_MENU:LogStatusForAllClients()
+    end, {}, self.LogIntervalSeconds, self.LogIntervalSeconds)
 
     NASG_ATC:Log("NASG_ATC_StatusMenu started")
 end
