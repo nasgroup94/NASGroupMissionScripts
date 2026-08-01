@@ -126,6 +126,33 @@ function NASG_ATC_STATUS_MENU:ShowStatus(client)
     MESSAGE:New(self:BuildStatusText(client), self.MessageDurationSeconds):ToClient(client)
 end
 
+-- F10 fallback for Feature 1 (callsign alias): menus can't accept free-text
+-- input, so this can only ever clear an alias, never set one -- setting an
+-- arbitrary alias remains voice-only ("set callsign as ...").
+function NASG_ATC_STATUS_MENU:ClearCallsignAlias(client)
+    if not client or not client:IsAlive() then
+        return
+    end
+
+    local atc = NASG_ATC
+    local clientKey = atc:GetClientKey(client)
+    local session = clientKey and atc.ClientSessions[clientKey]
+
+    if not session or not session.CallsignAlias then
+        MESSAGE:New("ATC Status: no callsign alias is currently set.", self.MessageDurationSeconds):ToClient(client)
+        return
+    end
+
+    session.CallsignAlias = nil
+    session.FlightPlanId = nil
+    session.ActiveSequenceName = nil
+    session.ActiveLegIndex = nil
+
+    atc:RefreshPackageMembership(session, client)
+
+    MESSAGE:New("ATC Status: callsign alias cleared.", self.MessageDurationSeconds):ToClient(client)
+end
+
 -- Rebuilds the coalition-scoped "ATC Status" submenu from the current
 -- active-client roster: removes every previously-built entry, then adds
 -- one fresh MENU_COALITION_COMMAND per active BLUE client. Safe to call
@@ -154,8 +181,10 @@ function NASG_ATC_STATUS_MENU:RebuildMenu()
 
             table.insert(clientNames, displayName)
 
-            self.ClientMenus[#self.ClientMenus + 1] = MENU_COALITION_COMMAND:New(
-                    coalition.side.BLUE, displayName, self.RootMenu,
+            local clientMenu = MENU_COALITION:New(coalition.side.BLUE, displayName, self.RootMenu)
+
+            MENU_COALITION_COMMAND:New(
+                    coalition.side.BLUE, "Show Status", clientMenu,
                     function()
                         local selected = CLIENT:FindByName(clientName)
 
@@ -163,6 +192,18 @@ function NASG_ATC_STATUS_MENU:RebuildMenu()
                             NASG_ATC_STATUS_MENU:ShowStatus(selected)
                         end
                     end)
+
+            MENU_COALITION_COMMAND:New(
+                    coalition.side.BLUE, "Clear Callsign Alias", clientMenu,
+                    function()
+                        local selected = CLIENT:FindByName(clientName)
+
+                        if selected then
+                            NASG_ATC_STATUS_MENU:ClearCallsignAlias(selected)
+                        end
+                    end)
+
+            self.ClientMenus[#self.ClientMenus + 1] = clientMenu
         end
     end)
 

@@ -641,6 +641,76 @@ class ATCSpeechEventBuilder:
 
         return None
 
+    # Matches a pilot self-report of a VORTAC/TACAN radial, spoken digit-by-
+    # digit like a runway ("established on the three four six radial",
+    # "on the 346 radial") -- same mixed digit-word/digit approach as
+    # extract_runway above, since STT output can mix either form.
+    def extract_reported_radial(self, text: str) -> int | None:
+        normalized = self.normalize_text(text)
+
+        match = re.search(
+            r"\b(?:established\s+(?:on\s+)?(?:the\s+)?(?:radial\s+)?|on\s+the\s+)"
+            r"((?:[0-9]|zero|one|two|three|four|five|six|seven|eight|nine|niner)"
+            r"(?:\s+(?:[0-9]|zero|one|two|three|four|five|six|seven|eight|nine|niner)){0,2})"
+            r"\s*radial\b",
+            normalized,
+        )
+
+        if not match:
+            return None
+
+        digits = "".join(
+            part if part.isdigit() else self.NUMBER_WORDS.get(part, "")
+            for part in match.group(1).split()
+        )
+
+        return int(digits) if digits else None
+
+    def extract_parking_location(self, text: str) -> str | None:
+        normalized = self.normalize_text(text)
+
+        match = re.search(
+            r"\b(northeast|northwest|southeast|southwest|north|south|east|west)"
+            r"\s*(ramp|eor|end of runway)\b",
+            normalized,
+        )
+
+        if not match:
+            return None
+
+        noun = "ramp" if match.group(2) == "ramp" else "eor"
+
+        return f"{match.group(1)}_{noun}"
+
+    # Parses the new callsign out of "set callsign as check four one" /
+    # "change callsign to viper 21". The speaker's identity for this
+    # transmission is already known independently (SRS client_name), so this
+    # only needs to extract the new value, not re-confirm who's talking.
+    def extract_callsign_alias(self, text: str) -> str | None:
+        normalized = self.normalize_text(text)
+
+        match = re.search(
+            r"\b(?:set|change)\s+callsign\s+(?:as|to)\s+"
+            r"([a-z]+)\s*"
+            r"((?:[0-9]|zero|one|two|three|four|five|six|seven|eight|nine|niner)"
+            r"(?:\s+(?:[0-9]|zero|one|two|three|four|five|six|seven|eight|nine|niner)){0,2})\b",
+            normalized,
+        )
+
+        if not match:
+            return None
+
+        word_part = match.group(1).strip()
+        digits = "".join(
+            part if part.isdigit() else self.NUMBER_WORDS.get(part, "")
+            for part in match.group(2).split()
+        )
+
+        if not word_part or not digits:
+            return None
+
+        return f"{word_part.upper()}{digits}"
+
     def extract_altitude(self, text: str) -> str | None:
         normalized = self.normalize_text(text)
         match = re.search(r"\b(?:passing|level|climbing through|descending through)\s+([a-z0-9\s]+)", normalized)
@@ -984,6 +1054,21 @@ class ATCSpeechEventBuilder:
 
         if runway:
             speech_event["runway"] = runway
+
+        reported_radial = self.extract_reported_radial(text)
+
+        if reported_radial is not None:
+            speech_event["reported_radial"] = reported_radial
+
+        parking_location = self.extract_parking_location(text)
+
+        if parking_location:
+            speech_event["parking_location"] = parking_location
+
+        callsign_alias = self.extract_callsign_alias(text)
+
+        if callsign_alias:
+            speech_event["callsign_alias"] = callsign_alias
 
         altitude = self.extract_altitude(text)
 

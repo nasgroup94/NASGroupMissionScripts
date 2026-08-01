@@ -71,6 +71,34 @@ an unambiguous closest match, so a badly garbled transcription still falls
 through to "unable"/say-again rather than guessing among these
 similarly-named fixes.
 
+NOTE ON TANKER/AIRWING ASSETS: at fields with a MOOSE AIRWING registered to
+NASG_ATC (NASG_ATC:AddAssets(...), e.g. Nellis_AFB.lua's tanker AUFTRAGs —
+Jade, Coral, Pearl, Topaz, Onyx, Amber), those names are live, not static
+tracked points: Center resolves them straight off whichever aircraft is
+currently flying that AUFTRAG, so "request vector to Jade" (or "request
+tanker" for the nearest one, no name needed) always gives a current
+bearing/range plus that AUFTRAG's actual TACAN/radio frequency, and keeps
+working across respawns since it isn't tied to one spawned unit's name.
+Same fuzzy-match tolerance as fixes/waypoints applies to the name.
+
+NOTE ON CALLSIGN ALIAS: forgot to rename your DCS client slot before
+spawning? Say "set callsign as <callsign>" (or "change callsign to
+<callsign>") on Ground and every facility will address you by the new
+callsign from then on — it also becomes the lookup key for your flight
+plan. The F10 "ATC Status" menu has a matching "Clear Callsign Alias" leaf
+per client if you want to drop back to your original name; F10 can only
+clear an alias, not set one (no free-text input on the radio menu).
+
+NOTE ON PACKAGE FLIGHTS: callsigns that fit a <STEM><FLIGHT><POSITION>
+pattern (e.g. CHECK11-14, CHECK21-24 — each a separate 4-ship) are
+recognized as a package, whether you spawned directly with that callsign or
+aliased into one. Only Clearance Delivery currently shares state across a
+package: once any one member (usually but not necessarily the flight lead)
+has received a full clearance, the rest of the package are told "you're
+already covered under <callsign>'s clearance" instead of getting a
+duplicate one. Ground/Tower taxi and takeoff clearances are still handled
+per-aircraft.
+
 NOTE ON NAMED PROCEDURES / ASSIGNED ROUTES: named departure/recovery
 procedures ("Dream departure", "Strike recovery") are ordered sequences of
 tracked points, defined per-mission in
@@ -136,7 +164,7 @@ if you never do, nothing downstream changes.
 ===============================================================================
  GROUND CONTROL — 250.100 AM  ("Al Minhad Ground")
 ===============================================================================
-All 16 commands below are fully implemented.
+All 17 commands below are fully implemented.
 
   1.  Radio check
       Say: "radio check" / "comm check" / "comms check"
@@ -165,13 +193,17 @@ All 16 commands below are fully implemented.
 
   7.  Request taxi
       Say: "request taxi" / "ready to taxi" / "ready for taxi"
-      -> Verifies ATIS, detects your ramp, issues taxi route to the active
-         runway with hold-short + Tower handoff.
+      -> Verifies ATIS, then (at airports that require it, e.g. Nellis)
+         requires you to state your parking location in the same call --
+         "west ramp", "south eor", "northeast eor", etc. -- and replies
+         "say your parking location" until you do. Once stated, issues taxi
+         route to the active runway with hold-short + Tower handoff.
 
   8.  Request taxi to EOR (end of runway / arming)
       Say: "request taxi to eor" / "request eor" / "end of runway"
-      -> Clears you to the EOR/arming area (falls back to normal taxi if EOR
-         is unavailable at this field).
+      -> Same parking-location requirement as Request taxi above. Clears you
+         to the EOR/arming area (falls back to normal taxi if EOR is
+         unavailable at this field).
 
   9.  EOR complete
       Say: "eor complete" / "arming complete" / "ready at eor"
@@ -204,6 +236,12 @@ All 16 commands below are fully implemented.
   16. Ground emergency
       Say: "emergency" / "brake failure" / "engine fire" / "ground emergency"
       -> Acknowledges; tells you to hold position.
+
+  17. Set callsign alias
+      Say: "set callsign as <callsign>" / "set callsign to <callsign>" /
+           "change callsign as <callsign>" / "change callsign to <callsign>"
+      -> Adopts the new callsign for all facilities (see NOTE ON CALLSIGN
+         ALIAS above); replies "copy, <callsign>, callsign updated."
 
 
 ===============================================================================
@@ -314,10 +352,12 @@ All 16 commands below are fully implemented.
          Arms a readback.
 
   5.  Request vector to waypoint — "request vector" / "vectors to..."
-      -> Bearing/distance vector to the requested flight-plan waypoint, or a
-         registered tracked point (tanker, bullseye, objective, etc.) if the
-         name doesn't match a waypoint; same assigned-route-leg fallback as
-         #4 when no name is given.
+      -> Bearing/distance vector to the requested flight-plan waypoint, else
+         a registered tracked point (bullseye, objective, etc.), else a
+         live named tanker/AWACS asset (e.g. "request vector to Jade") if
+         the name matches one being flown right now (see NOTE ON TANKER/
+         AIRWING ASSETS below); same assigned-route-leg fallback as #4 when
+         no name is given.
 
   6.  Request range — "request range" / "vector to range" / "range work"
       -> Vectors to a range waypoint on your flight plan ("unable" if none).
@@ -355,6 +395,15 @@ All 16 commands below are fully implemented.
   15. Course check — "course check" / "am i on course" / "on course"
       -> On-course + distance remaining, or off-course side/distance + rejoin
          heading.
+
+  15a. Established on radial (report) — "established on the 346 radial" /
+       "established radial" / "on the radial"
+      -> Pilot self-report (vs. #15's pilot-initiated request) that they're
+         established on a Clearance-assigned route's radial-intercept leg
+         (e.g. DREAM FOUR's BLD R-346). Confirmed against the leg's actual
+         target radial/DME/altitude, not the number spoken (STT mis-hears);
+         "roger, radar contact on <fix>" if correct, "negative, N degrees
+         [left/right] of <fix>" if not, "unable" if no radial leg is active.
 
   16. Readback — "proceed direct" / "maintain" / "climb" / "descend"
       -> Validates a pending Center instruction, including the altitude

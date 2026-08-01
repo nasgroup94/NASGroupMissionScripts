@@ -1020,24 +1020,21 @@ function NASG_ATC:GetFlightPlanForCallsign(callsign)
 end
 
 function NASG_ATC:GetFlightPlanForClient(client, event)
-    if event then
-        local fp = self:GetFlightPlanForCallsign(event.callsign or event.client_name or event.srs_client_name)
+    -- ResolveEffectiveCallsign (NASG_ATC_Core.lua) implements this same
+    -- callsign-alias -> event.callsign -> player name -> unit name chain,
+    -- plus a pilot-set callsign alias ahead of all of it.
+    local callsign = self:ResolveEffectiveCallsign(client, event)
+
+    if callsign then
+        local fp = self:GetFlightPlanForCallsign(callsign)
 
         if fp then
             return fp
         end
     end
 
-    if client then
-        local playerName = self:GetClientPlayerNameSafe(client)
-        local fp = self:GetFlightPlanForCallsign(playerName)
-
-        if fp then
-            return fp
-        end
-
-        local clientName = self:GetClientNameSafe(client)
-        fp = self:GetFlightPlanForCallsign(clientName)
+    if event then
+        local fp = self:GetFlightPlanForCallsign(event.srs_client_name)
 
         if fp then
             return fp

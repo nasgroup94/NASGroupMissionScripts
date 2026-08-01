@@ -499,7 +499,12 @@ end
 --     intercept (no DME, e.g. "BLD R-346") is reached as soon as it's
 --     established on the radial -- that IS the whole leg, same criterion
 --     HandleRadialCourseCheck already uses to report "on the radial" with
---     nothing left to check.
+--     nothing left to check. If the bearing/DME check can't confirm it (wide
+--     turn, brief crossing, tolerance too tight), falls back to whether the
+--     pilot is already within toleranceNM of nextLeg's fix -- a radial has
+--     no coordinate of its own to compare against, so this checks the next
+--     point in the route instead (e.g. JUNNO past the DREAM FOUR's BLD
+--     R-346 intercept), same idea as the coordinate-leg fallback below.
 --   * Coordinate leg -- reached within toleranceNM (default 2) of its point,
 --     OR already closer to nextLeg's coordinate than to this one. The
 --     fallback covers an infrequent check-in landing well past the fix
@@ -513,25 +518,31 @@ function NASG_ATC:IsRouteLegReached(client, currentLeg, nextLeg, toleranceNM)
     end
 
     if currentLeg.Radial and currentLeg.Airbase then
-        if not NASG_ATC_TACAN then
+        if not NASG_ATC_TACAN or not NASG_ATC_NAVIGATION then
             return false
         end
 
         local vector = NASG_ATC_TACAN:GetClientRadial(client, currentLeg.Airbase)
+        local onRadial = vector and NASG_ATC_TACAN:IsOnRadial(client, currentLeg.Airbase, currentLeg.Radial, currentLeg.ToleranceDeg)
 
-        if not vector then
-            return false
+        if onRadial then
+            if not currentLeg.DME then
+                return true
+            end
+
+            if math.abs(vector.DistanceNM - currentLeg.DME) <= (currentLeg.DMEToleranceNM or 1) then
+                return true
+            end
         end
 
-        if not NASG_ATC_TACAN:IsOnRadial(client, currentLeg.Airbase, currentLeg.Radial, currentLeg.ToleranceDeg) then
-            return false
-        end
+        -- Bearing/DME couldn't confirm the intercept (wide turn, brief
+        -- crossing, tolerance too tight) -- fall back to whether the pilot
+        -- has already reached the next leg's fix, same escape hatch the
+        -- coordinate-leg case below uses for its own fallback.
+        local nextCoordinate = nextLeg and self:GetTrackedPointCoordinate(nextLeg)
+        local nextVector = nextCoordinate and NASG_ATC_NAVIGATION:GetVectorToCoordinate(client, nextCoordinate)
 
-        if not currentLeg.DME then
-            return true
-        end
-
-        return math.abs(vector.DistanceNM - currentLeg.DME) <= (currentLeg.DMEToleranceNM or 1)
+        return nextVector ~= nil and nextVector.DistanceNM <= (toleranceNM or 2)
     end
 
     if not NASG_ATC_NAVIGATION then

@@ -10,6 +10,9 @@ NASG_ATC.Version = "0.4.0"
 NASG_ATC.DebugEnabled = NASG_ATC.DebugEnabled or false
 
 NASG_ATC.ClientSessions = NASG_ATC.ClientSessions or {}
+-- Package-flight index: NASG_ATC.SessionsByPackage[packageKey][position] = session.
+-- Kept in sync by RefreshPackageMembership; never written to directly elsewhere.
+NASG_ATC.SessionsByPackage = NASG_ATC.SessionsByPackage or {}
 NASG_ATC.Airports = NASG_ATC.Airports or {}
 -- Structural airport definitions (the per-map "database"), keyed by Id.
 -- Populated by DefineAirport; activated (merged with comms) by ActivateAirport.
@@ -23,6 +26,7 @@ NASG_ATC.Scanner = NASG_ATC.Scanner or nil
 
 NASG_ATC.Defaults = {
     RequireCorrectATIS = true,
+    RequireParkingLocation = false,
     EngineHotSpeedThresholdKnots = 1,
     -- One-shot scan after Start() to pick up clients that were already alive
     -- before the Birth/EngineStartup event handlers existed. Everything after
@@ -948,27 +952,52 @@ function NASG_ATC:GetClientKey(client)
     return self:GetClientNameSafe(client)
 end
 
-function NASG_ATC:GetClientCallsign(client, event)
+-- Resolves the raw (non-speech-formatted) callsign a client/event should be
+-- known by, preferring a pilot-set alias (session.CallsignAlias) over the
+-- normal event.callsign -> player name -> unit name -> event.client_name
+-- chain. This is the single source of truth for "who is this, right now" --
+-- GetClientCallsign (speech) and GetFlightPlanForClient (package/flight-plan
+-- lookup) both resolve through here so an alias applies everywhere at once.
+function NASG_ATC:ResolveEffectiveCallsign(client, event)
+    if client then
+        local clientKey = self:GetClientKey(client)
+        local session = clientKey and self.ClientSessions[clientKey]
+
+        if session and session.CallsignAlias and session.CallsignAlias ~= "" then
+            return session.CallsignAlias
+        end
+    end
+
     if event and event.callsign and event.callsign ~= "" then
-        return self:FormatCallsignForSpeech(event.callsign)
+        return self:NormalizeClientName(event.callsign)
     end
 
     if client then
         local playerName = self:GetClientPlayerNameSafe(client)
 
         if playerName and playerName ~= "" then
-            return self:FormatCallsignForSpeech(self:NormalizeClientName(playerName))
+            return self:NormalizeClientName(playerName)
         end
 
         local clientName = self:GetClientNameSafe(client)
 
         if clientName and clientName ~= "" then
-            return self:FormatCallsignForSpeech(self:NormalizeClientName(clientName))
+            return self:NormalizeClientName(clientName)
         end
     end
 
     if event and event.client_name then
-        return self:FormatCallsignForSpeech(self:NormalizeClientName(event.client_name))
+        return self:NormalizeClientName(event.client_name)
+    end
+
+    return nil
+end
+
+function NASG_ATC:GetClientCallsign(client, event)
+    local callsign = self:ResolveEffectiveCallsign(client, event)
+
+    if callsign then
+        return self:FormatCallsignForSpeech(callsign)
     end
 
     return "Aircraft"
@@ -1229,6 +1258,18 @@ function NASG_ATC:GetParkingAreaByName(airport, parkingAreaName)
     return nil
 end
 
+-- Resolves a pilot-spoken canonical location key (e.g. "west_ramp",
+-- "southeast_eor") to a real ParkingAreas entry via the airport's
+-- ParkingLocations alias table. Returns nil if the airport doesn't define
+-- that location (e.g. no east ramp modeled yet) so callers can re-prompt.
+function NASG_ATC:ResolveParkingLocation(airport, locationKey)
+    if not airport or not locationKey or not airport.ParkingLocations then
+        return nil
+    end
+
+    return self:GetParkingAreaByName(airport, airport.ParkingLocations[locationKey])
+end
+
 function NASG_ATC:FindAirportForClient(client)
     if not client then
         return nil
@@ -1318,6 +1359,7 @@ function NASG_ATC:GetOrCreateSession(client, airport)
         }
 
         self.ClientSessions[clientKey] = session
+        self:RefreshPackageMembership(session, client)
 
         self:Log(
                 string.format(
@@ -1334,6 +1376,97 @@ function NASG_ATC:GetOrCreateSession(client, airport)
     return session
 end
 
+-- Splits a package-member callsign into its package key and position within
+-- that 4-ship, e.g. "CHECK41" -> ("CHECK4", 1), "CHECK43" -> ("CHECK4", 3).
+-- Reuses NASG_ATC_FlightPlans.lua's GetCallsignStemAndNumber (stem+number
+-- split) rather than duplicating its regex. Single-digit callsigns (e.g.
+-- "CHECK1") don't carry a flight/position digit pair and are treated as not
+-- belonging to any package.
+function NASG_ATC:GetPackageKeyForCallsign(callsign)
+    if not callsign or callsign == "" then
+        return nil, nil
+    end
+
+    local stem, number = self:GetCallsignStemAndNumber(callsign)
+
+    if not stem or not number or number < 10 then
+        return nil, nil
+    end
+
+    return stem .. tostring(math.floor(number / 10)), number % 10
+end
+
+-- Recomputes and re-indexes a session's package membership in
+-- NASG_ATC.SessionsByPackage. Call after anything that can change what
+-- callsign a session resolves to (session creation, alias set/clear).
+-- Prefers a resolved flight plan's package_callsign (authored package
+-- composition, see NASG_ATC_FlightPlans.lua) over splitting the raw/alias
+-- callsign directly.
+function NASG_ATC:RefreshPackageMembership(session, client)
+    if not session then
+        return
+    end
+
+    if session.PackageKey and self.SessionsByPackage[session.PackageKey] then
+        self.SessionsByPackage[session.PackageKey][session.PackagePosition] = nil
+    end
+
+    session.PackageKey = nil
+    session.PackagePosition = nil
+
+    local callsign = session.CallsignAlias
+
+    if not callsign or callsign == "" then
+        callsign = self:ResolveEffectiveCallsign(client, { callsign = session.ClientKey })
+    end
+
+    if not callsign then
+        return
+    end
+
+    local flightPlan = self.GetFlightPlanForCallsign and self:GetFlightPlanForCallsign(callsign)
+    local packageCallsign = flightPlan and flightPlan.package_callsign
+
+    local packageKey, position = self:GetPackageKeyForCallsign(packageCallsign or callsign)
+
+    if not packageKey then
+        return
+    end
+
+    session.PackageKey = packageKey
+    session.PackagePosition = position
+
+    self.SessionsByPackage[packageKey] = self.SessionsByPackage[packageKey] or {}
+    self.SessionsByPackage[packageKey][position] = session
+end
+
+-- Returns the package's designated lead session (position 1), or the given
+-- session itself if it isn't in a package or no lead session is registered.
+function NASG_ATC:GetPackageLeaderSession(session)
+    if not session or not session.PackageKey then
+        return session
+    end
+
+    local package = self.SessionsByPackage[session.PackageKey]
+    return (package and package[1]) or session
+end
+
+-- Returns all sessions currently sharing the given session's package key
+-- (including the session itself). Returns just {session} if it isn't in a
+-- package.
+function NASG_ATC:GetPackageMemberSessions(session)
+    if not session or not session.PackageKey then
+        return { session }
+    end
+
+    local members = {}
+
+    for _, memberSession in pairs(self.SessionsByPackage[session.PackageKey] or {}) do
+        members[#members + 1] = memberSession
+    end
+
+    return members
+end
 
 function NASG_ATC:GetPendingReadback(session, facility)
     if not session then
@@ -1602,29 +1735,92 @@ function NASG_ATC:IsATISCorrect(airport, receivedLetter)
     return self:NormalizeATISLetter(currentLetter) == self:NormalizeATISLetter(receivedLetter)
 end
 
+-- Disambiguates a bare runway heading (e.g. "03", no parallel-runway side)
+-- into the airport's actual specific runway identifier (e.g. "03R"), using
+-- airport.ActiveRunway and airport.Runways[...].Reciprocal. MOOSE's
+-- ATIS:GetActiveRunway() can return isLeft = nil when it can't disambiguate
+-- two parallel runways sharing a heading (see GetMooseATISRunway), which
+-- otherwise leaks a bare heading into clearances ("Runway 03" instead of
+-- "Runway 03R"). No-ops (returns the input unchanged) if the runway already
+-- has a side suffix, the airport has no Runways config, or the heading can't
+-- be resolved unambiguously.
+function NASG_ATC:ResolveRunwaySide(airport, runway)
+    if not airport or not runway or runway == "" then
+        return runway
+    end
+
+    runway = tostring(runway)
+
+    if not runway:match("^%d+$") then
+        return runway
+    end
+
+    local runways = airport.Runways
+
+    if not runways then
+        return runway
+    end
+
+    local function heading(id)
+        return id and tostring(id):match("^(%d+)")
+    end
+
+    local targetHeading = heading(runway)
+    local active = airport.ActiveRunway
+
+    if heading(active) == targetHeading then
+        return active
+    end
+
+    local activeConfig = active and runways[active]
+    local reciprocal = activeConfig and activeConfig.Reciprocal
+
+    if heading(reciprocal) == targetHeading then
+        return reciprocal
+    end
+
+    -- Fall back to scanning for a single unambiguous match; if more than one
+    -- runway shares this heading we can't guess the side, so leave it bare.
+    local match = nil
+
+    for id in pairs(runways) do
+        if heading(id) == targetHeading then
+            if match then
+                return runway
+            end
+
+            match = id
+        end
+    end
+
+    return match or runway
+end
+
 function NASG_ATC:GetActiveRunway(airport, takeoff)
     if not airport then
         return nil
     end
 
+    local runway = nil
+
     -- Prefer the live MOOSE ATIS active runway (wind-derived) when attached.
     if airport.MooseATIS then
-        local runway = self:GetMooseATISRunway(airport.MooseATIS, takeoff)
+        runway = self:GetMooseATISRunway(airport.MooseATIS, takeoff)
+    end
 
-        if runway and runway ~= "" then
-            return runway
+    if not runway or runway == "" then
+        if takeoff == false and airport.ArrivalRunway then
+            runway = tostring(airport.ArrivalRunway)
+        elseif airport.ActiveRunway then
+            runway = tostring(airport.ActiveRunway)
         end
     end
 
-    if takeoff == false and airport.ArrivalRunway then
-        return tostring(airport.ArrivalRunway)
+    if not runway or runway == "" then
+        return nil
     end
 
-    if airport.ActiveRunway then
-        return tostring(airport.ActiveRunway)
-    end
-
-    return nil
+    return self:ResolveRunwaySide(airport, runway)
 end
 
 function NASG_ATC:JoinTaxiRoute(route)
@@ -2526,9 +2722,35 @@ function NASG_ATC:RefreshAuftragAsset(watchedSource, mission, chief)
         MissionType = missionType,
         Coordinate = coordinate,
         Coalition = watchedSource.Coalition,
-        Radio = mission.radio or mission.Radio or mission.frequency or mission.Frequency,
+        Radio = self:GetAuftragRadio(mission),
         Tacan = self:GetAuftragTacan(mission),
     })
+end
+
+-- mission.radio (set via AUFTRAG:SetRadio) is a {Freq, Modu} table, not a
+-- plain frequency -- fall back to legacy plain-number fields for any
+-- caller that set one of those directly instead.
+function NASG_ATC:GetAuftragRadio(mission)
+    if not mission then
+        return nil
+    end
+
+    if type(mission.radio) == "table" then
+        return mission.radio.Freq
+    end
+
+    return mission.radio or mission.Radio or mission.frequency or mission.Frequency
+end
+
+-- mission.tacan (set via AUFTRAG:SetTACAN) is already a {Channel, Band,
+-- Morse, UnitName} table -- the same shape the Center facility's tanker
+-- reply formats directly, so just hand it back as-is.
+function NASG_ATC:GetAuftragTacan(mission)
+    if not mission then
+        return nil
+    end
+
+    return mission.tacan or mission.Tacan
 end
 
 function NASG_ATC:GetAuftragCoordinate(mission)
@@ -2675,6 +2897,48 @@ function NASG_ATC:FindNearestAsset(client, filter)
         DistanceMeters = shortestDistance,
         DistanceNM = shortestDistance / 1852,
     }
+end
+
+-- Looks up an asset (tanker, AWACS, ...) by its display name -- e.g. "Jade",
+-- "Coral" -- for named requests like "request vector to Jade", as opposed
+-- to FindNearestAsset's role-only nearest-match. Tolerates a small amount of
+-- STT mis-hearing via the same fuzzy match used for flight-plan fixes.
+function NASG_ATC:FindAssetByName(name, filter)
+    local key = self:NormalizeFlightPlanLookup(name)
+
+    if key == "" then
+        return nil
+    end
+
+    local assets = self:GetAssets(filter)
+    local byKey = {}
+
+    for _, asset in ipairs(assets) do
+        local assetKey = self:NormalizeFlightPlanLookup(asset.Name or asset.GroupName or "")
+
+        if assetKey ~= "" and not byKey[assetKey] then
+            byKey[assetKey] = asset
+        end
+    end
+
+    local match = byKey[key]
+
+    if not match then
+        local keys = {}
+
+        for lookupKey in pairs(byKey) do
+            keys[#keys + 1] = lookupKey
+        end
+
+        local fuzzyKey = self:FuzzyMatchLookupKey(key, keys)
+
+        if fuzzyKey then
+            self:Log(string.format("Fuzzy-matched asset request '%s' to '%s'", key, fuzzyKey))
+            match = byKey[fuzzyKey]
+        end
+    end
+
+    return match
 end
 
 function NASG_ATC:FormatDebugValue(value)
@@ -3177,6 +3441,31 @@ function NASG_ATC:RefreshAirwingOpsGroupsForRole(watchedSource, role)
             end
 
             local groupName = NASG_ATC:GetGroupNameSafe(mooseGroup)
+
+            -- Prefer the AUFTRAG mission's name/radio/TACAN (e.g. "Jade",
+            -- 323, TACAN 14Y) over the raw DCS spawn name -- the mission is
+            -- what NellisAW's tanker AUFTRAGs (Nellis_AFB.lua) actually
+            -- carry that data on; the ops group/unit objects don't.
+            local missionName = nil
+            local missionRadio = nil
+            local missionTacan = nil
+
+            pcall(function()
+                local mission = type(opsGroup.GetMissionCurrent) == "function"
+                        and opsGroup:GetMissionCurrent()
+                        or nil
+
+                if mission then
+                    if type(mission.GetName) == "function" then
+                        missionName = mission:GetName()
+                    end
+
+                    missionName = missionName or mission.name
+                    missionRadio = mission.radio and mission.radio.Freq
+                    missionTacan = mission.tacan
+                end
+            end)
+
             local units = {}
 
             pcall(function()
@@ -3229,13 +3518,15 @@ function NASG_ATC:RefreshAirwingOpsGroupsForRole(watchedSource, role)
                         Group = mooseGroup,
                         Unit = unit,
                         UnitName = unitName,
-                        GroupName = groupName,
-                        Name = unitName,
+                        GroupName = missionName or groupName,
+                        Name = missionName or groupName or unitName,
                         TypeName = typeName,
                         Role = role,
                         MissionType = missionTypes[1],
                         Coalition = watchedSource.Coalition or NASG_ATC.Defaults.Coalition,
                         Coordinate = coordinate,
+                        Radio = missionRadio,
+                        Tacan = missionTacan,
                         Enabled = true,
                     })
                 else

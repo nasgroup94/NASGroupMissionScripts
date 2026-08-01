@@ -35,3 +35,5 @@ Verbose:     False
 [main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
 [064613089b0b40af84f3d75d784a43e6] TTS job completed successfully. cache_hit=False
 [e775b42e8b2f4516bd2c976e0a548d99] TTS job completed successfully. cache_hit=False
+TTS service stop file detected: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\nasg_tts_service.stop
+[Fri 07/31/2026 21:45:53.13] start_tts_service.bat exiting with code 0 

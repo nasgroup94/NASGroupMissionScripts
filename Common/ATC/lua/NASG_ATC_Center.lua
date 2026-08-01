@@ -185,6 +185,15 @@ NASG_ATC_CENTER.Requests = {
         Handler = "HandleCourseCheck",
     },
 
+    report_established_radial = {
+        Patterns = {
+            "established on",
+            "established radial",
+            "on the radial",
+        },
+        Handler = "HandleEstablishedRadialReport",
+    },
+
     readback = {
         Patterns = {
             "radar contact",
@@ -276,6 +285,19 @@ function NASG_ATC_CENTER:GetTargetForEvent(atc, airport, flightPlan, session, ev
         if point then
             return "tracked_point", point
         end
+
+        -- Named live asset (tanker/AWACS family name, e.g. "Jade", "Coral" --
+        -- see NASG_ATC:FindAssetByName) takes over from a static tracked
+        -- point when nothing matched: the asset registry already tracks the
+        -- live unit, so the vector stays current as it orbits.
+        local asset = atc.FindAssetByName and atc:FindAssetByName(rawValue, {
+            Enabled = true,
+            Coalition = airport.Coalition or atc.Defaults.Coalition,
+        })
+
+        if asset then
+            return "asset", asset
+        end
     end
 
     if not rawValue and session and session.Route and session.Route.Legs then
@@ -308,6 +330,9 @@ function NASG_ATC_CENTER:SendVectorToTarget(atc, client, airport, event, targetT
 
     if targetType == "waypoint" then
         vector = NASG_ATC_NAVIGATION:GetVectorToWaypoint(client, target)
+    elseif targetType == "asset" then
+        local coordinate = atc:GetAssetCoordinate(target)
+        vector = coordinate and NASG_ATC_NAVIGATION:GetVectorToCoordinate(client, coordinate)
     else
         local coordinate = atc:GetTrackedPointCoordinate(target)
         vector = coordinate and NASG_ATC_NAVIGATION:GetVectorToCoordinate(client, coordinate)
@@ -1186,6 +1211,113 @@ function NASG_ATC_CENTER:HandleRadialCourseCheck(atc, client, airport, callsign,
     end
 
     self:Send(atc, airport, string.format("%s, on the %s.", callsign, legName))
+    return true
+end
+
+-- Confirms or corrects a pilot's self-report of being established on the
+-- active route leg's radial (e.g. "established on the three four six
+-- radial") -- the pilot proactively reporting to ATC, as opposed to
+-- HandleCourseCheck's pilot-initiated request for ATC to check them. Runs
+-- the same bearing/DME/altitude checks HandleRadialCourseCheck does against
+-- the leg's actual target radial (not the number the pilot spoke -- STT
+-- digit mis-hears are common, so the reply confirms/corrects against truth
+-- rather than trusting event.reported_radial); only the acknowledgement/
+-- correction phrasing differs. Advances past any already-reached legs first
+-- (AdvanceRouteLegIfReached), same as HandleRouteCourseCheck -- if that
+-- already carried the active leg past the last radial leg in the route (a
+-- late report, or the leg's own next-waypoint fallback in
+-- IsRouteLegReached already caught it), the report is acknowledged as
+-- clear of the intercept rather than treated as an error.
+function NASG_ATC_CENTER:HandleEstablishedRadialReport(atc, client, airport, session, event)
+    local callsign = atc:GetClientCallsign(client, event)
+    local route = session and session.Route
+
+    if not route or not NASG_ATC_NAVIGATION or not NASG_ATC_TACAN then
+        self:Send(atc, airport, string.format("%s, unable. No flight plan available.", callsign))
+        return true
+    end
+
+    local previousIndex = route.ActiveLegIndex or 1
+    atc:AdvanceRouteLegIfReached(client, session)
+
+    local routeLeg = route.Legs and route.Legs[route.ActiveLegIndex or 1]
+
+    if not routeLeg or not (routeLeg.Radial and routeLeg.Airbase) then
+        if (route.ActiveLegIndex or 1) > previousIndex then
+            self:Send(atc, airport, string.format("%s, roger, radar contact.", callsign))
+            return true
+        end
+
+        self:Send(atc, airport, string.format("%s, unable. No radial leg active.", callsign))
+        return true
+    end
+
+    local vector = NASG_ATC_TACAN:GetClientRadial(client, routeLeg.Airbase)
+
+    if not vector then
+        self:Send(atc, airport, string.format("%s, unable. Coordinates unavailable.", callsign))
+        return true
+    end
+
+    local legName = tostring(routeLeg.Name or string.format("%s R-%03d", tostring(routeLeg.Airbase), routeLeg.Radial))
+    local tolerance = routeLeg.ToleranceDeg or 2
+    local diff = NASG_ATC_NAVIGATION:HeadingDifference(routeLeg.Radial, vector.Bearing)
+
+    if math.abs(diff) > tolerance then
+        local side = diff > 0 and "right" or "left"
+
+        self:Send(
+                atc,
+                airport,
+                string.format(
+                        "%s, negative, %.0f degrees %s of the %s, currently on the %s radial.",
+                        callsign,
+                        math.abs(diff),
+                        side,
+                        legName,
+                        NASG_ATC_NAVIGATION:FormatHeading(vector.Bearing)
+                )
+        )
+        return true
+    end
+
+    if routeLeg.DME and math.abs(vector.DistanceNM - routeLeg.DME) > (routeLeg.DMEToleranceNM or 1) then
+        self:Send(
+                atc,
+                airport,
+                string.format(
+                        "%s, roger, on the %s, %.1f DME, %s the fix.",
+                        callsign,
+                        legName,
+                        vector.DistanceNM,
+                        vector.DistanceNM > routeLeg.DME and "inside" or "outside"
+                )
+        )
+        return true
+    end
+
+    local liveAltitudeFt = self:GetClientAltitudeFeet(client)
+    local altitudeOk = atc:IsAltitudeConstraintSatisfied(liveAltitudeFt, routeLeg)
+
+    if altitudeOk == false then
+        local requiredClause = atc:FormatAltitudeConstraintClause(routeLeg)
+        local liveClause = liveAltitudeFt and atc:FormatAltitudeSpeech(liveAltitudeFt)
+
+        self:Send(
+                atc,
+                airport,
+                string.format(
+                        "%s, roger, on the %s. Restriction requires %s, currently %s.",
+                        callsign,
+                        legName,
+                        requiredClause,
+                        liveClause or "altitude unknown"
+                )
+        )
+        return true
+    end
+
+    self:Send(atc, airport, string.format("%s, roger, radar contact on the %s.", callsign, legName))
     return true
 end
 

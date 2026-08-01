@@ -206,6 +206,16 @@ NASG_ATC_GROUND.Requests = {
         },
         Handler = "HandleCrossingReadyCheckIn",
     },
+
+    set_callsign_alias = {
+        Patterns = {
+            "set callsign as",
+            "set callsign to",
+            "change callsign as",
+            "change callsign to",
+        },
+        Handler = "HandleSetCallsignAlias",
+    },
 }
 
 
@@ -646,6 +656,44 @@ function NASG_ATC_GROUND:HandleRadioCheck(atc, client, airport, session, event)
     return true
 end
 
+-- Lets a pilot who forgot to rename their DCS client slot fix their
+-- callsign in-flight ("set callsign as check four one"). event.callsign_alias
+-- is extracted by srs_stt_bridge.py's extract_callsign_alias. The alias is
+-- stored on the session (atc:GetClientCallsign/ResolveEffectiveCallsign,
+-- NASG_ATC_Core.lua, then use it everywhere for free) and package
+-- membership is recomputed since it depends on the resolved callsign.
+function NASG_ATC_GROUND:HandleSetCallsignAlias(atc, client, airport, session, event)
+    local alias = event and event.callsign_alias
+    local callsign = atc:GetClientCallsign(client, event)
+
+    if not alias or alias == "" then
+        self:Send(
+                atc,
+                airport,
+                string.format("%s, say again, set callsign as, followed by your new callsign.", callsign)
+        )
+        return false
+    end
+
+    session.CallsignAlias = alias
+
+    -- Force GetOrAttachFlightPlan to re-resolve against the new alias
+    -- instead of sticking with whatever it cached under the old callsign.
+    session.FlightPlanId = nil
+    session.ActiveSequenceName = nil
+    session.ActiveLegIndex = nil
+
+    atc:RefreshPackageMembership(session, client)
+
+    self:Send(
+            atc,
+            airport,
+            string.format("Copy, %s, callsign updated.", atc:FormatCallsignForSpeech(alias))
+    )
+
+    return true
+end
+
 function NASG_ATC_GROUND:BuildTaxiReadbackCorrectionMessage(atc, callsign, pending, missing)
     local runway = tostring(pending and pending.Runway or "")
     local runwaySpeech = atc:NormalizeRunway(runway)
@@ -791,6 +839,42 @@ function NASG_ATC_GROUND:HandlePushbackComplete(atc, client, airport, session, e
     return true
 end
 
+-- Enforces RequireParkingLocation: resolves event.parking_location into
+-- session.ParkingAreaName once per session, or replies asking for it and
+-- returns false so the caller can bail without issuing a clearance.
+-- No-ops (returns true) for airports that don't require it, or once a
+-- location's already been resolved this session (voice or coordinate).
+function NASG_ATC_GROUND:EnsureParkingLocationStated(atc, airport, session, event, callsign)
+    local requireParkingLocation = airport.RequireParkingLocation
+
+    if requireParkingLocation == nil then
+        requireParkingLocation = atc.Defaults.RequireParkingLocation
+    end
+
+    if not requireParkingLocation or session.ParkingAreaName then
+        return true
+    end
+
+    local locationKey = event and event.parking_location
+    local parkingArea = locationKey and atc:ResolveParkingLocation(airport, locationKey)
+
+    if parkingArea then
+        session.ParkingAreaName = parkingArea.Name
+        atc:Log(
+                string.format(
+                        "Ground taxi request parking location stated client=%s location=%s parking=%s",
+                        tostring(session.ClientKey),
+                        tostring(locationKey),
+                        tostring(parkingArea.Name)
+                )
+        )
+        return true
+    end
+
+    self:Send(atc, airport, string.format("%s, say your parking location.", callsign))
+    return false
+end
+
 function NASG_ATC_GROUND:HandleTaxiRequest(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
     local requireCorrectATIS = airport.RequireCorrectATIS
@@ -829,6 +913,10 @@ function NASG_ATC_GROUND:HandleTaxiRequest(atc, client, airport, session, event)
 
         session.ATISVerified = true
         atc:Log("Ground taxi request ATIS verified client=" .. tostring(session.ClientKey))
+    end
+
+    if not self:EnsureParkingLocationStated(atc, airport, session, event, callsign) then
+        return true
     end
 
     if not session.ParkingAreaName then
@@ -896,6 +984,10 @@ function NASG_ATC_GROUND:HandleTaxiEORRequest(atc, client, airport, session, eve
         end
 
         self:Send(atc, airport, string.format("%s, EOR unavailable at this airport. Say request taxi when ready.", callsign))
+        return true
+    end
+
+    if not self:EnsureParkingLocationStated(atc, airport, session, event, callsign) then
         return true
     end
 

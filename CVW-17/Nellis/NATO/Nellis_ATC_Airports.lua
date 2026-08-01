@@ -37,6 +37,12 @@ NASG_ATC:DefineAirport({
 
     DefaultParkingAreaName = "Nellis Ramp",
 
+    -- Pilots must state where they're parked on a taxi request (see
+    -- NASG_ATC_GROUND:EnsureParkingLocationStated) instead of Ground
+    -- silently guessing from live coordinates — resolved via ParkingLocations
+    -- below.
+    RequireParkingLocation = true,
+
     -- Ground -> Tower -> Center -> Tower -> Ground (false) vs AWACS (true).
     UseAWACSForDeparture = false,
 
@@ -174,6 +180,34 @@ NASG_ATC:DefineAirport({
                 ["21L"] = { "Foxtrot", "Echo" },
             },
         },
+
+        -- Voice-only origins for jets that spawn already sitting at an EOR
+        -- (hot pit / quick-turn) rather than at the ramp. No Zone, so live-
+        -- coordinate auto-detection never picks these -- they're only ever
+        -- reached via a pilot stating them (ParkingLocations below).
+        { Name = "South West EOR", Node = "eor_sw" },
+        { Name = "South EOR", Node = "eor_s" },
+        { Name = "South East EOR", Node = "eor_se" },
+        { Name = "North West EOR", Node = "eor_nw" },
+        { Name = "North EOR", Node = "eor_n" },
+        { Name = "North East EOR", Node = "eor_ne" },
+    },
+
+    -- Canonical parking_location keys (from srs_stt_bridge.py's
+    -- extract_parking_location) -> ParkingAreas Name above. Used by
+    -- NASG_ATC:ResolveParkingLocation when RequireParkingLocation is set.
+    ParkingLocations = {
+        west_ramp = "Nellis Ramp",
+        southwest_eor = "South West EOR",
+        south_eor = "South EOR",
+        southeast_eor = "South East EOR",
+        northwest_eor = "North West EOR",
+        north_eor = "North EOR",
+        northeast_eor = "North East EOR",
+        -- east_ramp intentionally omitted: no east-side ramp/zone exists in
+        -- this mission yet. A pilot saying "east ramp" will be re-prompted
+        -- until one is added here (plus a ParkingAreas entry + TaxiGraph
+        -- node/edges off Golf).
     },
 
     -----------------------------------------------------------------------

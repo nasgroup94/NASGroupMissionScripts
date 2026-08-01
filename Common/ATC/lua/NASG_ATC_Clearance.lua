@@ -175,8 +175,46 @@ function NASG_ATC_CLEARANCE:OnClientSessionEnded(atc, session, reason)
     self:ReleaseSquawkCode(atc, session)
 end
 
+-- Returns another session in the same package that already has a full
+-- clearance on file (session.Clearance.Issued), or nil. Package flights
+-- (see NASG_ATC_Core.lua:RefreshPackageMembership) only need one member --
+-- usually but not necessarily the numeric flight lead -- to get a clearance
+-- for the whole group.
+function NASG_ATC_CLEARANCE:FindPackageClearance(atc, session)
+    if not session or not session.PackageKey then
+        return nil
+    end
+
+    for _, memberSession in ipairs(atc:GetPackageMemberSessions(session)) do
+        if memberSession ~= session and memberSession.Clearance and memberSession.Clearance.Issued then
+            return memberSession
+        end
+    end
+
+    return nil
+end
+
 function NASG_ATC_CLEARANCE:HandleClearanceRequest(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
+
+    local packageClearance = self:FindPackageClearance(atc, session)
+
+    if packageClearance then
+        local leadCallsign = atc:FormatCallsignForSpeech(packageClearance.CallsignAlias or packageClearance.ClientKey)
+
+        self:Send(
+                atc,
+                airport,
+                string.format(
+                        "%s, you're already covered under %s's clearance for your package. Contact Ground when ready.",
+                        callsign,
+                        leadCallsign
+                )
+        )
+
+        return true
+    end
+
     local routeSegments = event and event.route_segments
 
     if routeSegments and #routeSegments > 0 then

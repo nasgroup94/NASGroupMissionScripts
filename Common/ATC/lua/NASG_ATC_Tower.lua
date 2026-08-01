@@ -260,23 +260,27 @@ function NASG_ATC_TOWER:GetDepartureFacility(atc, airport)
 end
 
 function NASG_ATC_TOWER:GetRunwayForDeparture(atc, airport, session, event)
-    return tostring(
+    local runway = tostring(
             event.runway
                     or session.LineupRunway
                     or atc:GetActiveRunway(airport, true)
                     or airport.ActiveRunway
                     or "active"
     )
+
+    return atc:ResolveRunwaySide(airport, runway)
 end
 
 function NASG_ATC_TOWER:GetRunwayForArrival(atc, airport, event)
-    return tostring(
+    local runway = tostring(
             event.runway
                     or atc:GetActiveRunway(airport, false)
                     or airport.ArrivalRunway
                     or airport.ActiveRunway
                     or "active"
     )
+
+    return atc:ResolveRunwaySide(airport, runway)
 end
 
 function NASG_ATC_TOWER:GetDepartureClimbAltitudeFeet(atc, client, airport, session, event)
@@ -305,10 +309,10 @@ function NASG_ATC_TOWER:BuildTakeoffClearanceMessage(atc, airport, callsign, run
 
     if climbAltitudeSpeech then
         message = string.format(
-                "%s, climb and maintain %s, Runway %s, cleared for takeoff.",
+                "%s, Runway %s, cleared for takeoff, climb and maintain %s.",
                 callsign,
-                climbAltitudeSpeech,
-                runwaySpeech
+                runwaySpeech,
+                climbAltitudeSpeech
         )
     else
         message = string.format(
