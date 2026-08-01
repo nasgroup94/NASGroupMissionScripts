@@ -5,6 +5,9 @@ NASG_ATC_CENTER.States = {
     CENTER_CONTROL = "CENTER_CONTROL",
     CENTER_MARSA = "CENTER_MARSA",
     CENTER_OWN_NAVIGATION = "CENTER_OWN_NAVIGATION",
+    -- Recovery approved, still on Center frequency, waiting for
+    -- StartRecoveryDistanceCheck's tick to detect 10 NM and hand off to Tower.
+    CENTER_RECOVERY = "CENTER_RECOVERY",
 }
 
 NASG_ATC_CENTER.Requests = {
@@ -92,6 +95,9 @@ NASG_ATC_CENTER.Requests = {
             "vectors home",
             "vectors for recovery",
             "request vectors home",
+            "home plate",
+            "strike recovery",
+            "request strike recovery",
         },
         Handler = "HandleRecovery",
     },
@@ -732,40 +738,47 @@ function NASG_ATC_CENTER:GetRecoveryDescentAltitudeFeet(atc, flightPlan, recover
     return (centerConfig and centerConfig.RecoveryDescentAltitudeFt) or atc.Defaults.RecoveryDescentAltitudeFt
 end
 
+-- "request Strike recovery to home plate" carries a named return route the
+-- same way Clearance's outbound "Dream Four departure to Student Gap" does
+-- -- attach it via the shared AttachChainedRoute helper before resolving the
+-- recovery airport, so session.Route.Legs/DestinationText are on file for
+-- the vector below and for the normal course-check/leg-advancement plumbing
+-- afterward.
 function NASG_ATC_CENTER:HandleRecovery(atc, client, airport, session, event)
-    --local callsign = atc:GetClientCallsign(client, event)
-    local callsign = client:GetCallsign()
+    local callsign = atc:GetClientCallsign(client, event)
+    local routeSegments = event and event.route_segments
+
+    if routeSegments and #routeSegments > 0 then
+        atc:AttachChainedRoute(session, routeSegments, event and event.destination, nil, airport.Id)
+    end
+
     local flightPlan = atc:GetOrAttachFlightPlan(client, session, event)
     -- Flight-plan arrival stays authoritative; a Clearance-Delivery-assigned
-    -- route's stated destination is only consulted when the flight plan has
-    -- none on file.
+    -- (or just-attached recovery) route's stated destination is only
+    -- consulted when the flight plan has none on file.
     local arrivalAirportId = atc:GetFlightPlanArrivalAirportId(flightPlan)
             or (session.Route and session.Route.DestinationText)
     local recoveryAirport = arrivalAirportId and atc:GetAirport(arrivalAirportId) or airport
-    local towerFrequency = atc:GetFacilityFrequency(recoveryAirport, atc.Facilities.TOWER)
-    local towerCallsign = atc:GetFacilityCallsign(recoveryAirport, atc.Facilities.TOWER)
     local descentAltitudeFt = self:GetRecoveryDescentAltitudeFeet(atc, flightPlan, recoveryAirport)
 
-    session.State = atc.States.INBOUND
-    session.Facility = atc.Facilities.TOWER
+    -- Recovery approval keeps the pilot on Center -- no immediate Tower
+    -- handoff here. StartRecoveryDistanceCheck's tick below detects when the
+    -- aircraft closes inside 10 NM of the recovery airport and switches it
+    -- to Tower at that point, matching real approach-control handoff timing.
+    session.State = atc.States.CENTER_RECOVERY
+    session.Facility = atc.Facilities.CENTER
+    session.RecoveryAirportId = recoveryAirport and recoveryAirport.Id
     session.UpdatedAt = timer.getTime()
 
-    local handoffText
-
-    if towerFrequency then
-        handoffText = string.format("Recovery approved. Contact %s %s.", towerCallsign, atc:FormatFrequency(towerFrequency))
-    else
-        handoffText = string.format("Recovery approved. Contact %s.", towerCallsign)
-    end
+    local squawkCode = NASG_ATC_CLEARANCE and NASG_ATC_CLEARANCE:AssignSquawkCode(atc, session)
 
     local message
 
     if descentAltitudeFt then
         message = string.format(
-                "%s, descend and maintain %s. %s",
+                "%s, recovery approved, descend and maintain %s.",
                 callsign,
-                atc:FormatAltitudeSpeech(descentAltitudeFt),
-                handoffText
+                atc:FormatAltitudeSpeech(descentAltitudeFt)
         )
 
         atc:SetPendingReadback(session, {
@@ -774,7 +787,40 @@ function NASG_ATC_CENTER:HandleRecovery(atc, client, airport, session, event)
             AltitudeFt = descentAltitudeFt,
         })
     else
-        message = string.format("%s, %s", callsign, handoffText)
+        message = string.format("%s, recovery approved.", callsign)
+    end
+
+    -- Vector to the first leg of the return route. Pass an empty event (not
+    -- the real one) so GetTargetForEvent's named-fix lookups don't try to
+    -- resolve event.destination ("home plate") as a waypoint/tracked point
+    -- and skip the session.Route.Legs fallback as a result.
+    local targetType, target = self:GetTargetForEvent(atc, airport, flightPlan, session, {}, nil, client)
+
+    if target and NASG_ATC_NAVIGATION then
+        local targetName = targetType == "waypoint"
+                and atc:GetWaypointDisplayName(target)
+                or tostring(target.Name or target.Id or "point")
+        local vector
+
+        if targetType == "waypoint" then
+            vector = NASG_ATC_NAVIGATION:GetVectorToWaypoint(client, target)
+        else
+            local coordinate = atc:GetTrackedPointCoordinate(target)
+            vector = coordinate and NASG_ATC_NAVIGATION:GetVectorToCoordinate(client, coordinate)
+        end
+
+        if vector then
+            message = message .. string.format(
+                    " Proceed %s, bearing %s, distance %.0f miles.",
+                    targetName,
+                    NASG_ATC_NAVIGATION:FormatHeading(vector.Bearing),
+                    vector.DistanceNM
+            )
+        end
+    end
+
+    if squawkCode then
+        message = message .. string.format(" Squawk %s.", squawkCode)
     end
 
     local routeWarning = self:CheckRouteSafetyOfFlight(atc, session)
@@ -785,7 +831,133 @@ function NASG_ATC_CENTER:HandleRecovery(atc, client, airport, session, event)
 
     self:Send(atc, airport, message)
 
+    self:StartRecoveryDistanceCheck()
+
     return true
+end
+
+function NASG_ATC_CENTER:GetAirbaseCoordinate(airport)
+    if not airport or not airport.AirbaseName then
+        return nil
+    end
+
+    local coordinate = nil
+
+    pcall(function()
+        local airbase = AIRBASE:FindByName(airport.AirbaseName)
+
+        if airbase then
+            coordinate = airbase:GetCoordinate()
+        end
+    end)
+
+    return coordinate
+end
+
+-- Mirrors the AWACS picture-broadcast / Ground crossing-recheck timer
+-- pattern: one recurring timer.scheduleFunction that self-stops (returns
+-- nil) once nobody is left waiting on a recovery handoff.
+NASG_ATC_CENTER.RecoveryDistanceCheck = NASG_ATC_CENTER.RecoveryDistanceCheck or { Enabled = false, _timerId = nil }
+NASG_ATC_CENTER.RecoveryDistanceCheckIntervalSecs = NASG_ATC_CENTER.RecoveryDistanceCheckIntervalSecs or 15
+NASG_ATC_CENTER.RecoveryHandoffDistanceNM = NASG_ATC_CENTER.RecoveryHandoffDistanceNM or 10
+
+function NASG_ATC_CENTER:StartRecoveryDistanceCheck()
+    local rc = self.RecoveryDistanceCheck
+
+    if rc.Enabled then
+        return
+    end
+
+    rc.Enabled = true
+
+    local intervalSecs = self.RecoveryDistanceCheckIntervalSecs
+
+    rc._timerId = timer.scheduleFunction(function()
+        if not rc.Enabled then
+            return nil
+        end
+
+        local stillWaiting = false
+
+        pcall(function()
+            stillWaiting = NASG_ATC_CENTER:RecoveryDistanceCheckTick()
+        end)
+
+        if not stillWaiting then
+            rc.Enabled = false
+            rc._timerId = nil
+            return nil
+        end
+
+        return timer.getTime() + intervalSecs
+    end, {}, timer.getTime() + intervalSecs)
+end
+
+function NASG_ATC_CENTER:StopRecoveryDistanceCheck()
+    local rc = self.RecoveryDistanceCheck
+    rc.Enabled = false
+
+    if rc._timerId then
+        pcall(function() timer.removeFunction(rc._timerId) end)
+        rc._timerId = nil
+    end
+end
+
+-- Re-assesses every session currently approved for recovery and hands off
+-- to Tower once the aircraft is within RecoveryHandoffDistanceNM of the
+-- recovery airport. Returns true if at least one session is still waiting,
+-- so the caller knows whether to keep rescheduling itself.
+function NASG_ATC_CENTER:RecoveryDistanceCheckTick()
+    local stillWaiting = false
+
+    for clientKey, session in pairs(NASG_ATC.ClientSessions or {}) do
+        if session.Facility == NASG_ATC.Facilities.CENTER
+                and session.State == NASG_ATC_CENTER.States.CENTER_RECOVERY
+                and session.RecoveryAirportId then
+
+            local recoveryAirport = NASG_ATC:GetAirport(session.RecoveryAirportId)
+            local client = nil
+
+            pcall(function() client = CLIENT:FindByName(clientKey) end)
+
+            local airbaseCoordinate = recoveryAirport and self:GetAirbaseCoordinate(recoveryAirport)
+            local clientCoordinate = nil
+
+            if client then
+                pcall(function() clientCoordinate = client:GetCoordinate() end)
+            end
+
+            if recoveryAirport and client and airbaseCoordinate and clientCoordinate and NASG_ATC_NAVIGATION then
+                local vector = NASG_ATC_NAVIGATION:GetBearingDistance(clientCoordinate, airbaseCoordinate)
+
+                if vector and vector.DistanceNM and vector.DistanceNM <= self.RecoveryHandoffDistanceNM then
+                    local callsign = NASG_ATC:GetClientCallsign(client, nil)
+                    local towerFrequency = NASG_ATC:GetFacilityFrequency(recoveryAirport, NASG_ATC.Facilities.TOWER)
+                    local towerCallsign = NASG_ATC:GetFacilityCallsign(recoveryAirport, NASG_ATC.Facilities.TOWER)
+
+                    session.State = NASG_ATC.States.INBOUND
+                    session.Facility = NASG_ATC.Facilities.TOWER
+                    session.UpdatedAt = timer.getTime()
+
+                    if towerFrequency then
+                        self:Send(
+                                NASG_ATC,
+                                recoveryAirport,
+                                string.format("%s, contact %s %s.", callsign, towerCallsign, NASG_ATC:FormatFrequency(towerFrequency))
+                        )
+                    else
+                        self:Send(NASG_ATC, recoveryAirport, string.format("%s, contact %s.", callsign, towerCallsign))
+                    end
+                else
+                    stillWaiting = true
+                end
+            else
+                stillWaiting = true
+            end
+        end
+    end
+
+    return stillWaiting
 end
 
 function NASG_ATC_CENTER:HandleDivert(atc, client, airport, session, event)

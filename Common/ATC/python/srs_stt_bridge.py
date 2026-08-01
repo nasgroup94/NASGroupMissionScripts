@@ -500,7 +500,8 @@ class ATCSpeechEventBuilder:
         self.intent_patterns = intent_patterns or {}
 
     def normalize_text(self, text: str) -> str:
-        return " ".join((text or "").lower().split())
+        cleaned = re.sub(r"[,.]", " ", (text or "").lower())
+        return " ".join(cleaned.split())
 
     def normalize_compact(self, text: str) -> str:
         return re.sub(r"[^a-z0-9]", "", (text or "").lower())
@@ -930,7 +931,14 @@ class ATCSpeechEventBuilder:
                 "recovery",
             )
 
-            return any(phrase in normalized for phrase in clearance_phrases)
+            if any(phrase in normalized for phrase in clearance_phrases):
+                return True
+
+            # A pilot reading back a bare squawk code often omits the word
+            # "squawk" entirely (e.g. "2174, Hobo one one") -- has_callsign_at_end()
+            # already confirmed the callsign is present, so a tight cluster of at
+            # least 4 digits (the shape of a squawk code) is enough of a signal.
+            return bool(re.search(r"\d(?:[\s\-]?\d){3,}", normalized))
 
         return False
 

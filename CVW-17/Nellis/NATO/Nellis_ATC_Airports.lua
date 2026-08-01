@@ -102,37 +102,53 @@ NASG_ATC:DefineAirport({
     -- jet off the runway and onto Foxtrot/Golf. Foxtrot (west) and Golf
     -- (east) are the two north-south taxiways every bridge touches; Golf
     -- also spurs via Charlie to the LOLA (Live Ordnance Loading Area) pad.
-    -- One EOR per runway end: South West (03L, on Foxtrot), South East
-    -- (03R, on Alpha), North West (21R, on Echo), North East (21L, on Echo)
-    -- -- see the TaxiGraph below for the actual node layout.
+    --
+    -- Six EORs total: the four outboard ones sit past their own runway --
+    -- South West (03L, on Foxtrot), South East (03R, past it on Alpha),
+    -- North West (21R, on Echo), North East (21L, past it on Echo) -- plus
+    -- two shared ones sitting in the gap BETWEEN each runway pair: South
+    -- (between 03L/03R, on Alpha) and North (between 21L/21R, on Echo).
+    -- See the TaxiGraph below for the actual node layout.
+    --
+    -- The main ramp is on the WEST side (Foxtrot), so "request taxi to
+    -- active EOR" resolves per active runway to whichever EOR needs the
+    -- FEWEST crossings from there:
+    --   * 03L active -> South West EOR (adjacent, 0 crossings).
+    --   * 03R active -> South EOR (cross 03L once, land in the gap right
+    --     next to 03R) rather than South East EOR, which sits past 03R and
+    --     would mean crossing 03R twice (out to the EOR, then back to
+    --     depart).
+    --   * 21R active -> North West EOR (adjacent, 0 crossings).
+    --   * 21L active -> North EOR (cross 21R once), not North East EOR, for
+    --     the same reason as 03R/South EOR above.
     -----------------------------------------------------------------------
     EOR = {
-        Enabled = false,
+        Enabled = true,
         RequireZone = false,
         UnavailableFallbackToRunway = true,
         Runways = {
             ["03L"] = {
                 Name = "South West EOR",
                 TaxiRoutes = {
-                    ["Nellis Ramp"] = { "Golf", "Alpha" },
+                    ["Nellis Ramp"] = { "Foxtrot" },
                 },
             },
             ["03R"] = {
-                Name = "South East EOR",
+                Name = "South EOR",
                 TaxiRoutes = {
-                    ["Nellis Ramp"] = { "Golf", "Alpha" },
+                    ["Nellis Ramp"] = { "Foxtrot", "Alpha" },
                 },
             },
             ["21R"] = {
                 Name = "North West EOR",
                 TaxiRoutes = {
-                    ["Nellis Ramp"] = { "Golf", "Echo" },
+                    ["Nellis Ramp"] = { "Foxtrot" },
                 },
             },
             ["21L"] = {
-                Name = "North East EOR",
+                Name = "North EOR",
                 TaxiRoutes = {
-                    ["Nellis Ramp"] = { "Golf", "Echo" },
+                    ["Nellis Ramp"] = { "Foxtrot", "Echo" },
                 },
             },
         },
@@ -148,13 +164,14 @@ NASG_ATC:DefineAirport({
             -- Static fallback routes (used if TaxiGraph is ever unavailable).
             -- Crossings are NOT expressible here — that's the whole reason
             -- the dynamic TaxiGraph below exists. Assumes the ramp accesses
-            -- the field via Golf (see the nellis_ramp edge below) — adjust
-            -- both together if the real ramp access point differs.
+            -- the field via Foxtrot on the west side (see the nellis_ramp
+            -- edge below) -- adjust both together if the real ramp access
+            -- point differs.
             TaxiRoutes = {
-                ["03L"] = { "Golf", "Alpha" },
-                ["03R"] = { "Golf", "Alpha" },
-                ["21R"] = { "Golf", "Echo" },
-                ["21L"] = { "Golf", "Echo" },
+                ["03L"] = { "Foxtrot", "Alpha" },
+                ["03R"] = { "Foxtrot", "Alpha" },
+                ["21R"] = { "Foxtrot", "Echo" },
+                ["21L"] = { "Foxtrot", "Echo" },
             },
         },
     },
@@ -173,8 +190,8 @@ NASG_ATC:DefineAirport({
     --
     -- ASSUMPTIONS (not in the original brief — trivial to move if wrong):
     --   * Charlie branches off Golf at the Delta junction (d_east).
-    --   * The main ramp reaches the field via Golf at the Bravo junction
-    --     (b_east).
+    --   * The main ramp reaches the field via Foxtrot at the Bravo junction
+    --     (b_west) -- the ramp is on the west side.
     --
     -- This graph is topology-only (no Zone/Vec2 on the junction/EOR/exit
     -- nodes), so edge costs default to 1 and DEPARTURE routing (parking/EOR
@@ -195,11 +212,17 @@ NASG_ATC:DefineAirport({
             ["21R"] = "rwy21R",
         },
 
+        -- Active-runway -> default EOR. 03R/21L point at the shared middle
+        -- EOR (eor_s/eor_n) rather than their own outboard EOR (eor_se/
+        -- eor_ne), since eor_se/eor_ne sit PAST their runway relative to the
+        -- west ramp -- routing there would cross the runway twice instead
+        -- of once. eor_se/eor_ne remain in the graph as real nodes, just not
+        -- the default target for "request taxi to active EOR".
         EORNodes = {
             ["03L"] = "eor_sw",
-            ["03R"] = "eor_se",
+            ["03R"] = "eor_s",
             ["21R"] = "eor_nw",
-            ["21L"] = "eor_ne",
+            ["21L"] = "eor_n",
         },
 
         Nodes = {
@@ -207,8 +230,10 @@ NASG_ATC:DefineAirport({
 
             { Name = "eor_sw", Type = "junction" },
             { Name = "eor_se", Type = "junction" },
+            { Name = "eor_s",  Type = "junction" },
             { Name = "eor_nw", Type = "junction" },
             { Name = "eor_ne", Type = "junction" },
+            { Name = "eor_n",  Type = "junction" },
 
             { Name = "rwy03L", Type = "runway", Runway = "03L" },
             { Name = "rwy03R", Type = "runway", Runway = "03R" },
@@ -248,26 +273,34 @@ NASG_ATC:DefineAirport({
             { From = "b_east", To = "d_east", Taxiway = "Golf" },
             { From = "d_east", To = "e_east", Taxiway = "Golf" },
             { From = "d_east", To = "lola",   Taxiway = "Charlie" },
-            { From = "nellis_ramp", To = "b_east", Taxiway = "Golf" },
+            { From = "nellis_ramp", To = "b_west", Taxiway = "Foxtrot" },
 
             -- Alpha: bridges both strips at the south end -- the only way
-            -- onto 03L/03R. South West EOR crosses 03L to reach 03R (and
-            -- vice versa); South East EOR sits past 03R with no crossing
-            -- needed for a 03R departure.
-            { From = "a_west", To = "rwy03L", Taxiway = "Alpha" },
-            { From = "rwy03L", To = "rwy03R", Taxiway = "Alpha", CrossesRunway = "03L" },
-            { From = "rwy03R", To = "eor_se", Taxiway = "Alpha" },
-            { From = "eor_se", To = "a_east", Taxiway = "Alpha", CrossesRunway = "03R" },
+            -- onto 03L/03R. The crossing tag lives on each runway's own
+            -- EOR-adjacent edge (the pavement you actually cross to get past
+            -- that runway), not on the gap between the two runways -- so
+            -- South West EOR crosses 03L to reach 03R, South East EOR
+            -- crosses 03R to reach 03L, and each sits directly on its own
+            -- runway with no crossing needed. South EOR sits in the gap
+            -- between the two runways and needs no crossing to reach either.
+            { From = "a_west", To = "rwy03L", Taxiway = "Alpha", CrossesRunway = "03L" },
+            { From = "rwy03L", To = "eor_s",  Taxiway = "Alpha" },
+            { From = "eor_s",  To = "rwy03R", Taxiway = "Alpha" },
+            { From = "rwy03R", To = "eor_se", Taxiway = "Alpha", CrossesRunway = "03R" },
+            { From = "eor_se", To = "a_east", Taxiway = "Alpha" },
 
             -- Echo: bridges both strips at the north end -- the only way
             -- onto 21L/21R. Mirrors Alpha: North West EOR crosses 21R to
-            -- reach 21L (and vice versa); North East EOR sits past 21L with
-            -- no crossing needed for a 21L departure.
+            -- reach 21L, North East EOR crosses 21L to reach 21R, and each
+            -- sits directly on its own runway with no crossing needed. North
+            -- EOR sits in the gap between the two runways and needs no
+            -- crossing to reach either.
             { From = "e_west",  To = "eor_nw", Taxiway = "Echo" },
-            { From = "eor_nw",  To = "rwy21R", Taxiway = "Echo" },
-            { From = "rwy21R",  To = "rwy21L", Taxiway = "Echo", CrossesRunway = "21R" },
-            { From = "rwy21L",  To = "eor_ne", Taxiway = "Echo" },
-            { From = "eor_ne",  To = "e_east", Taxiway = "Echo", CrossesRunway = "21L" },
+            { From = "eor_nw",  To = "rwy21R", Taxiway = "Echo", CrossesRunway = "21R" },
+            { From = "rwy21R",  To = "eor_n",  Taxiway = "Echo" },
+            { From = "eor_n",   To = "rwy21L", Taxiway = "Echo" },
+            { From = "rwy21L",  To = "eor_ne", Taxiway = "Echo", CrossesRunway = "21L" },
+            { From = "eor_ne",  To = "e_east", Taxiway = "Echo" },
 
             -- Bravo: mid-field bridge, exit-only (no EOR/hold-short here).
             { From = "b_west", To = "b_x03L", Taxiway = "Bravo" },

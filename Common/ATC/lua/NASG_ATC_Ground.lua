@@ -144,6 +144,7 @@ NASG_ATC_GROUND.Requests = {
             "return to ramp",
             "return to parking",
             "taxi to parking",
+            "taxi to line",
         },
         Handler = "HandleTaxiBackRequest",
     },
@@ -164,8 +165,18 @@ NASG_ATC_GROUND.Requests = {
             "rearm and refuel",
             "taxi to rearm",
             "taxi to refuel",
+            "hot refuel",
         },
         Handler = "HandleRearmRefuelRequest",
+    },
+
+    request_shutdown = {
+        Patterns = {
+            "request shutdown",
+            "shutdown",
+            "request engine shutdown",
+        },
+        Handler = "HandleShutdownRequest",
     },
 
     abort_taxi = {
@@ -306,10 +317,10 @@ function NASG_ATC_GROUND:GetEORRoute(atc, airport, parkingAreaName, runway)
     -- Prefer dynamic graph routing when the airport defines a taxi graph.
     if airport.TaxiGraph and NASG_ATC_TAXIGRAPH then
         local parkingArea = atc:GetParkingAreaByName(airport, parkingAreaName)
-        local route = NASG_ATC_TAXIGRAPH:RouteParkingToEOR(airport, parkingArea, runway)
+        local route, routeDetail = NASG_ATC_TAXIGRAPH:RouteParkingToEOR(airport, parkingArea, runway)
 
         if route and #route > 0 then
-            return route
+            return route, routeDetail
         end
     end
 
@@ -351,32 +362,47 @@ function NASG_ATC_GROUND:IsClientInEORZone(atc, client, airport, runway)
     return zone:IsCoordinateInZone(coordinate)
 end
 
-function NASG_ATC_GROUND:BuildEORTaxiClearanceMessage(atc, airport, session, callsign)
+function NASG_ATC_GROUND:BuildEORTaxiClearanceMessage(atc, client, airport, session, callsign)
     local runway = tostring(atc:GetActiveRunway(airport, true) or airport.ActiveRunway or "active")
+    local runwaySpeech = atc:NormalizeRunway(runway)
     local eorConfig = self:GetEORConfig(atc, airport, runway)
 
     if not eorConfig then
         return nil
     end
 
-    local eorName = eorConfig.Name or ("EOR Runway " .. atc:NormalizeRunway(runway))
-    local route = self:GetEORRoute(atc, airport, session.ParkingAreaName, runway)
+    local eorName = eorConfig.Name or ("EOR Runway " .. runwaySpeech)
+    local route, routeDetail = self:GetEORRoute(atc, airport, session.ParkingAreaName, runway)
     local routeText = atc:JoinTaxiRoute(route)
+    -- Some EORs (e.g. the shared South/North EOR) sit on the far side of a
+    -- runway from the ramp, so the taxi-to-EOR leg itself can cross a
+    -- runway before the pilot ever reaches the hold-short point.
+    local crossingText, crossRunways = self:BuildCrossingInstructions(atc, client, airport, routeDetail, runway)
+
+    -- The clearance names the departure runway explicitly (not just the EOR
+    -- name) so the readback has something to check against -- see
+    -- IsTaxiReadbackCorrect's unconditional ContainsRunway(pending.Runway).
+    local message
 
     if routeText then
-        return string.format(
-                "%s, taxi to %s via the following taxiways: %s. Remain this frequency. Advise EOR complete.",
+        message = string.format(
+                "%s, taxi to %s for Runway %s via the following taxiways: %s.",
                 callsign,
                 eorName,
+                runwaySpeech,
                 routeText
         )
+    else
+        message = string.format("%s, taxi to %s for Runway %s.", callsign, eorName, runwaySpeech)
     end
 
-    return string.format(
-            "%s, taxi to %s. Remain this frequency. Advise EOR complete.",
-            callsign,
-            eorName
-    )
+    if crossingText then
+        message = message .. " " .. crossingText
+    end
+
+    message = message .. " Remain this frequency. Advise EOR complete."
+
+    return message, crossRunways
 end
 
 -- Decides whether Ground may clear a crossing of `crossingRunwayEndId` (an
@@ -726,6 +752,17 @@ function NASG_ATC_GROUND:HandleStartupRequest(atc, client, airport, session, eve
     return true
 end
 
+function NASG_ATC_GROUND:HandleShutdownRequest(atc, client, airport, session, event)
+    local callsign = atc:GetClientCallsign(client, event)
+
+    session.State = atc.States.GROUND_COMPLETE
+    session.Facility = atc.Facilities.GROUND
+    session.UpdatedAt = timer.getTime()
+
+    self:Send(atc, airport, string.format("%s, shutdown approved. Good day.", callsign))
+    return true
+end
+
 function NASG_ATC_GROUND:HandlePushbackRequest(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
     local direction = event and (event.pushback_direction or event.direction) or nil
@@ -871,7 +908,7 @@ function NASG_ATC_GROUND:HandleTaxiEORRequest(atc, client, airport, session, eve
     end
 
     local route = self:GetEORRoute(atc, airport, session.ParkingAreaName, runway)
-    local message = self:BuildEORTaxiClearanceMessage(atc, airport, session, callsign)
+    local message, crossRunways = self:BuildEORTaxiClearanceMessage(atc, client, airport, session, callsign)
 
     session.State = atc.States.TAXIING_TO_EOR
     session.Facility = atc.Facilities.GROUND
@@ -885,6 +922,7 @@ function NASG_ATC_GROUND:HandleTaxiEORRequest(atc, client, airport, session, eve
         InstructionText = message,
         Runway = runway,
         Route = route,
+        CrossRunways = crossRunways,
     })
 
     self:Send(atc, airport, message)
@@ -960,6 +998,14 @@ function NASG_ATC_GROUND:HandleProgressiveTaxiRequest(atc, client, airport, sess
 end
 
 function NASG_ATC_GROUND:HandleHoldingShortReady(atc, client, airport, session, event)
+    -- A pilot holding short for runway-crossing traffic (not for a Tower
+    -- handoff) can also phrase their check-in as a generic "holding short"
+    -- call, which resolves to this same intent. Route those to the crossing
+    -- check instead of handing them to Tower.
+    if session.State == atc.States.HOLDING_SHORT_FOR_CROSSING then
+        return self:HandleCrossingReadyCheckIn(atc, client, airport, session, event)
+    end
+
     local callsign = atc:GetClientCallsign(client, event)
     local towerFrequency = atc:GetFacilityFrequency(airport, atc.Facilities.TOWER)
 
@@ -976,37 +1022,139 @@ function NASG_ATC_GROUND:HandleHoldingShortReady(atc, client, airport, session, 
     return true
 end
 
--- Check-in from a pilot holding short of an inactive runway for crossing
--- traffic (see AssessRunwayCrossing). Re-assesses the same runway and either
--- releases the pilot to continue taxiing or repeats the hold.
-function NASG_ATC_GROUND:HandleCrossingReadyCheckIn(atc, client, airport, session, event)
-    local callsign = atc:GetClientCallsign(client, event)
+-- Re-assesses a pilot's pending runway crossing (see AssessRunwayCrossing)
+-- and, if traffic is now clear, releases them to continue taxiing. Shared by
+-- the manual check-in and the automatic periodic recheck; only speaks when
+-- it actually releases the crossing, so it's safe to poll silently.
+function NASG_ATC_GROUND:TryReleaseCrossing(atc, client, airport, session, callsign)
     local runway = session.PendingCrossingRunway
 
     if not runway or session.State ~= atc.States.HOLDING_SHORT_FOR_CROSSING then
+        return false
+    end
+
+    local assessment = self:AssessRunwayCrossing(atc, client, airport, runway)
+
+    if not assessment or assessment.Decision ~= "CROSS" then
+        return false
+    end
+
+    local runwaySpeech = atc:NormalizeRunway(runway)
+
+    session.State = ({
+        taxi_eor = atc.States.TAXIING_TO_EOR,
+        taxi_from_eor = atc.States.HOLDING_SHORT,
+    })[session.PendingCrossingReturnType] or atc.States.TAXIING
+
+    session.PendingCrossingRunway = nil
+    session.PendingCrossingReturnType = nil
+    session.UpdatedAt = timer.getTime()
+
+    self:Send(atc, airport, string.format("%s, cross Runway %s, continue taxi.", callsign, runwaySpeech))
+    return true
+end
+
+-- Check-in from a pilot holding short of an inactive runway for crossing
+-- traffic. Re-assesses the same runway and either releases the pilot to
+-- continue taxiing or repeats the hold.
+function NASG_ATC_GROUND:HandleCrossingReadyCheckIn(atc, client, airport, session, event)
+    local callsign = atc:GetClientCallsign(client, event)
+
+    if not session.PendingCrossingRunway or session.State ~= atc.States.HOLDING_SHORT_FOR_CROSSING then
         atc:SendSayAgain(airport, atc.Facilities.GROUND, client, event)
         return true
     end
 
-    local assessment = self:AssessRunwayCrossing(atc, client, airport, runway)
-    local runwaySpeech = atc:NormalizeRunway(runway)
+    local runway = session.PendingCrossingRunway
 
-    if assessment and assessment.Decision == "CROSS" then
-        session.State = ({
-            taxi_eor = atc.States.TAXIING_TO_EOR,
-            taxi_from_eor = atc.States.HOLDING_SHORT,
-        })[session.PendingCrossingReturnType] or atc.States.TAXIING
-
-        session.PendingCrossingRunway = nil
-        session.PendingCrossingReturnType = nil
-        session.UpdatedAt = timer.getTime()
-
-        self:Send(atc, airport, string.format("%s, cross Runway %s, continue taxi.", callsign, runwaySpeech))
+    if self:TryReleaseCrossing(atc, client, airport, session, callsign) then
         return true
     end
 
-    self:Send(atc, airport, string.format("%s, continue holding short Runway %s.", callsign, runwaySpeech))
+    self:Send(atc, airport, string.format("%s, continue holding short Runway %s.", callsign, atc:NormalizeRunway(runway)))
     return true
+end
+
+-- Proactive recheck so a pilot holding short for crossing traffic doesn't
+-- have to call back in once the runway goes clear. Mirrors the AWACS
+-- picture-broadcast timer pattern: one recurring timer.scheduleFunction that
+-- self-stops (returns nil) once nobody is left holding.
+NASG_ATC_GROUND.CrossingRecheck = NASG_ATC_GROUND.CrossingRecheck or { Enabled = false, _timerId = nil }
+NASG_ATC_GROUND.CrossingRecheckIntervalSecs = NASG_ATC_GROUND.CrossingRecheckIntervalSecs or 20
+
+function NASG_ATC_GROUND:StartCrossingRecheck()
+    local cr = self.CrossingRecheck
+
+    if cr.Enabled then
+        return
+    end
+
+    cr.Enabled = true
+
+    local intervalSecs = self.CrossingRecheckIntervalSecs
+
+    cr._timerId = timer.scheduleFunction(function()
+        if not cr.Enabled then
+            return nil
+        end
+
+        local stillWaiting = false
+
+        pcall(function()
+            stillWaiting = NASG_ATC_GROUND:CrossingRecheckTick()
+        end)
+
+        if not stillWaiting then
+            cr.Enabled = false
+            cr._timerId = nil
+            return nil
+        end
+
+        return timer.getTime() + intervalSecs
+    end, {}, timer.getTime() + intervalSecs)
+end
+
+function NASG_ATC_GROUND:StopCrossingRecheck()
+    local cr = self.CrossingRecheck
+    cr.Enabled = false
+
+    if cr._timerId then
+        pcall(function() timer.removeFunction(cr._timerId) end)
+        cr._timerId = nil
+    end
+end
+
+-- Re-assesses every session currently holding short for a runway crossing
+-- and proactively releases any that have gone clear. Returns true if at
+-- least one session is still waiting, so the caller knows whether to keep
+-- rescheduling itself.
+function NASG_ATC_GROUND:CrossingRecheckTick()
+    local stillWaiting = false
+
+    for clientKey, session in pairs(NASG_ATC.ClientSessions or {}) do
+        if session.Facility == NASG_ATC.Facilities.GROUND
+                and session.State == NASG_ATC.States.HOLDING_SHORT_FOR_CROSSING
+                and session.PendingCrossingRunway then
+
+            local airport = session.AirportId and NASG_ATC:GetAirport(session.AirportId) or nil
+            local client = nil
+
+            pcall(function() client = CLIENT:FindByName(clientKey) end)
+
+            if airport and client then
+                local callsign = NASG_ATC:GetClientCallsign(client, nil)
+                local released = self:TryReleaseCrossing(NASG_ATC, client, airport, session, callsign)
+
+                if not released then
+                    stillWaiting = true
+                end
+            else
+                stillWaiting = true
+            end
+        end
+    end
+
+    return stillWaiting
 end
 
 function NASG_ATC_GROUND:HandleTaxiBackRequest(atc, client, airport, session, event)
@@ -1061,28 +1209,6 @@ function NASG_ATC_GROUND:HandleEmergency(atc, client, airport, session, event)
 
     self:Send(atc, airport, string.format("%s, roger emergency. Hold position if able. Emergency services notified.", callsign))
     return true
-end
-
-function NASG_ATC_GROUND:ContainsRunway(atc, text, runway)
-    local runwayText = tostring(runway or "")
-
-    if runwayText == "" or runwayText == "active" then
-        return true
-    end
-
-    local normalized = atc:NormalizeReadbackText(text)
-    local runwayNumeric = atc:NormalizeReadbackText(runwayText)
-    local runwaySpeech = atc:NormalizeReadbackText(atc:NormalizeRunway(runwayText))
-
-    if runwayNumeric ~= "" and string.find(normalized, runwayNumeric, 1, true) then
-        return true
-    end
-
-    if runwaySpeech ~= "" and string.find(normalized, runwaySpeech, 1, true) then
-        return true
-    end
-
-    return false
 end
 
 function NASG_ATC_GROUND:ContainsRunway(atc, text, runway)
@@ -1382,6 +1508,7 @@ function NASG_ATC_GROUND:HandleReadback(atc, client, airport, session, event)
                 session.State = atc.States.HOLDING_SHORT_FOR_CROSSING
                 session.PendingCrossingRunway = holdingCrossing
                 session.PendingCrossingReturnType = pending.Type
+                self:StartCrossingRecheck()
             elseif pending.Type == "taxi_eor" then
                 session.State = atc.States.TAXIING_TO_EOR
             elseif pending.Type == "taxi_from_eor" then

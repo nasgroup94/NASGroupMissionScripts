@@ -342,7 +342,7 @@ function REFUELING_MONITOR:OnAfterClientInZone(From, Event, To)
         self:T("The are still client in the zones, calling OnAfterClientInZone again in 3sec.")
         self:__ClientInZone(3)
     else
-        self:T("There are no clients in any of the zones, setting state back to CheckingZones.")
+        self:T("There are no clients in any of the zones, _SETTINGS:SetPlayerMenuOff() state back to CheckingZones.")
         self:__CheckingZones(15)
     end
 

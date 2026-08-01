@@ -2,17 +2,26 @@ NASG_ATC = NASG_ATC or {}
 NASG_ATC_STATUS_MENU = NASG_ATC_STATUS_MENU or {}
 
 ---------------------------------------------------------------------------
--- Generic, theater-agnostic F10 "ATC Status" display. Adds a private F10
--- command to every blue client group; the pilot can trigger it any time to
--- see what NASG_ATC currently has on file for their aircraft -- facility/
--- session state, the exact pending-readback instruction (if any), assigned
--- route/procedure legs, and an attached flight plan summary. Read-only:
--- this module never mutates session state, only reads it.
+-- Generic, theater-agnostic F10 "ATC Status" display. Adds one coalition
+-- menu entry per active BLUE client under "ATC Status"; the pilot can
+-- trigger it any time to see what NASG_ATC currently has on file for their
+-- aircraft -- facility/session state, the exact pending-readback
+-- instruction (if any), assigned route/procedure legs, and an attached
+-- flight plan summary. Read-only: this module never mutates session state,
+-- only reads it.
+--
+-- Per-client entries use MENU_COALITION_COMMAND rather than
+-- MENU_GROUP_COMMAND: DCS has a long-standing multiplayer bug where
+-- group-scoped menus added dynamically after mission start don't reliably
+-- display for client slots (MOOSE's own MENU_GROUP doc comment notes this).
+-- The AAPVE range menus avoid it the same way -- one coalition-scoped entry
+-- per client, rebuilt whenever the client roster changes.
 ---------------------------------------------------------------------------
 
 NASG_ATC_STATUS_MENU.MenuText = "ATC Status"
 NASG_ATC_STATUS_MENU.MessageDurationSeconds = 30
-NASG_ATC_STATUS_MENU.LogIntervalSeconds = 60
+NASG_ATC_STATUS_MENU.RefreshIntervalSeconds = 60
+NASG_ATC_STATUS_MENU.ClientMenus = {}
 
 function NASG_ATC_STATUS_MENU:BuildStatusText(client)
     local atc = NASG_ATC
@@ -117,54 +126,50 @@ function NASG_ATC_STATUS_MENU:ShowStatus(client)
     MESSAGE:New(self:BuildStatusText(client), self.MessageDurationSeconds):ToClient(client)
 end
 
--- MENU_GROUP_COMMAND:New is idempotent per-group-per-path (Moose just
--- rebinds the command function if the path already exists), so this is
--- safe to call repeatedly for the same group without tracking state here.
-function NASG_ATC_STATUS_MENU:AddMenuForClient(client)
-    if not client then
-        return
+-- Rebuilds the coalition-scoped "ATC Status" submenu from the current
+-- active-client roster: removes every previously-built entry, then adds
+-- one fresh MENU_COALITION_COMMAND per active BLUE client. Safe to call
+-- repeatedly (on Birth/leave/death events and on a timer) since it always
+-- starts from a clean slate.
+function NASG_ATC_STATUS_MENU:RebuildMenu()
+    for _, item in pairs(self.ClientMenus) do
+        if item and item.Remove then
+            pcall(function() item:Remove() end)
+        end
     end
 
-    local group = client:GetGroup()
+    self.ClientMenus = {}
 
-    if not group then
-        return
-    end
-
-    MENU_GROUP_COMMAND:New(group, self.MenuText, nil, function()
-        NASG_ATC_STATUS_MENU:ShowStatus(client)
-    end)
-end
-
-function NASG_ATC_STATUS_MENU:ScanForClients()
     local clientSet = SET_CLIENT:New()
                                 :FilterCoalitions("blue")
                                 :FilterActive()
                                 :FilterStart()
 
-    clientSet:ForEachClient(function(client)
-        if client and client:IsAlive() then
-            NASG_ATC_STATUS_MENU:AddMenuForClient(client)
-        end
-    end)
-end
-
--- Writes every active client's status to dcs.log (via NASG_ATC:Log) on a
--- repeating timer, since the F10 "ATC Status" menu item is not currently
--- displaying in-game. Same client discovery filter as ScanForClients so
--- this covers whoever is actually flying, independent of the menu bug.
-function NASG_ATC_STATUS_MENU:LogStatusForAllClients()
-    local clientSet = SET_CLIENT:New()
-                                :FilterCoalitions("blue")
-                                :FilterActive()
-                                :FilterStart()
+    local clientNames = {}
 
     clientSet:ForEachClient(function(client)
         if client and client:IsAlive() then
-            local playerName = client:GetPlayerName() or client:GetName() or "unknown"
-            NASG_ATC:Log(string.format("Status for %s:\n%s", tostring(playerName), NASG_ATC_STATUS_MENU:BuildStatusText(client)))
+            local clientName = client:GetName()
+            local displayName = client:GetPlayerName() or clientName or "unknown"
+
+            table.insert(clientNames, displayName)
+
+            self.ClientMenus[#self.ClientMenus + 1] = MENU_COALITION_COMMAND:New(
+                    coalition.side.BLUE, displayName, self.RootMenu,
+                    function()
+                        local selected = CLIENT:FindByName(clientName)
+
+                        if selected then
+                            NASG_ATC_STATUS_MENU:ShowStatus(selected)
+                        end
+                    end)
         end
     end)
+
+    NASG_ATC:Log(string.format(
+            "[NASG_ATC_StatusMenu] RebuildMenu: RootMenu=%s clients=%d (%s)",
+            tostring(self.RootMenu), #clientNames, table.concat(clientNames, ", ")
+    ))
 end
 
 function NASG_ATC_STATUS_MENU:Start()
@@ -172,29 +177,40 @@ function NASG_ATC_STATUS_MENU:Start()
         return
     end
 
+    self.RootMenu = MENU_COALITION:New(coalition.side.BLUE, self.MenuText)
+
     self._EventHandler = EVENTHANDLER:New()
     self._EventHandler:HandleEvent(EVENTS.Birth)
+    self._EventHandler:HandleEvent(EVENTS.PlayerLeaveUnit)
+    self._EventHandler:HandleEvent(EVENTS.Dead)
+    self._EventHandler:HandleEvent(EVENTS.Crash)
 
     function self._EventHandler:OnEventBirth(eventData)
-        local client = NASG_ATC:GetClientFromEvent(eventData)
-
-        if client then
-            NASG_ATC_STATUS_MENU:AddMenuForClient(client)
-        end
+        NASG_ATC_STATUS_MENU:RebuildMenu()
     end
 
-    -- Catches clients already alive before this handler existed, same
-    -- one-shot-after-start pattern as NASG_ATC:Start's own Scanner.
+    function self._EventHandler:OnEventPlayerLeaveUnit(eventData)
+        NASG_ATC_STATUS_MENU:RebuildMenu()
+    end
+
+    function self._EventHandler:OnEventDead(eventData)
+        NASG_ATC_STATUS_MENU:RebuildMenu()
+    end
+
+    function self._EventHandler:OnEventCrash(eventData)
+        NASG_ATC_STATUS_MENU:RebuildMenu()
+    end
+
+    -- Catches clients already alive before this handler existed.
     self._Scanner = SCHEDULER:New(nil, function()
-        NASG_ATC_STATUS_MENU:ScanForClients()
+        NASG_ATC_STATUS_MENU:RebuildMenu()
     end, {}, NASG_ATC.Defaults.StartupClientScanDelaySeconds or 5)
 
-    -- Repeating dcs.log dump of every active client's status -- the F10
-    -- menu item isn't displaying in-game, so this is the working substitute
-    -- until that's root-caused.
-    self._LogScheduler = SCHEDULER:New(nil, function()
-        NASG_ATC_STATUS_MENU:LogStatusForAllClients()
-    end, {}, self.LogIntervalSeconds, self.LogIntervalSeconds)
+    -- Periodic rebuild as a safety net for any roster change this module
+    -- doesn't explicitly listen for.
+    self._RefreshScheduler = SCHEDULER:New(nil, function()
+        NASG_ATC_STATUS_MENU:RebuildMenu()
+    end, {}, self.RefreshIntervalSeconds, self.RefreshIntervalSeconds)
 
     NASG_ATC:Log("NASG_ATC_StatusMenu started")
 end

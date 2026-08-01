@@ -50,6 +50,9 @@ NASG_ATC.Defaults = {
     -- Fallback recovery descent altitude (feet) issued by Center before
     -- handing an inbound aircraft off to Tower.
     RecoveryDescentAltitudeFt = 6000,
+    -- Fallback VFR pattern altitude (feet AGL) Tower states on overhead/
+    -- straight-in/downwind entry when the airport config has no PatternAltitudeFt.
+    PatternAltitudeFt = 1500,
     -- Squawk codes real-world ATC never assigns (hijack/comm-fail/emergency/
     -- VFR-conspicuity) — excluded from Clearance Delivery's assignment pool.
     ReservedSquawkCodes = { "7500", "7600", "7700", "1200", "7000" },
@@ -645,6 +648,30 @@ function NASG_ATC:NormalizeReadbackText(text)
     return value
 end
 
+NASG_ATC.NumberWordsToDigits = {
+    zero = "0", one = "1", two = "2", three = "3", four = "4", five = "5",
+    six = "6", seven = "7", eight = "8", nine = "9", ten = "10",
+    eleven = "11", twelve = "12", thirteen = "13", fourteen = "14",
+    fifteen = "15", sixteen = "16", seventeen = "17", eighteen = "18",
+    nineteen = "19", twenty = "20",
+}
+
+-- Converts spelled-out number words ("Dream Four") to digits ("Dream 4"),
+-- word-boundary-safe. STT transcription is inconsistent about which form a
+-- spoken number comes back as (e.g. Whisper often normalizes spoken numbers
+-- to digits regardless of how they were actually said), so callers matching
+-- a registered name/segment against live readback text should compare both
+-- the original and this digit-normalized form rather than assume one.
+function NASG_ATC:NormalizeNumberWords(text)
+    local value = tostring(text or "")
+
+    for word, digit in pairs(self.NumberWordsToDigits) do
+        value = value:gsub("%f[%a]" .. word .. "%f[%A]", digit)
+    end
+
+    return value
+end
+
 function NASG_ATC:IsRouteReadbackCorrect(rawText, route)
     if not route or #route == 0 then
         return true
@@ -774,6 +801,16 @@ function NASG_ATC:IsSquawkReadbackCorrect(rawText, squawkCode)
     local numericSquawkText = self:NormalizeReadbackText(squawkCode)
 
     if numericSquawkText ~= "" and string.find(text, numericSquawkText, 1, true) then
+        return true
+    end
+
+    -- STT frequently renders a spoken code group as space/hyphen separated
+    -- digits ("2-1-7-4") rather than one contiguous number; NormalizeReadbackText
+    -- turns the separators into spaces, so also compare against a digits-only
+    -- view of the readback that discards those gaps entirely.
+    local digitsOnlyText = text:gsub("%D", "")
+
+    if numericSquawkText ~= "" and string.find(digitsOnlyText, numericSquawkText, 1, true) then
         return true
     end
 
@@ -1472,9 +1509,15 @@ function NASG_ATC:GetMooseATISRunway(atisObject, takeoff)
     local name = nil
 
     pcall(function()
-        local runwayName = atisObject:GetActiveRunway(takeoff ~= false)
+        local runwayName, isLeft = atisObject:GetActiveRunway(takeoff ~= false)
 
         if runwayName and runwayName ~= "" then
+            if isLeft == true then
+                runwayName = runwayName .. "L"
+            elseif isLeft == false then
+                runwayName = runwayName .. "R"
+            end
+
             name = tostring(runwayName)
         end
     end)

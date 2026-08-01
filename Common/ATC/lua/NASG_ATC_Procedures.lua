@@ -105,6 +105,21 @@ function NASG_ATC:FindProcedure(value, airportId, procedureType)
     local procedure = self.ProceduresByLookup[key]
 
     if not procedure then
+        local keys = {}
+
+        for lookupKey in pairs(self.ProceduresByLookup) do
+            keys[#keys + 1] = lookupKey
+        end
+
+        local fuzzyKey = self:FuzzyMatchLookupKey(key, keys)
+
+        if fuzzyKey then
+            self:Log(string.format("Fuzzy-matched procedure request '%s' to '%s'", key, fuzzyKey))
+            procedure = self.ProceduresByLookup[fuzzyKey]
+        end
+    end
+
+    if not procedure then
         return nil
     end
 

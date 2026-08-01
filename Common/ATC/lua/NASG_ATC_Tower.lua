@@ -159,6 +159,16 @@ NASG_ATC_TOWER.Requests = {
         Handler = "HandleInbound",
     },
 
+    inbound_straight_in = {
+        Patterns = {
+            "straight in",
+            "request straight in",
+            "inbound straight in",
+            "straight in approach",
+        },
+        Handler = "HandleInbound",
+    },
+
     report_initial = {
         Patterns = {
             "initial",
@@ -343,9 +353,46 @@ function NASG_ATC_TOWER:BuildLandingClearanceMessage(atc, airport, callsign, run
     )
 end
 
+function NASG_ATC_TOWER:BuildWrongATISMessage(atc, airport, callsign)
+    local currentInformationRaw = atc:GetCurrentATISLetter(airport)
+    local currentInformation = atc:GetATISLetterForSpeech(currentInformationRaw)
+    local towerCallsign = atc:GetFacilityCallsign(airport, atc.Facilities.TOWER)
+
+    if currentInformationRaw then
+        return string.format(
+                "%s, %s, Information %s is current. Advise when ready with %s.",
+                callsign,
+                towerCallsign,
+                currentInformation,
+                currentInformation
+        )
+    end
+
+    return string.format(
+            "%s, %s, verify you have current airport information.",
+            callsign,
+            towerCallsign
+    )
+end
+
 function NASG_ATC_TOWER:HandleInbound(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
+
+    local requireCorrectATIS = airport.RequireCorrectATIS
+
+    if requireCorrectATIS == nil then
+        requireCorrectATIS = atc.Defaults.RequireCorrectATIS
+    end
+
+    if requireCorrectATIS and not atc:IsATISCorrect(airport, event and event.atis_letter) then
+        self:Send(atc, airport, self:BuildWrongATISMessage(atc, airport, callsign))
+        return true
+    end
+
     local runway = self:GetRunwayForArrival(atc, airport, event)
+    local patternAltitudeFt = airport.PatternAltitudeFt or atc.Defaults.PatternAltitudeFt
+    local patternAltitudeSpeech = patternAltitudeFt and atc:FormatAltitudeSpeech(patternAltitudeFt)
+    local patternClause = patternAltitudeSpeech and string.format(", pattern altitude %s", patternAltitudeSpeech) or ""
 
     session.State = atc.States.INBOUND
     session.Facility = atc.Facilities.TOWER
@@ -357,22 +404,24 @@ function NASG_ATC_TOWER:HandleInbound(atc, client, airport, session, event)
                 atc,
                 airport,
                 string.format(
-                        "%s, enter initial Runway %s. Report initial.",
+                        "%s, enter initial Runway %s%s. Report initial.",
                         callsign,
-                        atc:NormalizeRunway(runway)
+                        atc:NormalizeRunway(runway),
+                        patternClause
                 )
         )
         return true
     end
 
-    if event.arrival_type == "straight_in" then
+    if event.intent == "inbound_straight_in" then
         self:Send(
                 atc,
                 airport,
                 string.format(
-                        "%s, make straight-in Runway %s. Report five miles final.",
+                        "%s, make straight-in Runway %s%s. Report five miles final.",
                         callsign,
-                        atc:NormalizeRunway(runway)
+                        atc:NormalizeRunway(runway),
+                        patternClause
                 )
         )
         return true
@@ -382,9 +431,10 @@ function NASG_ATC_TOWER:HandleInbound(atc, client, airport, session, event)
             atc,
             airport,
             string.format(
-                    "%s, enter left downwind Runway %s. Report midfield.",
+                    "%s, enter left downwind Runway %s%s. Report midfield.",
                     callsign,
-                    atc:NormalizeRunway(runway)
+                    atc:NormalizeRunway(runway),
+                    patternClause
             )
     )
 
@@ -634,8 +684,38 @@ function NASG_ATC_TOWER:HandleGoingAround(atc, client, airport, session, event)
     return true
 end
 
+-- Generic hook called by NASG_ATC:HandleClientSessionEnded (land/crash/
+-- dead/disconnect) for every registered facility. On landing, this
+-- automatically hands the pilot to Ground the same way a manual "clear of
+-- runway" call does, so touchdown alone triggers the switch without
+-- requiring the pilot to call in. HandleClearOfRunway is idempotent, so a
+-- pilot who also calls "clear of runway" out of habit afterward just gets
+-- an acknowledgement rather than a duplicate handoff.
+function NASG_ATC_TOWER:OnClientSessionEnded(atc, session, reason)
+    if reason ~= "land" or not session or session.Facility ~= atc.Facilities.TOWER then
+        return
+    end
+
+    local airport = session.AirportId and atc:GetAirport(session.AirportId)
+
+    if not airport then
+        return
+    end
+
+    local client = nil
+    pcall(function() client = CLIENT:FindByName(session.ClientKey) end)
+
+    self:HandleClearOfRunway(atc, client, airport, session, {})
+end
+
 function NASG_ATC_TOWER:HandleClearOfRunway(atc, client, airport, session, event)
     local callsign = atc:GetClientCallsign(client, event)
+
+    if session.Facility == atc.Facilities.GROUND then
+        self:Send(atc, airport, string.format("%s, roger.", callsign))
+        return true
+    end
+
     local groundFrequency = atc:GetFacilityFrequency(airport, atc.Facilities.GROUND)
 
     session.State = atc.States.TRANSFERRED_TO_GROUND

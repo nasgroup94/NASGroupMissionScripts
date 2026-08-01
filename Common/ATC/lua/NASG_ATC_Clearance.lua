@@ -321,8 +321,18 @@ function NASG_ATC_CLEARANCE:HandleReadback(atc, client, airport, session, event)
     local procedureOk = true
 
     if pending.RouteSegmentNames then
+        local numericText = atc:NormalizeNumberWords(text)
+
         for _, segmentName in ipairs(pending.RouteSegmentNames) do
-            if not string.find(text, string.lower(segmentName), 1, true) then
+            local loweredName = string.lower(segmentName)
+            local numericName = atc:NormalizeNumberWords(loweredName)
+
+            local found = string.find(text, loweredName, 1, true)
+                    or string.find(text, numericName, 1, true)
+                    or string.find(numericText, loweredName, 1, true)
+                    or string.find(numericText, numericName, 1, true)
+
+            if not found then
                 procedureOk = false
                 break
             end
@@ -340,13 +350,26 @@ function NASG_ATC_CLEARANCE:HandleReadback(atc, client, airport, session, event)
         end
 
         local callsign = atc:GetClientCallsign(client, event)
+        local message
 
         if pending.RouteSegmentNames then
-            self:Send(atc, airport, string.format("%s, readback correct.", callsign))
+            message = string.format("%s, readback correct.", callsign)
         else
-            local message = self:BuildFullClearanceMessage(atc, client, airport, session, event, callsign)
-            self:Send(atc, airport, message)
+            message = self:BuildFullClearanceMessage(atc, client, airport, session, event, callsign)
         end
+
+        local groundFrequency = atc:GetFacilityFrequency(airport, atc.Facilities.GROUND)
+
+        if groundFrequency then
+            message = message .. string.format(" Contact Ground, %s.", atc:FormatFrequency(groundFrequency))
+        else
+            message = message .. " Contact Ground."
+        end
+
+        self:Send(atc, airport, message)
+
+        session.State = atc.States.TRANSFERRED_TO_GROUND
+        session.Facility = atc.Facilities.GROUND
 
         return true
     end

@@ -71,7 +71,7 @@ NASG_ATC:RegisterProcedure({
     Name = "FYTTR Three",
     Type = "departure",
     AirportId = "nellis",
-    Aliases = { "FYTTR3", "FYTTR", "Fighter", "fighter three", "FIGHTER THREE", "FIGHTER" },
+    Aliases = { "FYTTR3", "FYTTR", "FIGHTER THREE", "FIGHTER" },
     Points = {
         { Point = "fyttr", AltitudeFt = 14000, AltitudeConstraint = "above" },
     },
@@ -95,7 +95,7 @@ NASG_ATC:RegisterProcedure({
     Name = "Dream Four",
     Type = "departure",
     AirportId = "nellis",
-    Aliases = { "Dream4", "Dream","dream for departure","DREAM FOR","DREAM FOR DEPARTURE", "DREAM FLOOR" },
+    Aliases = { "Dream4", "Dream","dream for departure","DREAM FOR","DREAM FOR DEPARTURE", "DREAM FLOOR", "STREAM FOUR","STREAM FOR", "STREAM FLOOR", "DREAM FORWARD", "TRAIN FOR", "TRAIN FOR DEPARTURE", "TRAIN FOUR"},
     RunwayPoints = {
         ["3"] = {
             { Radial = 346, Airbase = AIRBASE.Nevada.Boulder_City, Name = "BLD R-346" },
@@ -127,7 +127,7 @@ NASG_ATC:RegisterProcedure({
     Name = "Nellis TACAN Zulu",
     Type = "recovery",
     AirportId = "nellis",
-    Aliases = { "TACAN Z", "Hi TACAN Z", "TACAN Zulu" },
+    Aliases = { "TACAN Z", "Hi TACAN Z", "TACAN ZULU" },
     Points = {
         { Radial = 209, Airbase = AIRBASE.Nevada.Nellis, DME = 30, Name = "ARCOE", AltitudeFt = 15000, AltitudeConstraint = "at" },
     },
