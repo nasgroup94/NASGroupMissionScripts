@@ -157,6 +157,24 @@ if you never do, nothing downstream changes.
       Say back the squawk code (and procedure name, if one was assigned).
       -> Validates; confirms, or re-issues with "negative" on a mismatch.
 
+  6.  Check into mission
+      Say: "check into mission <number>" / "check in to mission <number>" /
+      "join mission <number>" / "request mission <number>",
+      e.g. "check into mission one oh one."
+      -> Looks up flight plans staged under
+         FlightPlanRootFolder/<today>/<mission number>/ (one file per
+         airframe) and attaches the one matching your aircraft type to your
+         session, replacing any flight plan you already had. Replies "copy,
+         checked in to mission <n>, flight plan loaded." if a match for your
+         aircraft was found, "...no flight plan on file for your aircraft."
+         if the mission exists but has nothing for your airframe, or
+         "negative, no flight plans on file for mission <n>." if the mission
+         number itself isn't recognized. If the mission number wasn't heard
+         clearly: "say again, check into mission, followed by the mission
+         number." Also available on the F10 menu under Select Mission (no
+         voice call needed, but you must have already contacted Ground or
+         Clearance at least once to have an active session).
+
   NOT YET IMPLEMENTED on Clearance:
     - (none — all declared intents have handlers)
 

@@ -19,6 +19,11 @@ NASG_ATC.FlightPlansById = NASG_ATC.FlightPlansById or {}
 NASG_ATC.FlightPlansByLookup = NASG_ATC.FlightPlansByLookup or {}
 NASG_ATC.FlightPlanFileMTime = NASG_ATC.FlightPlanFileMTime or nil
 
+-- Mission check-in (see CheckInToMission/GetMissionFlightPlan below):
+-- Root/<today>/<mission number>/<platform-specific plan>, indexed as
+-- [normalized mission number][normalized aircraft_type] = flightPlan.
+NASG_ATC.MissionFlightPlansByNumber = NASG_ATC.MissionFlightPlansByNumber or {}
+
 
 function NASG_ATC:NormalizeFlightPlanLookup(value)
     local text = tostring(value or "")
@@ -551,6 +556,315 @@ function NASG_ATC:BuildFlightPlanFromDTC(path, data)
 end
 
 
+-- DCS DTC exports (Hornet WYPT steerpoints) store position as a projected
+-- {x, y} pair in the mission's world coordinate frame (x=north, y=east),
+-- not lat/lon, so it can't be treated like the generic lat/lon DTC schema.
+-- coord.LOtoLL is the same engine call MOOSE/mist/CTLD use for this
+-- conversion elsewhere in this codebase, so we lean on it here too rather
+-- than hand-rolling a per-terrain projection.
+function NASG_ATC:ConvertDCSPointToLatLon(x, y)
+    x = tonumber(x)
+    y = tonumber(y)
+
+    if not x or not y then
+        return nil, nil
+    end
+
+    if not coord or not coord.LOtoLL then
+        return nil, nil
+    end
+
+    local ok, lat, lon = pcall(coord.LOtoLL, { x = x, y = 0, z = y })
+
+    if ok and lat and lon then
+        return lat, lon
+    end
+
+    return nil, nil
+end
+
+function NASG_ATC:NormalizeHornetDTCWaypoint(rawPoint)
+    if type(rawPoint) ~= "table" then
+        return nil
+    end
+
+    local lat, lon = self:ConvertDCSPointToLatLon(rawPoint.x, rawPoint.y)
+
+    if not lat or not lon then
+        return nil
+    end
+
+    local number = tonumber(rawPoint.wypt_num)
+    local id = tostring(rawPoint.id or ("STPT" .. tostring(number or "")))
+    local note = tostring(rawPoint.note or "")
+
+    return {
+        waypoint = number,
+        name = (note ~= "" and note) or id,
+        stpt_id = id,
+        lat = lat,
+        lon = lon,
+        alt = tonumber(rawPoint.alt),
+        source = "dtc_hornet",
+        raw = rawPoint,
+    }
+end
+
+-- Hornet steerpoints tag their own route membership/order via R1/R2/R3 (+
+-- R1_order/R2_order/R3_order) rather than a separate ordered list, so we
+-- rebuild each named route straight from those flags instead of parsing
+-- WYPT.NAV_ROUTE's parallel (and less complete) speed/ETA table.
+function NASG_ATC:BuildHornetDTCRouteSequences(rawPoints, waypointsByStptId)
+    local sequences = {}
+
+    for _, flag in ipairs({ "R1", "R2", "R3" }) do
+        local ordered = {}
+
+        for _, rawPoint in ipairs(rawPoints or {}) do
+            if type(rawPoint) == "table" and rawPoint[flag] then
+                ordered[#ordered + 1] = {
+                    order = tonumber(rawPoint[flag .. "_order"]) or 0,
+                    id = tostring(rawPoint.id or ""),
+                }
+            end
+        end
+
+        if #ordered > 0 then
+            table.sort(ordered, function(a, b) return a.order < b.order end)
+
+            local waypointRefs = {}
+
+            for _, entry in ipairs(ordered) do
+                local waypoint = waypointsByStptId[entry.id]
+
+                if waypoint then
+                    waypointRefs[#waypointRefs + 1] = waypoint.waypoint
+                end
+            end
+
+            if #waypointRefs >= 2 then
+                sequences[#sequences + 1] = {
+                    name = "Route " .. flag:sub(2),
+                    waypoints = waypointRefs,
+                    max_lateral_error_nm = 5,
+                }
+            end
+        end
+    end
+
+    return sequences
+end
+
+function NASG_ATC:ExtractHornetDTCWaypoints(data)
+    local rawPoints = self:GetTableValueByPath(data, "data.WYPT.NAV_PTS")
+
+    if type(rawPoints) ~= "table" then
+        return nil, nil, nil
+    end
+
+    local waypoints = {}
+    local waypointsByStptId = {}
+
+    for index, rawPoint in ipairs(rawPoints) do
+        local waypoint = self:NormalizeHornetDTCWaypoint(rawPoint)
+
+        if waypoint then
+            waypoint.waypoint = waypoint.waypoint or index
+            waypoints[#waypoints + 1] = waypoint
+            waypointsByStptId[waypoint.stpt_id] = waypoint
+        end
+    end
+
+    table.sort(waypoints, function(a, b) return (a.waypoint or 0) < (b.waypoint or 0) end)
+
+    return waypoints, waypointsByStptId, rawPoints
+end
+
+function NASG_ATC:BuildFlightPlanFromHornetDTC(path, data)
+    local waypoints, waypointsByStptId, rawPoints = self:ExtractHornetDTCWaypoints(data)
+
+    if not waypoints or #waypoints == 0 then
+        self:Log("Hornet DTC has no usable steerpoints (map coordinate conversion unavailable outside a running mission?): " .. tostring(path))
+        return nil
+    end
+
+    local stem = self:GetFileStem(path)
+
+    local callsign = self:GetDTCValue(data, {
+        "name",
+        "data.name",
+        "callsign",
+        "Callsign",
+    }) or stem
+
+    local aircraftType = self:GetDTCValue(data, {
+        "type",
+        "Type",
+        "data.type",
+        "data.Type",
+    })
+
+    local sequenceRefs = {}
+
+    for _, waypoint in ipairs(waypoints) do
+        sequenceRefs[#sequenceRefs + 1] = waypoint.waypoint
+    end
+
+    local sequences = {
+        {
+            name = "DTC",
+            waypoints = sequenceRefs,
+            max_lateral_error_nm = 5,
+        },
+    }
+
+    for _, routeSequence in ipairs(self:BuildHornetDTCRouteSequences(rawPoints, waypointsByStptId)) do
+        sequences[#sequences + 1] = routeSequence
+    end
+
+    return {
+        id = "dtc_" .. self:NormalizeFlightPlanLookup(stem),
+        source = "dtc_hornet",
+        source_file = path,
+        callsign = tostring(callsign),
+        aircraft_type = aircraftType,
+        aliases = {
+            stem,
+            callsign,
+        },
+        waypoints = waypoints,
+        sequences = sequences,
+    }
+end
+
+
+-- F-14 (and other DCS modules that share its DTC schema) store steerpoints
+-- as a fixed set of NAV "pages" (route slots), most of them empty templates
+-- -- only the page(s) the pilot actually populated have a non-empty
+-- `waypoints` array. Unlike the Hornet, these waypoints already carry real
+-- lat/lon, so no coordinate conversion is needed; x/y is kept only as a
+-- fallback for modules/exports that omit lat/lon.
+function NASG_ATC:NormalizeNavPageDTCWaypoint(rawWaypoint, waypointNumber, pageLabel)
+    if type(rawWaypoint) ~= "table" then
+        return nil
+    end
+
+    local lat = tonumber(rawWaypoint.lat)
+    local lon = tonumber(rawWaypoint.lon)
+
+    if not lat or not lon then
+        lat, lon = self:ConvertDCSPointToLatLon(rawWaypoint.x, rawWaypoint.y)
+    end
+
+    if not lat or not lon then
+        return nil
+    end
+
+    local name = tostring(rawWaypoint.name or "")
+
+    if name == "" then
+        name = pageLabel .. " WP" .. tostring(waypointNumber)
+    end
+
+    return {
+        waypoint = waypointNumber,
+        name = name,
+        lat = lat,
+        lon = lon,
+        alt = tonumber(rawWaypoint.elev),
+        speed = tonumber(rawWaypoint.spd),
+        source = "dtc_navpages",
+        raw = rawWaypoint,
+    }
+end
+
+function NASG_ATC:ExtractNavPageDTCWaypoints(data)
+    local navPages = self:GetTableValueByPath(data, "data.NAV")
+
+    if type(navPages) ~= "table" then
+        return nil, nil
+    end
+
+    local waypoints = {}
+    local sequences = {}
+    local runningNumber = 0
+
+    for pageIndex, navPage in ipairs(navPages) do
+        local rawWaypoints = type(navPage) == "table" and navPage.waypoints or nil
+
+        if type(rawWaypoints) == "table" and rawWaypoints[1] then
+            local pageName = navPage.name
+
+            if type(pageName) ~= "string" or pageName == "" then
+                pageName = "NAV " .. tostring(pageIndex)
+            end
+
+            local sequenceRefs = {}
+
+            for _, rawWaypoint in ipairs(rawWaypoints) do
+                runningNumber = runningNumber + 1
+
+                local waypoint = self:NormalizeNavPageDTCWaypoint(rawWaypoint, runningNumber, pageName)
+
+                if waypoint then
+                    waypoints[#waypoints + 1] = waypoint
+                    sequenceRefs[#sequenceRefs + 1] = waypoint.waypoint
+                end
+            end
+
+            if #sequenceRefs >= 2 then
+                sequences[#sequences + 1] = {
+                    name = pageName,
+                    waypoints = sequenceRefs,
+                    max_lateral_error_nm = 5,
+                }
+            end
+        end
+    end
+
+    return waypoints, sequences
+end
+
+function NASG_ATC:BuildFlightPlanFromNavPagesDTC(path, data)
+    local waypoints, sequences = self:ExtractNavPageDTCWaypoints(data)
+
+    if not waypoints or #waypoints == 0 then
+        self:Log("NAV-page DTC has no usable waypoints: " .. tostring(path))
+        return nil
+    end
+
+    local stem = self:GetFileStem(path)
+
+    local callsign = self:GetDTCValue(data, {
+        "name",
+        "data.name",
+        "callsign",
+        "Callsign",
+    }) or stem
+
+    local aircraftType = self:GetDTCValue(data, {
+        "type",
+        "Type",
+        "data.type",
+        "data.Type",
+    })
+
+    return {
+        id = "dtc_" .. self:NormalizeFlightPlanLookup(stem),
+        source = "dtc_navpages",
+        source_file = path,
+        callsign = tostring(callsign),
+        aircraft_type = aircraftType,
+        aliases = {
+            stem,
+            callsign,
+        },
+        waypoints = waypoints,
+        sequences = sequences,
+    }
+end
+
+
 function NASG_ATC:GetFlightPlanJsonKind(data)
     if type(data) ~= "table" then
         return "unknown"
@@ -558,6 +872,22 @@ function NASG_ATC:GetFlightPlanJsonKind(data)
 
     if data.flight_plans or data.FlightPlans then
         return "nasg_atc"
+    end
+
+    local hornetWaypoints = self:GetTableValueByPath(data, "data.WYPT.NAV_PTS")
+
+    if type(hornetWaypoints) == "table" and hornetWaypoints[1] then
+        return "dtc_hornet"
+    end
+
+    local navPages = self:GetTableValueByPath(data, "data.NAV")
+
+    if type(navPages) == "table" then
+        for _, navPage in ipairs(navPages) do
+            if type(navPage) == "table" and type(navPage.waypoints) == "table" and navPage.waypoints[1] then
+                return "dtc_navpages"
+            end
+        end
     end
 
     if self:FindFirstTableByPaths(data, {
@@ -802,6 +1132,48 @@ function NASG_ATC:ListDTCFiles(folder)
     return files
 end
 
+-- Non-recursive: just the immediate child directories of `folder`, used to
+-- enumerate mission-number folders under a day folder (see
+-- LoadMissionFlightPlans below) without descending into them.
+function NASG_ATC:ListImmediateSubfolders(folder)
+    local subfolders = {}
+
+    if not folder or folder == "" or not lfs or not lfs.dir or not lfs.attributes then
+        return subfolders
+    end
+
+    local ok, iterator, directoryObject = pcall(function()
+        return lfs.dir(folder)
+    end)
+
+    if not ok or not iterator then
+        self:Log("Unable to open folder for mission scan: " .. tostring(folder))
+        return subfolders
+    end
+
+    while true do
+        local nextOk, filename = pcall(function()
+            return iterator(directoryObject)
+        end)
+
+        if not nextOk or not filename then
+            break
+        end
+
+        if filename ~= "." and filename ~= ".." then
+            local path = self:JoinPath(folder, filename)
+            local attributesOk, attributes = pcall(function() return lfs.attributes(path) end)
+
+            if attributesOk and attributes and attributes.mode == "directory" then
+                subfolders[#subfolders + 1] = { name = filename, path = path }
+            end
+        end
+    end
+
+    table.sort(subfolders, function(a, b) return a.name < b.name end)
+    return subfolders
+end
+
 function NASG_ATC:ApplyFlightPlanFolderCallsign(flightPlan, path)
     if not flightPlan then
         return
@@ -869,6 +1241,51 @@ function NASG_ATC:BuildFlightPlanAliasMap(flightPlans)
     end
 end
 
+-- Shared kind-detection/build dispatch used by both the per-callsign
+-- day-folder loader (LoadDTCFlightPlans) and the mission-number loader
+-- (LoadMissionFlightPlans), so a new DTC/JSON shape only needs to be taught
+-- to GetFlightPlanJsonKind + one Build* function to work in both places.
+-- Always returns a list (kind "nasg_atc" files can contain several plans).
+function NASG_ATC:BuildFlightPlansFromFile(path, data)
+    local kind = self:GetFlightPlanJsonKind(data)
+
+    if kind == "nasg_atc" then
+        return data.flight_plans or data.FlightPlans or {}, kind
+    end
+
+    local flightPlan = nil
+
+    if kind == "combatflite" then
+        flightPlan = self:BuildFlightPlanFromCombatFliteJson(path, data)
+    elseif kind == "dtc_hornet" then
+        flightPlan = self:BuildFlightPlanFromHornetDTC(path, data)
+    elseif kind == "dtc_navpages" then
+        flightPlan = self:BuildFlightPlanFromNavPagesDTC(path, data)
+    elseif kind == "dtc" then
+        flightPlan = self:BuildFlightPlanFromDTC(path, data)
+    else
+        flightPlan = self:BuildFlightPlanFromHornetDTC(path, data)
+
+        if not flightPlan then
+            flightPlan = self:BuildFlightPlanFromNavPagesDTC(path, data)
+        end
+
+        if not flightPlan then
+            flightPlan = self:BuildFlightPlanFromDTC(path, data)
+        end
+
+        if not flightPlan then
+            flightPlan = self:BuildFlightPlanFromCombatFliteJson(path, data)
+        end
+    end
+
+    if flightPlan then
+        return { flightPlan }, kind
+    end
+
+    return {}, kind
+end
+
 function NASG_ATC:LoadDTCFlightPlans()
     if not self.DTCFlightPlanEnabled then
         self:Log("DTC/current-day flight plan loading disabled")
@@ -895,35 +1312,18 @@ function NASG_ATC:LoadDTCFlightPlans()
         local data = self:DecodeJsonFile(path)
 
         if data then
-            local kind = self:GetFlightPlanJsonKind(data)
+            local plans, kind = self:BuildFlightPlansFromFile(path, data)
 
             self:Log("Flight plan JSON kind: " .. tostring(kind) .. " file=" .. tostring(path))
 
-            local flightPlan = nil
-
-            if kind == "combatflite" then
-                flightPlan = self:BuildFlightPlanFromCombatFliteJson(path, data)
-            elseif kind == "dtc" then
-                flightPlan = self:BuildFlightPlanFromDTC(path, data)
-            elseif kind == "nasg_atc" then
-                for _, plan in ipairs(data.flight_plans or data.FlightPlans or {}) do
-                    self:ApplyFlightPlanFolderCallsign(plan, path)
-                    flightPlans[#flightPlans + 1] = plan
-                end
-            else
-                flightPlan = self:BuildFlightPlanFromDTC(path, data)
-
-                if not flightPlan then
-                    flightPlan = self:BuildFlightPlanFromCombatFliteJson(path, data)
-                end
+            if #plans == 0 then
+                self:Log("No usable flight plan built from file: " .. tostring(path))
             end
 
-            if flightPlan then
-                self:ApplyFlightPlanFolderCallsign(flightPlan, path)
-                flightPlans[#flightPlans + 1] = flightPlan
-                self:Log("Loaded flight plan id=" .. tostring(flightPlan.id) .. " callsign=" .. tostring(flightPlan.callsign))
-            else
-                self:Log("No usable flight plan built from file: " .. tostring(path))
+            for _, plan in ipairs(plans) do
+                self:ApplyFlightPlanFolderCallsign(plan, path)
+                flightPlans[#flightPlans + 1] = plan
+                self:Log("Loaded flight plan id=" .. tostring(plan.id) .. " callsign=" .. tostring(plan.callsign))
             end
         else
             self:Log("Unable to decode JSON/DTC flight plan file: " .. tostring(path))
@@ -934,6 +1334,151 @@ function NASG_ATC:LoadDTCFlightPlans()
 
     self:Log("Loaded current-day flight plans from: " .. tostring(folder) .. " count=" .. tostring(#flightPlans))
     return flightPlans
+end
+
+-- Mission check-in folders live one level below the day folder used by
+-- LoadDTCFlightPlans -- Root/<today>/<mission number>/<platform-specific
+-- plan> -- so a pilot's personal callsign folder (Root/<today>/<callsign>)
+-- and mission folders can coexist side by side under the same day folder.
+-- Every immediate subfolder of the day folder is treated as a mission
+-- number; its files are also picked up (harmlessly) by LoadDTCFlightPlans's
+-- recursive callsign-folder scan above, they're just additionally indexed
+-- here by mission number + aircraft type for CheckInToMission/
+-- GetMissionFlightPlan to use.
+function NASG_ATC:LoadMissionFlightPlans()
+    self.MissionFlightPlansByNumber = {}
+
+    if not self.DTCFlightPlanEnabled then
+        return {}
+    end
+
+    local dayFolder = self:GetCurrentFlightPlanDayFolder()
+
+    if not dayFolder or dayFolder == "" then
+        return {}
+    end
+
+    local missionFolders = self:ListImmediateSubfolders(dayFolder)
+    local flightPlans = {}
+
+    for _, missionFolder in ipairs(missionFolders) do
+        local missionKey = self:NormalizeFlightPlanLookup(missionFolder.name)
+
+        if missionKey ~= "" then
+            local files = self:ListDTCFiles(missionFolder.path)
+
+            for _, path in ipairs(files) do
+                local data = self:DecodeJsonFile(path)
+
+                if data then
+                    local plans = self:BuildFlightPlansFromFile(path, data)
+
+                    for _, plan in ipairs(plans) do
+                        self:ApplyFlightPlanFolderCallsign(plan, path)
+                        plan.mission_number = missionFolder.name
+
+                        local typeKey = self:NormalizeFlightPlanLookup(plan.aircraft_type)
+
+                        if typeKey ~= "" then
+                            self.MissionFlightPlansByNumber[missionKey] = self.MissionFlightPlansByNumber[missionKey] or {}
+                            self.MissionFlightPlansByNumber[missionKey][typeKey] = plan
+                        else
+                            self:Log("Mission flight plan has no aircraft_type, cannot be platform-matched: " .. tostring(path))
+                        end
+
+                        flightPlans[#flightPlans + 1] = plan
+                    end
+                else
+                    self:Log("Unable to decode mission flight plan file: " .. tostring(path))
+                end
+            end
+        end
+    end
+
+    self:BuildFlightPlanAliasMap(flightPlans)
+
+    self:Log(
+            "Loaded mission flight plans from: " .. tostring(dayFolder)
+                    .. " missions=" .. tostring(#missionFolders)
+                    .. " plans=" .. tostring(#flightPlans)
+    )
+
+    return flightPlans
+end
+
+-- Matches an actual DCS aircraft type (e.g. "FA-18C_hornet") against the
+-- aircraft_type keys a mission folder actually has plans for. Tries an
+-- exact normalized match first, then falls back to substring-contains
+-- either direction (same spirit as FuzzyMatchLookupKey) so a DTC's own
+-- `type` field of just "hornet" still matches the real "FA-18C_hornet".
+function NASG_ATC:MatchAircraftTypeKey(aircraftType, availableTypeKeys)
+    local query = self:NormalizeFlightPlanLookup(aircraftType)
+
+    if query == "" or not availableTypeKeys then
+        return nil
+    end
+
+    if availableTypeKeys[query] then
+        return query
+    end
+
+    for key, _ in pairs(availableTypeKeys) do
+        if key ~= "" and (query:find(key, 1, true) or key:find(query, 1, true)) then
+            return key
+        end
+    end
+
+    return nil
+end
+
+function NASG_ATC:GetMissionFlightPlan(missionNumber, aircraftType)
+    local missionKey = self:NormalizeFlightPlanLookup(missionNumber)
+    local plansByType = self.MissionFlightPlansByNumber[missionKey]
+
+    if not plansByType then
+        return nil
+    end
+
+    local typeKey = self:MatchAircraftTypeKey(aircraftType, plansByType)
+
+    return typeKey and plansByType[typeKey] or nil
+end
+
+-- Shared by the Clearance Delivery voice intent and the F10 "Select
+-- Mission" menu. Attaches immediately if the client's aircraft type can be
+-- resolved and matches a plan on file; otherwise the check-in still
+-- "sticks" on the session and GetOrAttachFlightPlan will retry later.
+-- Returns ok, normalized mission number, matched flight plan (or nil),
+-- and a failure reason ("no_session"/"no_mission_number"/"unknown_mission").
+function NASG_ATC:CheckInToMission(session, client, missionNumberRaw)
+    if not session then
+        return false, nil, nil, "no_session"
+    end
+
+    local missionKey = self:NormalizeFlightPlanLookup(missionNumberRaw)
+
+    if missionKey == "" then
+        return false, nil, nil, "no_mission_number"
+    end
+
+    if not self.MissionFlightPlansByNumber[missionKey] then
+        return false, missionKey, nil, "unknown_mission"
+    end
+
+    session.MissionNumber = missionKey
+    session.FlightPlanId = nil
+    session.ActiveSequenceName = nil
+    session.ActiveLegIndex = nil
+    session.UpdatedAt = timer.getTime()
+
+    local aircraftType = client and self:GetMooseUnitTypeNameSafe(client)
+    local matchedFlightPlan = aircraftType and self:GetMissionFlightPlan(missionKey, aircraftType) or nil
+
+    if matchedFlightPlan then
+        self:AttachFlightPlanToSession(session, matchedFlightPlan)
+    end
+
+    return true, missionKey, matchedFlightPlan, nil
 end
 
 
@@ -1009,6 +1554,12 @@ function NASG_ATC:LoadFlightPlans()
         loadedFlightPlans[#loadedFlightPlans + 1] = flightPlan
     end
 
+    local missionFlightPlans = self:LoadMissionFlightPlans()
+
+    for _, flightPlan in ipairs(missionFlightPlans or {}) do
+        loadedFlightPlans[#loadedFlightPlans + 1] = flightPlan
+    end
+
     self.FlightPlans = loadedFlightPlans
     self:IndexFlightPlans()
 
@@ -1059,6 +1610,20 @@ function NASG_ATC:GetOrAttachFlightPlan(client, session, event)
 
     if flightPlan then
         return flightPlan
+    end
+
+    -- A pilot who's checked into a mission (CheckInToMission) gets that
+    -- mission's platform-matched plan ahead of the legacy callsign-folder
+    -- match -- e.g. if aircraft type couldn't be resolved yet at check-in
+    -- time but can be now.
+    if session and session.MissionNumber then
+        local aircraftType = self:GetMooseUnitTypeNameSafe(client)
+        flightPlan = aircraftType and self:GetMissionFlightPlan(session.MissionNumber, aircraftType)
+
+        if flightPlan then
+            self:AttachFlightPlanToSession(session, flightPlan)
+            return flightPlan
+        end
     end
 
     flightPlan = self:GetFlightPlanForClient(client, event)
@@ -1323,6 +1888,14 @@ function NASG_ATC:GetWaypointDisplayName(waypoint)
     end
 
     local number = self:GetWaypointNumber(waypoint)
+
+    -- Real DTC exports frequently leave the very first steerpoint unnamed
+    -- (it's usually just the takeoff/ramp point). Falling back to "waypoint
+    -- 1" reads as if that number meant something to the pilot; it doesn't,
+    -- so say the standard "continue as fragged" instead of the id.
+    if number == 1 then
+        return "continue as fragged"
+    end
 
     if number then
         return "waypoint " .. tostring(number)

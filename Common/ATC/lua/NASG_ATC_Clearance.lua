@@ -57,6 +57,16 @@ NASG_ATC_CLEARANCE.Requests = {
         },
         Handler = "HandleReadback",
     },
+
+    check_in_mission = {
+        Patterns = {
+            "check into mission",
+            "check in to mission",
+            "join mission",
+            "request mission",
+        },
+        Handler = "HandleCheckInMission",
+    },
 }
 
 function NASG_ATC_CLEARANCE:RegisterRequestPatterns(atc)
@@ -414,6 +424,61 @@ function NASG_ATC_CLEARANCE:HandleReadback(atc, client, airport, session, event)
 
     local callsign = atc:GetClientCallsign(client, event)
     self:Send(atc, airport, string.format("%s, negative. %s", callsign, pending.InstructionText))
+    return true
+end
+
+-- Groups a pilot into a mission-number flight plan (Root/<today>/<mission
+-- number>/<platform-specific plan>, see NASG_ATC_FlightPlans.lua). event.
+-- mission_number is extracted by srs_stt_bridge.py's extract_mission_number.
+-- Shared logic lives in atc:CheckInToMission so the F10 "Select Mission"
+-- menu (NASG_ATC_MissionMenu.lua) produces identical behavior to voice.
+function NASG_ATC_CLEARANCE:HandleCheckInMission(atc, client, airport, session, event)
+    local callsign = atc:GetClientCallsign(client, event)
+    local missionNumber = event and event.mission_number
+
+    if not missionNumber or missionNumber == "" then
+        self:Send(
+                atc,
+                airport,
+                string.format("%s, say again, check into mission, followed by the mission number.", callsign)
+        )
+        return false
+    end
+
+    local ok, missionKey, flightPlan, reason = atc:CheckInToMission(session, client, missionNumber)
+
+    if not ok then
+        if reason == "unknown_mission" then
+            self:Send(
+                    atc,
+                    airport,
+                    string.format("%s, negative, no flight plans on file for mission %s.", callsign, tostring(missionKey))
+            )
+        else
+            self:Send(
+                    atc,
+                    airport,
+                    string.format("%s, say again, check into mission, followed by the mission number.", callsign)
+            )
+        end
+
+        return true
+    end
+
+    if flightPlan then
+        self:Send(
+                atc,
+                airport,
+                string.format("%s, copy, checked in to mission %s, flight plan loaded.", callsign, missionKey)
+        )
+    else
+        self:Send(
+                atc,
+                airport,
+                string.format("%s, copy, checked in to mission %s, no flight plan on file for your aircraft.", callsign, missionKey)
+        )
+    end
+
     return true
 end
 

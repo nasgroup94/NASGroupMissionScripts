@@ -46,7 +46,7 @@ NASG_ATC:DefineAirport({
     -- Ground -> Tower -> Center -> Tower -> Ground (false) vs AWACS (true).
     UseAWACSForDeparture = false,
 
-    DepartureClimbAltitudeFt = 6000,
+    DepartureClimbAltitudeFt = 17000,
 
     Coalition = coalition.side.BLUE,
 

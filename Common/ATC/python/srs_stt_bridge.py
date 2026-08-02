@@ -711,6 +711,31 @@ class ATCSpeechEventBuilder:
 
         return f"{word_part.upper()}{digits}"
 
+    # Parses "check into mission one oh one" / "check in to mission 101" /
+    # "join mission two zero one" -- same mixed digit-word/digit approach as
+    # extract_reported_radial above. The keyword itself is intent-matched
+    # separately (NASG_ATC_Clearance.lua's check_in_mission patterns); this
+    # only extracts the mission number value.
+    def extract_mission_number(self, text: str) -> str | None:
+        normalized = self.normalize_text(text)
+
+        match = re.search(
+            r"\b(?:check\s+(?:in\s+to|into)|join|request)\s+mission\s+(?:number\s+)?"
+            r"((?:[0-9]+|zero|one|two|three|four|five|six|seven|eight|nine|niner)"
+            r"(?:\s+(?:[0-9]+|zero|one|two|three|four|five|six|seven|eight|nine|niner)){0,3})\b",
+            normalized,
+        )
+
+        if not match:
+            return None
+
+        digits = "".join(
+            part if part.isdigit() else self.NUMBER_WORDS.get(part, "")
+            for part in match.group(1).split()
+        )
+
+        return digits or None
+
     def extract_altitude(self, text: str) -> str | None:
         normalized = self.normalize_text(text)
         match = re.search(r"\b(?:passing|level|climbing through|descending through)\s+([a-z0-9\s]+)", normalized)
@@ -1069,6 +1094,11 @@ class ATCSpeechEventBuilder:
 
         if callsign_alias:
             speech_event["callsign_alias"] = callsign_alias
+
+        mission_number = self.extract_mission_number(text)
+
+        if mission_number:
+            speech_event["mission_number"] = mission_number
 
         altitude = self.extract_altitude(text)
 
