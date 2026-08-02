@@ -481,3 +481,51 @@ transmit failed: create SRS client: failed to connect to SRS server: failed to c
 [main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
 [585ec718b9ad43c294f28056945697a5] TTS job completed successfully. cache_hit=True
 [0ca463440d8d400599a206e87e74b463] TTS job completed successfully. cache_hit=True
+[54ae960193224d368db0d101a3f03a20] Received TTS request: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2', text_length=426
+[54ae960193224d368db0d101a3f03a20] TTS job started: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=270.1, modulations=AM, coalition=2, volume=0.3
+[ce0298314cd14868ae912754d7db8bfb] Received TTS request: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2', text_length=427
+[ce0298314cd14868ae912754d7db8bfb] TTS job started: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
+[54ae960193224d368db0d101a3f03a20] TTS job completed successfully. cache_hit=True
+[ce0298314cd14868ae912754d7db8bfb] TTS job completed successfully. cache_hit=True
+[3228f9b87cae483a8e3cc9d8d19d6415] Received TTS request: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2', text_length=426
+[3228f9b87cae483a8e3cc9d8d19d6415] TTS job started: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=270.1, modulations=AM, coalition=2, volume=0.3
+[7e63cebd2d074dab89fee6cdc05da79e] Received TTS request: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2', text_length=427
+[7e63cebd2d074dab89fee6cdc05da79e] TTS job started: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
+[3228f9b87cae483a8e3cc9d8d19d6415] TTS job completed successfully. cache_hit=True
+[7e63cebd2d074dab89fee6cdc05da79e] TTS job completed successfully. cache_hit=True
+[9efe065d607d48b985dda77a5e271a2b] Received TTS request: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2', text_length=426
+[9efe065d607d48b985dda77a5e271a2b] TTS job started: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=270.1, modulations=AM, coalition=2, volume=0.3
+[65ca90f04ca940199d25c512440ef1c4] Received TTS request: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2', text_length=427
+[65ca90f04ca940199d25c512440ef1c4] TTS job started: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
+[9efe065d607d48b985dda77a5e271a2b] TTS job completed successfully. cache_hit=True
+[65ca90f04ca940199d25c512440ef1c4] TTS job completed successfully. cache_hit=True
+[b4600b8e049b4b5f933290b55086d72a] Received TTS request: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2', text_length=426
+[b4600b8e049b4b5f933290b55086d72a] TTS job started: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=270.1, modulations=AM, coalition=2, volume=0.3
+[cfa815fd96dd4cbf978a686ddaf0619d] Received TTS request: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2', text_length=427
+[cfa815fd96dd4cbf978a686ddaf0619d] TTS job started: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
+[b4600b8e049b4b5f933290b55086d72a] TTS job completed successfully. cache_hit=True
+[cfa815fd96dd4cbf978a686ddaf0619d] TTS job completed successfully. cache_hit=True
+[444fe8d4478c45239e66328b4bf274ec] Received TTS request: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2', text_length=426
+[444fe8d4478c45239e66328b4bf274ec] TTS job started: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=270.1, modulations=AM, coalition=2, volume=0.3
+[75a0b3d6101c41eeaade3bfb5c9b6cb0] Received TTS request: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2', text_length=427
+[75a0b3d6101c41eeaade3bfb5c9b6cb0] TTS job started: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
+[444fe8d4478c45239e66328b4bf274ec] TTS job completed successfully. cache_hit=True
+[75a0b3d6101c41eeaade3bfb5c9b6cb0] TTS job completed successfully. cache_hit=True
+[af98621f7eb34c75b8055ddb719ac090] Received TTS request: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2', text_length=426
+[af98621f7eb34c75b8055ddb719ac090] TTS job started: initiator='Nellis ATIS|freqs=270.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=270.1, modulations=AM, coalition=2, volume=0.3
+[74560ce4d04a4a8f925cb86410424df1] Received TTS request: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2', text_length=427
+[74560ce4d04a4a8f925cb86410424df1] TTS job started: initiator='Creech ATIS|freqs=121.1|modulations=AM|coalition=2'
+[main] Starting Go native SRS sender with PCM: host=127.0.0.1, port=5002, freqs=121.1, modulations=AM, coalition=2, volume=0.3
+TTS service stop file detected: C:\NASGroup\NASGroupMissionScripts\Common\ATC\tmp\nasg_tts_service.stop
+[Sun 08/02/2026 15:57:04.40] start_tts_service.bat exiting with code 0 
