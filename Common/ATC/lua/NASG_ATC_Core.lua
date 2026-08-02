@@ -1350,7 +1350,11 @@ function NASG_ATC:GetOrCreateSession(client, airport)
             AirportId = airport.Id,
             State = isHot and self.States.WAITING_FOR_TAXI_REQUEST or self.States.WAITING_FOR_STARTUP_REQUEST,
             Facility = self.Facilities.GROUND,
+            -- Best-guess default from live coordinates; NOT the same as the
+            -- pilot having stated it. EnsureParkingLocationStated gates on
+            -- ParkingLocationConfirmed, not on this field being non-nil.
             ParkingAreaName = parkingArea and parkingArea.Name or nil,
+            ParkingLocationConfirmed = false,
             StartupApproved = false,
             ATISVerified = false,
             TaxiClearanceIssued = false,

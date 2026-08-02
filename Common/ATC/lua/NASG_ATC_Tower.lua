@@ -302,7 +302,7 @@ function NASG_ATC_TOWER:BuildTakeoffClearanceMessage(atc, airport, callsign, run
     local runwaySpeech = atc:NormalizeRunway(runway)
     local departureFacility = self:GetDepartureFacility(atc, airport)
     local departureFrequency = atc:GetFacilityFrequency(airport, departureFacility)
-    local windText = airport.WindText
+    local windText = self:GetWindSpeech(airport)
     local climbAltitudeSpeech = climbAltitudeFt and atc:FormatAltitudeSpeech(climbAltitudeFt)
 
     local message
@@ -339,7 +339,7 @@ end
 
 function NASG_ATC_TOWER:BuildLandingClearanceMessage(atc, airport, callsign, runway)
     local runwaySpeech = atc:NormalizeRunway(runway)
-    local windText = airport.WindText
+    local windText = self:GetWindSpeech(airport)
 
     if windText then
         return string.format(
@@ -463,6 +463,42 @@ function NASG_ATC_TOWER:GetAirbaseCoordinate(airport)
     return coordinate
 end
 
+--- Live wind report spoken in the same "<dir digits> at <speed digits>" style as
+--- the static airport.WindText fallback values, but pulled from COORDINATE:GetWind()
+--- at the field. Falls back to airport.WindText whenever the coordinate or wind data
+--- isn't available (e.g. no resolvable airbase), so callers always get a usable string.
+function NASG_ATC_TOWER:GetWindSpeech(airport)
+    local coordinate = self:GetAirbaseCoordinate(airport)
+    local direction, strengthMps = nil, nil
+
+    if coordinate then
+        pcall(function()
+            direction, strengthMps = coordinate:GetWind()
+        end)
+    end
+
+    if not direction or not strengthMps then
+        return airport.WindText
+    end
+
+    local roundedDirection = math.floor((direction / 10) + 0.5) * 10
+
+    if roundedDirection <= 0 then
+        roundedDirection = roundedDirection + 360
+    elseif roundedDirection > 360 then
+        roundedDirection = roundedDirection - 360
+    end
+
+    local speedKnots = UTILS.MpsToKnots(strengthMps)
+    local speedRounded = math.floor(speedKnots + 0.5)
+
+    return string.format(
+            "%s at %s",
+            NASG_RADIO_SPEECH:DigitsToSpeech(string.format("%03d", roundedDirection)),
+            NASG_RADIO_SPEECH:DigitsToSpeech(tostring(speedRounded))
+    )
+end
+
 -- Assess the runway environment for a departing client.
 -- Returns a status string plus the most relevant conflicting traffic:
 --   "HOLD"   - an arrival is on final about to land (keep holding short).
@@ -491,10 +527,69 @@ function NASG_ATC_TOWER:AssessRunwayForDeparture(atc, client, airport, runway)
     })
 end
 
+-- Ground hands a pilot to Tower to clear a runway crossing it isn't
+-- authorized to clear itself (NASG_ATC_Ground.lua:AssessRunwayCrossing's
+-- DEFER decision, recorded on session.PendingTowerCrossingRunway by
+-- HandleReadback). Assesses just that crossing runway and either releases
+-- the pilot to cross or holds them for traffic — never the real departure
+-- runway, which IssueDepartureClearance only reaches once this is nil.
+function NASG_ATC_TOWER:IssueCrossingClearance(atc, client, airport, session, event)
+    local callsign = atc:GetClientCallsign(client, event)
+    local crossingRunway = session.PendingTowerCrossingRunway
+    local runwaySpeech = atc:NormalizeRunway(crossingRunway)
+
+    local assessment = NASG_ATC_GROUND
+            and NASG_ATC_GROUND:AssessRunwayCrossing(atc, client, airport, crossingRunway, true)
+    local decision = assessment and assessment.Decision or "CROSS"
+
+    session.Facility = atc.Facilities.TOWER
+    session.UpdatedAt = timer.getTime()
+
+    atc:Log(
+            string.format(
+                    "Tower crossing assessment client=%s runway=%s decision=%s",
+                    tostring(session.ClientKey),
+                    tostring(crossingRunway),
+                    tostring(decision)
+            )
+    )
+
+    if decision == "HOLD" then
+        session.State = atc.States.HOLDING_SHORT_FOR_CROSSING
+        session.PendingReadback = nil
+
+        self:Send(
+                atc,
+                airport,
+                string.format("%s, continue holding short Runway %s, traffic.", callsign, runwaySpeech)
+        )
+
+        return true
+    end
+
+    session.State = atc.States.HOLDING_SHORT_FOR_CROSSING
+    session.PendingTowerCrossingRunway = nil
+
+    local message = string.format("%s, cleared to cross Runway %s.", callsign, runwaySpeech)
+
+    atc:SetPendingReadback(session, {
+        Type = "cross",
+        InstructionText = message,
+        Runway = crossingRunway,
+    })
+
+    self:Send(atc, airport, message)
+    return true
+end
+
 -- Shared departure-clearance logic used by both the holding-short check-in
 -- and the explicit takeoff request. Issues hold short / line up and wait /
 -- cleared for takeoff based on the current runway assessment.
 function NASG_ATC_TOWER:IssueDepartureClearance(atc, client, airport, session, event)
+    if session.PendingTowerCrossingRunway then
+        return self:IssueCrossingClearance(atc, client, airport, session, event)
+    end
+
     local callsign = atc:GetClientCallsign(client, event)
     local runway = self:GetRunwayForDeparture(atc, airport, session, event)
     local runwaySpeech = atc:NormalizeRunway(runway)
@@ -838,6 +933,27 @@ function NASG_ATC_TOWER:IsLandingReadbackCorrect(atc, rawText, pending)
     return runwaySpeechText == "" and runwayNumericText == ""
 end
 
+function NASG_ATC_TOWER:IsCrossReadbackCorrect(atc, rawText, pending)
+    local text = self:NormalizeReadbackText(rawText)
+    local runway = tostring(pending.Runway or "")
+    local runwaySpeechText = self:NormalizeReadbackText(atc:NormalizeRunway(runway))
+    local runwayNumericText = self:NormalizeReadbackText(runway)
+
+    if not string.find(text, "cross", 1, true) then
+        return false
+    end
+
+    if runwaySpeechText ~= "" and string.find(text, runwaySpeechText, 1, true) then
+        return true
+    end
+
+    if runwayNumericText ~= "" and string.find(text, runwayNumericText, 1, true) then
+        return true
+    end
+
+    return runwaySpeechText == "" and runwayNumericText == ""
+end
+
 function NASG_ATC_TOWER:HandleReadback(atc, client, airport, session, event)
     local rawText = event and event.raw_text or ""
 
@@ -869,6 +985,17 @@ function NASG_ATC_TOWER:HandleReadback(atc, client, airport, session, event)
     end
 
     local callsign = atc:GetClientCallsign(client, event)
+
+    if pending.Type == "cross" then
+        if self:IsCrossReadbackCorrect(atc, rawText, pending) then
+            session.PendingReadback = nil
+            atc:Log("Crossing clearance readback correct for client=" .. tostring(session.ClientKey))
+            return true
+        end
+
+        self:Send(atc, airport, string.format("%s, negative. %s", callsign, pending.InstructionText))
+        return true
+    end
 
     if pending.Type == "takeoff" then
         if self:IsTakeoffReadbackCorrect(atc, rawText, pending) then

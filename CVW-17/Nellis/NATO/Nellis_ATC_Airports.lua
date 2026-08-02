@@ -322,6 +322,7 @@ NASG_ATC:DefineAirport({
             { From = "eor_s",  To = "rwy03R", Taxiway = "Alpha" },
             { From = "rwy03R", To = "eor_se", Taxiway = "Alpha", CrossesRunway = "03R" },
             { From = "eor_se", To = "a_east", Taxiway = "Alpha" },
+            { From = "eor_se", To = "rwy03L", Taxiway = "Alpha",CrossesRunway = "03R"},
 
             -- Echo: bridges both strips at the north end -- the only way
             -- onto 21L/21R. Mirrors Alpha: North West EOR crosses 21R to

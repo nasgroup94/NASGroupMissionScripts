@@ -424,7 +424,12 @@ end
 --                            is not authorized to clear it, Tower must.
 --   { Decision = "CROSS" } - inactive strip, traffic clear.
 --   { Decision = "HOLD" }  - inactive strip, traffic requires holding short.
-function NASG_ATC_GROUND:AssessRunwayCrossing(atc, client, airport, crossingRunwayEndId)
+-- `skipActiveGate`: when true, skip the isActive->DEFER branch and go straight
+-- to the zone/traffic-based CROSS/HOLD assessment. Used by Tower once it has
+-- already taken ownership of a deferred crossing (session.PendingTowerCrossingRunway)
+-- so it can reuse this same traffic check without recursing back into "defer
+-- to Tower" — Tower already IS the authority at that point.
+function NASG_ATC_GROUND:AssessRunwayCrossing(atc, client, airport, crossingRunwayEndId, skipActiveGate)
     if not airport or not airport.Runways then
         return nil
     end
@@ -435,16 +440,19 @@ function NASG_ATC_GROUND:AssessRunwayCrossing(atc, client, airport, crossingRunw
         return nil
     end
 
-    local activeDeparture = tostring(atc:GetActiveRunway(airport, true) or "")
-    local activeArrival = tostring(atc:GetActiveRunway(airport, false) or "")
-    local reciprocal = cfg.Reciprocal and tostring(cfg.Reciprocal) or nil
     local endId = tostring(crossingRunwayEndId)
 
-    local isActive = (endId == activeDeparture or endId == activeArrival)
-            or (reciprocal and (reciprocal == activeDeparture or reciprocal == activeArrival))
+    if not skipActiveGate then
+        local activeDeparture = tostring(atc:GetActiveRunway(airport, true) or "")
+        local activeArrival = tostring(atc:GetActiveRunway(airport, false) or "")
+        local reciprocal = cfg.Reciprocal and tostring(cfg.Reciprocal) or nil
 
-    if isActive then
-        return { Decision = "DEFER", Runway = endId }
+        local isActive = (endId == activeDeparture or endId == activeArrival)
+                or (reciprocal and (reciprocal == activeDeparture or reciprocal == activeArrival))
+
+        if isActive then
+            return { Decision = "DEFER", Runway = endId }
+        end
     end
 
     if not cfg.RunwayZone then
@@ -851,7 +859,7 @@ function NASG_ATC_GROUND:EnsureParkingLocationStated(atc, airport, session, even
         requireParkingLocation = atc.Defaults.RequireParkingLocation
     end
 
-    if not requireParkingLocation or session.ParkingAreaName then
+    if not requireParkingLocation or session.ParkingLocationConfirmed then
         return true
     end
 
@@ -860,6 +868,7 @@ function NASG_ATC_GROUND:EnsureParkingLocationStated(atc, airport, session, even
 
     if parkingArea then
         session.ParkingAreaName = parkingArea.Name
+        session.ParkingLocationConfirmed = true
         atc:Log(
                 string.format(
                         "Ground taxi request parking location stated client=%s location=%s parking=%s",
@@ -1583,6 +1592,7 @@ function NASG_ATC_GROUND:HandleReadback(atc, client, airport, session, event)
             atc:ClearPendingReadback(session)
 
             local holdingCrossing = nil
+            local towerCrossingRunway = nil
 
             if pending.CrossRunways then
                 for _, crossing in ipairs(pending.CrossRunways) do
@@ -1592,9 +1602,17 @@ function NASG_ATC_GROUND:HandleReadback(atc, client, airport, session, event)
                     if crossing.Decision == "HOLD" then
                         holdingCrossing = crossing.Runway
                         break
+                    elseif crossing.Decision == "DEFER" and not towerCrossingRunway then
+                        -- Remember it for Tower: NASG_ATC_Tower.lua's
+                        -- IssueDepartureClearance checks this before assessing
+                        -- the real departure runway, so the pilot gets
+                        -- "cleared to cross" instead of a takeoff clearance.
+                        towerCrossingRunway = crossing.Runway
                     end
                 end
             end
+
+            session.PendingTowerCrossingRunway = towerCrossingRunway
 
             if holdingCrossing then
                 session.State = atc.States.HOLDING_SHORT_FOR_CROSSING
