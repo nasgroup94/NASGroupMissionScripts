@@ -669,8 +669,13 @@ class ATCSpeechEventBuilder:
     def extract_parking_location(self, text: str) -> str | None:
         normalized = self.normalize_text(text)
 
+        # Compound directions are tried before the plain ones so STT output that
+        # splits them into two words ("south east" instead of "southeast") still
+        # resolves to the correct compound key instead of falling through to a
+        # later, direction-losing match on the bare second word ("east").
         match = re.search(
-            r"\b(northeast|northwest|southeast|southwest|north|south|east|west)"
+            r"\b(north\s*east|north\s*west|south\s*east|south\s*west|"
+            r"north|south|east|west)"
             r"\s*(ramp|eor|end of runway)\b",
             normalized,
         )
@@ -678,9 +683,10 @@ class ATCSpeechEventBuilder:
         if not match:
             return None
 
+        direction = re.sub(r"\s+", "", match.group(1))
         noun = "ramp" if match.group(2) == "ramp" else "eor"
 
-        return f"{match.group(1)}_{noun}"
+        return f"{direction}_{noun}"
 
     # Parses the new callsign out of "set callsign as check four one" /
     # "change callsign to viper 21". The speaker's identity for this
