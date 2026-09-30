@@ -1126,4 +1126,11 @@ NASG_ATC:RegisterTrackedPoint({
     z = -100288.4,
 })
 
+NASG_ATC:RegisterTrackedPoint({
+    Id = "range64b",
+    Name = "range",
+    x = -340000,
+    z = -70000,
+})
+
 NASG_ATC:Log("Nevada ATC tracked points loaded")

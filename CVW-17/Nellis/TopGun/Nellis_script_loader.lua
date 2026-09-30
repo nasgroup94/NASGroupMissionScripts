@@ -77,6 +77,10 @@ assert(loadfile(mission_scripts_path .. "NATO\\ATIS.lua"))() -- creates atisNell
 -- NASG ATC.
 assert(loadfile(mission_scripts_path .. "NATO\\Nellis_ATC_ScriptLoader.lua"))()
 
+
+assert(loadfile(mission_scripts_path .. "Training\\Blue_Ranges.lua"))()
+
+
 -- BASE:TraceOnOff(true)
 -- BASE:TraceLevel(3)
 -- BASE:TraceClass('SET_CLIENT')
